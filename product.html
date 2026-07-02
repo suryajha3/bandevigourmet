@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="BandEvi Gourmet product detail page with ingredients, usage, storage, buyer notes, and cart booking."
+    />
+    <link rel="canonical" href="https://bandevigourmet.com/product.html" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:title" content="Product Detail | BandEvi Gourmet" />
+    <meta property="og:description" content="View BandEvi Gourmet product details and add items to cart booking." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bandevigourmet.com/product.html" />
+    <title>Product Detail | BandEvi Gourmet</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./index.html#top" aria-label="BandEvi Gourmet home">
+        <span class="brand-mark">B</span>
+        <span>
+          <strong>BandEvi Gourmet</strong>
+          <small>Global snack and spice brand</small>
+        </span>
+      </a>
+
+      <nav class="main-nav" aria-label="Primary navigation">
+        <a href="./products.html">Products</a>
+        <a href="./about.html">About</a>
+        <a href="./track.html">Track</a>
+        <a href="./wholesale.html">Wholesale</a>
+        <a href="./policies.html">Policies</a>
+      </nav>
+
+      <div class="header-actions">
+        <a class="portal-shortcut" href="./track.html">
+          <i data-lucide="badge-check"></i>
+          <span>Track order</span>
+        </a>
+        <button class="icon-button cart-trigger" type="button" aria-label="Open cart">
+          <i data-lucide="shopping-bag"></i>
+          <span class="cart-count" data-cart-count>0</span>
+        </button>
+      </div>
+      <div class="header-trust-row" aria-label="Trust highlights">
+        <span>Dedicated product page</span>
+        <span>Cart booking</span>
+        <span>Buyer details</span>
+        <span>Wholesale support</span>
+      </div>
+    </header>
+
+    <main id="singleProductPage" aria-live="polite"></main>
+
+    <footer class="site-footer" aria-label="Brand footer">
+      <div class="footer-intro">
+        <a class="brand footer-brand" href="./index.html#top" aria-label="BandEvi Gourmet home">
+          <span class="brand-mark">B</span>
+          <span>
+            <strong>BandEvi Gourmet</strong>
+            <small>Product detail and cart booking</small>
+          </span>
+        </a>
+        <p>Review product information, add to cart, and create a booking ID from checkout.</p>
+      </div>
+      <nav class="footer-links" aria-label="Product links">
+        <strong>Catalog</strong>
+        <a href="./products.html">All products</a>
+        <a href="./products.html#makhana-products">Makhana</a>
+        <a href="./products.html#masala-products">Masala</a>
+        <a href="./products.html#poha-products">Poha</a>
+      </nav>
+      <nav class="footer-links" aria-label="Support links">
+        <strong>Support</strong>
+        <a href="./track.html">Track order</a>
+        <a href="./account.html">Customer account</a>
+        <a href="./policies.html">Policies</a>
+      </nav>
+      <div class="footer-note">
+        <strong>Buyer note</strong>
+        <span>Final packaging, nutrition, and compliance values should be verified before commercial shipment.</span>
+      </div>
+    </footer>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>

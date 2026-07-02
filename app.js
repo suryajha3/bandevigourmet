@@ -70,6 +70,7 @@ const productGrid = document.querySelector("#productGrid");
 const makhanaProductGrid = document.querySelector("#makhanaProductGrid");
 const masalaProductGrid = document.querySelector("#masalaProductGrid");
 const pohaProductGrid = document.querySelector("#pohaProductGrid");
+const singleProductPage = document.querySelector("#singleProductPage");
 const cartItems = document.querySelector("#cartItems");
 const cartTotals = document.querySelector("#cartTotals");
 const cartDrawer = document.querySelector(".cart-drawer");
@@ -319,6 +320,10 @@ function productImage(product) {
   return product.image || "/assets/makhana-masala-hero.png";
 }
 
+function productUrl(product) {
+  return `./product.html?id=${encodeURIComponent(product.id)}`;
+}
+
 function imagePosition(product) {
   return product.position || "center";
 }
@@ -357,7 +362,7 @@ function renderProductCard(product) {
           <span class="pack-size">${product.size}</span>
         </div>
         <div class="card-actions">
-          <button class="detail-button" type="button" data-detail="${product.id}">View details</button>
+          <a class="detail-button" href="${productUrl(product)}">View details</a>
           <button type="button" data-add="${product.id}">
             <i data-lucide="plus"></i>
             Add to cart
@@ -379,7 +384,7 @@ function renderCategoryCard(product) {
         <h3>${product.name}</h3>
         <p>${product.size} - ${money(product.price)}</p>
         <div class="category-actions">
-          <button class="detail-button" type="button" data-detail="${product.id}">Details</button>
+          <a class="detail-button" href="${productUrl(product)}">Details</a>
           <button type="button" data-add="${product.id}">
             <i data-lucide="plus"></i>
             Add
@@ -411,7 +416,6 @@ function renderProducts() {
     : `<div class="empty-cart">No products matched that search.</div>`;
 
   bindAddButtons(productGrid);
-  bindDetailButtons(productGrid);
 
   refreshIcons();
 }
@@ -428,7 +432,6 @@ function renderCategoryProducts() {
     const categoryProducts = catalog.filter((product) => product.category === category);
     grid.innerHTML = categoryProducts.map(renderCategoryCard).join("");
     bindAddButtons(grid);
-    bindDetailButtons(grid);
   });
 
   refreshIcons();
@@ -444,6 +447,123 @@ function setProductFilter(filter) {
 
 function renderList(items) {
   return (items || []).map((item) => `<li>${item}</li>`).join("");
+}
+
+function renderProductFacts(details) {
+  return `
+    <div class="detail-grid">
+      <article>
+        <h4>Ingredients</h4>
+        <ul>${renderList(details.ingredients)}</ul>
+      </article>
+      <article>
+        <h4>Nutrition snapshot</h4>
+        <ul>${renderList(details.nutrition)}</ul>
+      </article>
+      <article>
+        <h4>Shelf life</h4>
+        <p>${details.shelfLife || "Add shelf-life details after final packaging."}</p>
+      </article>
+      <article>
+        <h4>Storage</h4>
+        <p>${details.storage || "Store sealed in a cool, dry place."}</p>
+      </article>
+      <article>
+        <h4>Origin note</h4>
+        <p>${details.origin || "Add sourcing and origin notes."}</p>
+      </article>
+      <article>
+        <h4>Flavor notes</h4>
+        <p>${details.flavorNotes || "Add flavor notes."}</p>
+      </article>
+    </div>
+  `;
+}
+
+function renderUsagePanel(details) {
+  return `
+    <div class="usage-panel">
+      <h4>Usage ideas</h4>
+      <div>${(details.usage || []).map((item) => `<span>${item}</span>`).join("")}</div>
+    </div>
+  `;
+}
+
+function renderSingleProductPage() {
+  if (!singleProductPage) return;
+
+  const params = new URLSearchParams(window.location.search);
+  const product = catalog.find((item) => item.id === params.get("id")) || catalog[0];
+  if (!product) {
+    singleProductPage.innerHTML = `<section class="page-hero"><h1>Product not found.</h1><a class="primary-link" href="./products.html">Back to products</a></section>`;
+    return;
+  }
+
+  const details = product.details || {};
+  const sameCategory = catalog.filter((item) => item.category === product.category && item.id !== product.id).slice(0, 3);
+  document.title = `${product.name} | BandEvi Gourmet`;
+
+  singleProductPage.innerHTML = `
+    <section class="single-product-hero" aria-labelledby="single-product-title">
+      <div class="single-product-media">
+        <img src="${productImage(product)}" alt="${product.name}" style="--position: ${imagePosition(product)}" />
+      </div>
+      <div class="single-product-copy">
+        <p class="eyebrow">${escapeHtml(product.category)} product</p>
+        <h1 id="single-product-title">${escapeHtml(product.name)}</h1>
+        <p>${escapeHtml(product.description)}</p>
+        <div class="single-product-meta" aria-label="Product highlights">
+          <span>${escapeHtml(product.badge)}</span>
+          <span>${escapeHtml(product.size)}</span>
+          <span>${product.rating}/5 rating</span>
+        </div>
+        <div class="single-product-price">
+          <strong>${money(product.price)}</strong>
+          <span>Cart booking and WhatsApp support available</span>
+        </div>
+        <div class="single-product-actions">
+          <button type="button" data-add="${product.id}">
+            <i data-lucide="plus"></i>
+            Add to cart
+          </button>
+          <button class="secondary-product-action cart-trigger" type="button">
+            <i data-lucide="shopping-bag"></i>
+            Open cart
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="single-product-section" aria-labelledby="product-detail-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Product details</p>
+          <h2 id="product-detail-title">Ingredients, usage, storage, and buyer notes</h2>
+        </div>
+        <a class="category-link" href="./products.html#${product.category}-products">Back to ${escapeHtml(product.category)}</a>
+      </div>
+      ${renderProductFacts(details)}
+      ${renderUsagePanel(details)}
+      <p class="detail-disclaimer">${details.disclaimer || "Replace display values with verified packaging details before final commercial launch."}</p>
+    </section>
+
+    <section class="single-product-section" aria-labelledby="related-products-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">More options</p>
+          <h2 id="related-products-title">Related ${escapeHtml(product.category)} products</h2>
+        </div>
+      </div>
+      <div class="category-grid">${sameCategory.length ? sameCategory.map(renderCategoryCard).join("") : `<article class="admin-empty">Explore the full catalog for more products.</article>`}</div>
+    </section>
+  `;
+
+  bindAddButtons(singleProductPage);
+  bindDetailButtons(singleProductPage);
+  singleProductPage.querySelectorAll(".cart-trigger").forEach((button) => {
+    button.addEventListener("click", openCart);
+  });
+  refreshIcons();
 }
 
 function openProductDetail(id) {
@@ -471,37 +591,8 @@ function openProductDetail(id) {
       </div>
     </div>
 
-    <div class="detail-grid">
-      <article>
-        <h4>Ingredients</h4>
-        <ul>${renderList(details.ingredients)}</ul>
-      </article>
-      <article>
-        <h4>Nutrition snapshot</h4>
-        <ul>${renderList(details.nutrition)}</ul>
-      </article>
-      <article>
-        <h4>Shelf life</h4>
-        <p>${details.shelfLife || "Add shelf-life details after final packaging."}</p>
-      </article>
-      <article>
-        <h4>Storage</h4>
-        <p>${details.storage || "Store sealed in a cool, dry place."}</p>
-      </article>
-      <article>
-        <h4>Origin note</h4>
-        <p>${details.origin || "Add sourcing and origin notes."}</p>
-      </article>
-      <article>
-        <h4>Flavor notes</h4>
-        <p>${details.flavorNotes || "Add flavor notes."}</p>
-      </article>
-    </div>
-
-    <div class="usage-panel">
-      <h4>Usage ideas</h4>
-      <div>${(details.usage || []).map((item) => `<span>${item}</span>`).join("")}</div>
-    </div>
+    ${renderProductFacts(details)}
+    ${renderUsagePanel(details)}
 
     <p class="detail-disclaimer">${details.disclaimer || "Replace display values with verified packaging details before final commercial launch."}</p>
   `;
@@ -847,6 +938,7 @@ function prefillCustomerLoginForm() {
 function renderCustomerPortal() {
   if (!customerDashboard) return;
 
+  const portalMode = customerDashboard.dataset.mode || "account";
   const customer = state.customer;
   const ordersForCustomer = customer
     ? state.orders.filter((order) => normalizePhone(order.customer?.phone) === normalizePhone(customer.phone))
@@ -863,7 +955,7 @@ function renderCustomerPortal() {
   };
 
   customerDashboard.innerHTML = `
-    <h3>${customer ? `Welcome, ${escapeHtml(customer.name)}` : "Customer dashboard"}</h3>
+    <h3>${customer ? `Welcome, ${escapeHtml(customer.name)}` : portalMode === "track" ? "Order status result" : "Customer dashboard"}</h3>
     ${
       customer
         ? `<div class="portal-profile">
@@ -872,7 +964,7 @@ function renderCustomerPortal() {
             ${customer.location ? `<span>${escapeHtml(customer.location)}</span>` : ""}
             <span>${state.customerSyncStatus === "synced" ? "Backend synced" : "Saved on this device"}</span>
           </div>`
-        : `<p class="portal-empty">Save your login details first, then place an order or track an existing order ID.</p>`
+        : `<p class="portal-empty">${portalMode === "track" ? "Enter your booking ID and phone number to see the latest status here." : "Save your login details first, then place an order or track an existing order ID."}</p>`
     }
     ${
       customer
@@ -884,11 +976,11 @@ function renderCustomerPortal() {
           </div>`
         : ""
     }
-    <h4 class="portal-subtitle">${state.trackedOrder ? "Tracked booking" : "Recent bookings"}</h4>
+    <h4 class="portal-subtitle">${state.trackedOrder ? "Tracked booking" : portalMode === "track" ? "Tracking result" : "Recent bookings"}</h4>
     ${
       visibleOrders.length
         ? visibleOrders.map(renderOrderCard).join("")
-        : `<p class="portal-empty">No saved orders yet. Place an order from the cart to create your first booking ID.</p>`
+        : `<p class="portal-empty">${portalMode === "track" ? "No booking loaded yet. Submit the tracking form to view status." : "No saved orders yet. Place an order from the cart to create your first booking ID."}</p>`
     }
     ${
       state.customerEnquiries.length
@@ -1284,6 +1376,7 @@ document.querySelectorAll(".faq-item button").forEach((button) => {
 
 renderProducts();
 renderCategoryProducts();
+renderSingleProductPage();
 renderCart();
 prefillCustomerLoginForm();
 renderCustomerPortal();

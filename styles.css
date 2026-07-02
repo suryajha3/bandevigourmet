@@ -246,7 +246,10 @@ a {
 .whatsapp-button,
 .wholesale-button,
 .product-card button,
+.product-card .detail-button,
 .category-card button,
+.category-card .detail-button,
+.single-product-actions button,
 .detail-hero button,
 .coupon-row button {
   display: inline-flex;
@@ -263,6 +266,7 @@ a {
 .primary-link,
 .checkout-button,
 .product-card button,
+.single-product-actions button,
 .category-card button,
 .detail-hero button {
   background: var(--saffron);
@@ -449,6 +453,51 @@ a {
 .category-overview a {
   align-self: end;
   color: var(--blue);
+  font-weight: 900;
+}
+
+.journey-section,
+.single-product-section {
+  width: min(1180px, calc(100% - 36px));
+  margin: 74px auto;
+}
+
+.journey-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.journey-grid article {
+  display: grid;
+  gap: 12px;
+  min-height: 260px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.journey-grid svg {
+  width: 30px;
+  height: 30px;
+  color: var(--green);
+}
+
+.journey-grid h3,
+.journey-grid p {
+  margin: 0;
+}
+
+.journey-grid p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.journey-grid a {
+  align-self: end;
+  width: fit-content;
+  color: var(--green);
   font-weight: 900;
 }
 
@@ -705,7 +754,8 @@ a {
   font-weight: 800;
 }
 
-.product-card button {
+.product-card button,
+.product-card .detail-button {
   width: 100%;
 }
 
@@ -720,10 +770,12 @@ a {
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--green);
+  text-decoration: none;
 }
 
 .product-card button svg,
 .category-card button svg,
+.single-product-actions button svg,
 .detail-hero button svg,
 .primary-link svg,
 .secondary-link svg,
@@ -1400,6 +1452,10 @@ a {
   gap: 14px;
 }
 
+.portal-panel.account-only {
+  grid-template-columns: 1fr;
+}
+
 .portal-form,
 .portal-dashboard {
   padding: 18px;
@@ -1631,6 +1687,103 @@ a {
   padding: 4px 8px;
   border-radius: 999px;
   background: #f4f1e8;
+  color: var(--green);
+}
+
+.single-product-hero {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.88fr) minmax(0, 1fr);
+  gap: clamp(22px, 5vw, 56px);
+  align-items: center;
+  width: min(1180px, calc(100% - 36px));
+  margin: 46px auto 74px;
+  padding: clamp(20px, 4vw, 42px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.single-product-media {
+  min-height: 520px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f4f1e8;
+}
+
+.single-product-media img {
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  object-fit: cover;
+  object-position: var(--position, center);
+}
+
+.single-product-copy {
+  display: grid;
+  gap: 18px;
+}
+
+.single-product-copy h1 {
+  margin: 0;
+  font-size: clamp(42px, 7vw, 74px);
+  line-height: 0.98;
+}
+
+.single-product-copy p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.single-product-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.single-product-meta span {
+  min-height: 34px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfaf5;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: capitalize;
+}
+
+.single-product-price {
+  display: grid;
+  gap: 4px;
+}
+
+.single-product-price strong {
+  color: var(--green);
+  font-size: 36px;
+}
+
+.single-product-price span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.single-product-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.single-product-actions button {
+  min-width: 170px;
+  padding: 0 18px;
+}
+
+.single-product-actions .secondary-product-action {
+  border: 1px solid var(--line);
+  background: #fff;
   color: var(--green);
 }
 
@@ -2731,6 +2884,11 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .journey-grid,
+  .single-product-hero {
+    grid-template-columns: 1fr;
+  }
+
   .legal-jump-nav {
     position: static;
   }
@@ -2809,6 +2967,9 @@ a {
   .export-desk,
   .operations-section,
   .wholesale-section,
+  .journey-section,
+  .single-product-section,
+  .single-product-hero,
   .page-hero,
   .category-overview,
   .buyer-process,
@@ -2858,6 +3019,10 @@ a {
 
   .portal-panel {
     grid-template-columns: 1fr;
+  }
+
+  .journey-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .admin-status-form {
@@ -2927,6 +3092,9 @@ a {
   .legal-layout,
   .legal-jump-nav,
   .customer-portal-section,
+  .journey-section,
+  .single-product-section,
+  .single-product-hero,
   .page-hero,
   .category-overview,
   .buyer-process,
@@ -2937,6 +3105,25 @@ a {
 
   .page-hero {
     padding: 20px;
+  }
+
+  .journey-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .single-product-hero {
+    padding: 20px;
+  }
+
+  .single-product-media,
+  .single-product-media img {
+    min-height: 340px;
+  }
+
+  .single-product-copy h1 {
+    font-size: 34px;
+    line-height: 1.08;
+    overflow-wrap: anywhere;
   }
 
   .page-hero h1 {

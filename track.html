@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Track BandEvi Gourmet booking status by order ID and phone number on a dedicated tracking page."
+    />
+    <link rel="canonical" href="https://bandevigourmet.com/track.html" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:title" content="Track Order | BandEvi Gourmet" />
+    <meta property="og:description" content="Track BandEvi Gourmet bookings from cart confirmation to delivery." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bandevigourmet.com/track.html" />
+    <title>Track Order | BandEvi Gourmet</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./index.html#top" aria-label="BandEvi Gourmet home">
+        <span class="brand-mark">B</span>
+        <span>
+          <strong>BandEvi Gourmet</strong>
+          <small>Global snack and spice brand</small>
+        </span>
+      </a>
+
+      <nav class="main-nav" aria-label="Primary navigation">
+        <a href="./products.html">Products</a>
+        <a href="./about.html">About</a>
+        <a href="./account.html">Account</a>
+        <a href="./track.html">Track</a>
+        <a href="./wholesale.html">Wholesale</a>
+        <a href="./policies.html">Policies</a>
+      </nav>
+
+      <div class="header-actions">
+        <a class="portal-shortcut" href="./account.html">
+          <i data-lucide="badge-check"></i>
+          <span>Login</span>
+        </a>
+        <button class="icon-button cart-trigger" type="button" aria-label="Open cart">
+          <i data-lucide="shopping-bag"></i>
+          <span class="cart-count" data-cart-count>0</span>
+        </button>
+      </div>
+      <div class="header-trust-row" aria-label="Trust highlights">
+        <span>Separate tracking page</span>
+        <span>Order ID lookup</span>
+        <span>Delivery status</span>
+        <span>Seller notes</span>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="page-hero account-page-hero" aria-labelledby="track-page-title">
+        <div>
+          <p class="eyebrow">Order tracking</p>
+          <h1 id="track-page-title">Track your booking status on a dedicated page.</h1>
+          <p>
+            Enter the booking ID and phone number used during checkout to see order stage, payment status, courier details, and seller notes.
+          </p>
+          <div class="hero-actions">
+            <a class="primary-link" href="./products.html">
+              <i data-lucide="store"></i>
+              Shop products
+            </a>
+            <a class="secondary-link" href="./account.html">
+              <i data-lucide="badge-check"></i>
+              Customer account
+            </a>
+          </div>
+        </div>
+        <img src="./assets/packaging-export-carton.png" alt="BandEvi Gourmet export carton packaging" />
+      </section>
+
+      <section class="customer-portal-section tracking-page-section" id="customer-portal" aria-labelledby="track-form-title">
+        <div class="portal-copy">
+          <p class="eyebrow">Live status lookup</p>
+          <h2 id="track-form-title">Booking status, courier, and delivery updates.</h2>
+          <p>
+            This tracking page is separate from customer login. Buyers can quickly check one order without opening their full account dashboard.
+          </p>
+          <div class="portal-highlights" aria-label="Tracking page features">
+            <span>Order ID search</span>
+            <span>Phone verification</span>
+            <span>Status timeline</span>
+            <span>WhatsApp support</span>
+          </div>
+        </div>
+        <div class="portal-panel account-only">
+          <form class="portal-form" id="orderLookupForm">
+            <h3>Track booking / order</h3>
+            <label>
+              <span>Order ID</span>
+              <input name="orderId" type="text" placeholder="Example: MM12345" required />
+            </label>
+            <label>
+              <span>Phone</span>
+              <input name="phone" type="tel" placeholder="Phone used in order" required />
+            </label>
+            <button class="portal-button secondary" type="submit">
+              <i data-lucide="search"></i>
+              Track status
+            </button>
+          </form>
+        </div>
+        <div class="portal-dashboard" id="customerDashboard" data-mode="track" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <footer class="site-footer" aria-label="Brand footer">
+      <div class="footer-intro">
+        <a class="brand footer-brand" href="./index.html#top" aria-label="BandEvi Gourmet home">
+          <span class="brand-mark">B</span>
+          <span>
+            <strong>BandEvi Gourmet</strong>
+            <small>Dedicated booking status page</small>
+          </span>
+        </a>
+        <p>Use the account page for customer profile and repeat order history.</p>
+      </div>
+      <nav class="footer-links" aria-label="Footer links">
+        <strong>Quick links</strong>
+        <a href="./products.html">Products</a>
+        <a href="./account.html">Customer account</a>
+        <a href="./wholesale.html">Wholesale</a>
+        <a href="./policies.html#shipping">Shipping</a>
+      </nav>
+      <div class="footer-note">
+        <strong>Tracking support</strong>
+        <span>If an order is not found, confirm the booking ID and the phone number used at checkout.</span>
+      </div>
+    </footer>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>

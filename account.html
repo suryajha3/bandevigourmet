@@ -9,11 +9,11 @@
     />
     <link rel="canonical" href="https://bandevigourmet.com/account.html" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <meta property="og:title" content="Account & Order Tracking | BandEvi Gourmet" />
-    <meta property="og:description" content="Save customer details, track BandEvi Gourmet booking IDs, and view order status." />
+    <meta property="og:title" content="Customer Account | BandEvi Gourmet" />
+    <meta property="og:description" content="Save customer details, prefill checkout, and view BandEvi Gourmet booking history." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://bandevigourmet.com/account.html" />
-    <title>Account & Order Tracking | BandEvi Gourmet</title>
+    <title>Customer Account | BandEvi Gourmet</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -29,13 +29,14 @@
       <nav class="main-nav" aria-label="Primary navigation">
         <a href="./products.html">Products</a>
         <a href="./about.html">About</a>
-        <a href="./account.html">Track</a>
+        <a href="./account.html">Account</a>
+        <a href="./track.html">Track</a>
         <a href="./wholesale.html">Wholesale</a>
         <a href="./policies.html">Policies</a>
       </nav>
 
       <div class="header-actions">
-        <a class="portal-shortcut" href="./account.html">
+        <a class="portal-shortcut" href="./track.html">
           <i data-lucide="badge-check"></i>
           <span>Track order</span>
         </a>
@@ -46,8 +47,8 @@
       </div>
       <div class="header-trust-row" aria-label="Trust highlights">
         <span>Customer profile</span>
-        <span>Booking status timeline</span>
-        <span>Backend order lookup</span>
+        <span>Repeat order history</span>
+        <span>Checkout prefill</span>
         <span>WhatsApp support</span>
       </div>
     </header>
@@ -56,19 +57,19 @@
       <section class="page-hero account-page-hero" aria-labelledby="account-page-title">
         <div>
           <p class="eyebrow">Customer account</p>
-          <h1 id="account-page-title">Track bookings from cart to delivery.</h1>
+          <h1 id="account-page-title">Customer login, profile, and order history.</h1>
           <p>
-            Save your customer profile, place orders from the cart, and track each booking ID using the phone number used at checkout.
+            Save customer details once, prefill checkout faster, and see recent bookings connected to the same phone number.
           </p>
           <div class="hero-actions">
             <a class="primary-link" href="./products.html">
               <i data-lucide="store"></i>
               Shop products
             </a>
-            <button class="secondary-link cart-trigger" type="button">
-              <i data-lucide="shopping-bag"></i>
-              Open cart
-            </button>
+            <a class="secondary-link" href="./track.html">
+              <i data-lucide="search"></i>
+              Track order
+            </a>
           </div>
         </div>
         <img src="./assets/packaging-makhana-pouch.png" alt="BandEvi Gourmet packaged makhana pouch" />
@@ -77,21 +78,21 @@
       <section class="customer-portal-section" id="customer-portal" aria-labelledby="customer-portal-title">
         <div class="portal-copy">
           <p class="eyebrow">Customer booking desk</p>
-          <h2 id="customer-portal-title">Login, track, and manage your BandEvi bookings.</h2>
+          <h2 id="customer-portal-title">Login and manage your BandEvi profile.</h2>
           <p>
-            This page is connected to the live backend. Saved customer details prefill checkout, while order IDs can be tracked from any device using the same phone number.
+            This page is connected to the live backend. Saved customer details prefill checkout and help repeat buyers see recent booking history.
           </p>
           <div class="portal-highlights" aria-label="Booking desk features">
             <span>Customer profile</span>
-            <span>Backend order lookup</span>
-            <span>Status timeline</span>
+            <span>Order history</span>
+            <span>Checkout prefill</span>
             <span>Support shortcut</span>
           </div>
           <div class="portal-note">
-            For admin-side status updates, use the protected admin panel after orders are placed.
+            For one-order lookup, use the separate tracking page.
           </div>
         </div>
-        <div class="portal-panel">
+        <div class="portal-panel account-only">
           <form class="portal-form" id="customerLoginForm">
             <h3>Customer login</h3>
             <label>
@@ -113,22 +114,6 @@
             <button class="portal-button" type="submit">
               <i data-lucide="badge-check"></i>
               Save login
-            </button>
-          </form>
-
-          <form class="portal-form" id="orderLookupForm">
-            <h3>Track booking / order</h3>
-            <label>
-              <span>Order ID</span>
-              <input name="orderId" type="text" placeholder="Example: MM12345" required />
-            </label>
-            <label>
-              <span>Phone</span>
-              <input name="phone" type="tel" placeholder="Phone used in order" required />
-            </label>
-            <button class="portal-button secondary" type="submit">
-              <i data-lucide="search"></i>
-              Track status
             </button>
           </form>
         </div>
@@ -156,7 +141,7 @@
           <article>
             <i data-lucide="package-open"></i>
             <h3>3. Track progress</h3>
-            <p>Status moves through booked, confirmed, packed, dispatched, and delivered.</p>
+            <p>Use the separate tracking page to check booked, confirmed, packed, dispatched, and delivered status.</p>
           </article>
           <article>
             <i data-lucide="message-circle"></i>
@@ -182,12 +167,12 @@
         <strong>Quick links</strong>
         <a href="./products.html">Products</a>
         <a href="./wholesale.html">Wholesale</a>
+        <a href="./track.html">Track order</a>
         <a href="./policies.html#refund">Refunds</a>
-        <a href="./policies.html#shipping">Shipping</a>
       </nav>
       <div class="footer-note">
-        <strong>Admin status updates</strong>
-        <span>Order status can be updated from the admin panel after login.</span>
+        <strong>Separate tracking page</strong>
+        <span>Customers can track one booking quickly from the dedicated status page.</span>
       </div>
     </footer>
 
