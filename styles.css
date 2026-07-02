@@ -1761,11 +1761,14 @@ a {
   }
 
   .hero h1 {
-    font-size: 38px;
+    font-size: 34px;
+    line-height: 1.08;
+    overflow-wrap: anywhere;
   }
 
   .hero-copy {
     font-size: 16px;
+    max-width: 100%;
   }
 
   .cart-drawer,
