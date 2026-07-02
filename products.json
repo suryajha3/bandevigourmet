@@ -108,6 +108,18 @@
     "position": "78% 58%"
   },
   {
+    "id": "premium-poha",
+    "name": "Premium Thick Poha",
+    "category": "poha",
+    "price": 149,
+    "size": "500 g",
+    "badge": "Breakfast staple",
+    "rating": 4.8,
+    "description": "Clean flattened rice for poha, chivda, namkeen, and quick Indian breakfasts.",
+    "image": "/assets/product-poha.png",
+    "position": "50% 56%"
+  },
+  {
     "id": "whole-spice-combo",
     "name": "Whole Spice Combo",
     "category": "combo",

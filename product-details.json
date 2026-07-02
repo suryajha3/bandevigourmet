@@ -89,6 +89,16 @@
     "usage": ["Curries", "Tadka", "Marinades", "Snack seasoning"],
     "disclaimer": "Nutrition values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
   },
+  "premium-poha": {
+    "ingredients": ["Flattened rice (poha)"],
+    "nutrition": ["Serving: 50 g", "Energy: 175 kcal", "Protein: 3.5 g", "Carbohydrate: 38 g", "Fat: 0.5 g", "Best cooked with vegetables, peanuts, spices, and lemon"],
+    "shelfLife": "Best before 6 months from packing when stored sealed.",
+    "storage": "Store in an airtight container in a cool, dry place away from moisture.",
+    "origin": "Sourced and packed in India. Add exact mill or region after final sourcing.",
+    "flavorNotes": "Neutral, light, and quick-cooking flattened rice with a soft texture after rinsing.",
+    "usage": ["Breakfast poha", "Chivda and namkeen", "Tiffin recipes", "Light evening snack"],
+    "disclaimer": "Nutrition and shelf-life values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
   "whole-spice-combo": {
     "ingredients": ["Cumin", "Coriander", "Cardamom", "Cloves", "Black pepper", "Cinnamon"],
     "nutrition": ["Serving: varies by spice", "Whole spice pantry set", "No added color", "No added flavor", "Use as required by recipe"],

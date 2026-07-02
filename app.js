@@ -59,6 +59,7 @@ const rupee = new Intl.NumberFormat("en-IN", {
 const productGrid = document.querySelector("#productGrid");
 const makhanaProductGrid = document.querySelector("#makhanaProductGrid");
 const masalaProductGrid = document.querySelector("#masalaProductGrid");
+const pohaProductGrid = document.querySelector("#pohaProductGrid");
 const cartItems = document.querySelector("#cartItems");
 const cartTotals = document.querySelector("#cartTotals");
 const cartDrawer = document.querySelector(".cart-drawer");
@@ -232,7 +233,8 @@ function renderProducts() {
 function renderCategoryProducts() {
   const categorySections = [
     { category: "makhana", grid: makhanaProductGrid },
-    { category: "masala", grid: masalaProductGrid }
+    { category: "masala", grid: masalaProductGrid },
+    { category: "poha", grid: pohaProductGrid }
   ];
 
   categorySections.forEach(({ category, grid }) => {
