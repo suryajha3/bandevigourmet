@@ -22,4 +22,12 @@ services:
       - key: ADMIN_TOKEN_SECRET
         generateValue: true
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: bandevigourmet-db
+          property: connectionString
+databases:
+  - name: bandevigourmet-db
+    plan: basic-256mb
+    databaseName: bandevigourmet
+    user: bandevigourmet
+    region: oregon
