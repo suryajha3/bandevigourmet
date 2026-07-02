@@ -25,6 +25,7 @@ import products from "./products.json";
 import { STORE_CONFIG } from "./store-config.js";
 
 const API_TIMEOUT_MS = 6000;
+const LIVE_API_ORIGIN = "https://bandevigourmet-web.onrender.com";
 
 const catalog = products.map((product) => ({
   ...product,
@@ -113,9 +114,10 @@ function writeJson(key, value) {
 async function apiRequest(path, options = {}) {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  const apiPath = path.startsWith("http") ? path : `${LIVE_API_ORIGIN}${path}`;
 
   try {
-    const response = await fetch(path, {
+    const response = await fetch(apiPath, {
       ...options,
       signal: controller.signal,
       headers: {

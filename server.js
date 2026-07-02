@@ -14,6 +14,11 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 const TOKEN_SECRET = process.env.ADMIN_TOKEN_SECRET || ADMIN_PASSWORD || randomUUID();
 const TOKEN_TTL_MS = 1000 * 60 * 60 * 12;
 const ORDER_STATUSES = new Set(["booked", "confirmed", "packed", "dispatched", "delivered"]);
+const API_CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS"
+};
 
 const mimeTypes = new Map([
   [".html", "text/html; charset=utf-8"],
@@ -33,7 +38,8 @@ const mimeTypes = new Map([
 function jsonResponse(res, status, payload) {
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store"
+    "Cache-Control": "no-store",
+    ...API_CORS_HEADERS
   });
   res.end(JSON.stringify(payload));
 }
@@ -205,9 +211,8 @@ function normalizeOrder(input) {
 async function handleApi(req, res, url) {
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS"
+      ...API_CORS_HEADERS,
+      "Access-Control-Max-Age": "86400"
     });
     res.end();
     return true;

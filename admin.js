@@ -1,4 +1,5 @@
 const TOKEN_KEY = "bandevi-admin-token";
+const LIVE_API_ORIGIN = "https://bandevigourmet-web.onrender.com";
 const STATUS_LABELS = {
   booked: "Booked",
   confirmed: "Confirmed",
@@ -45,13 +46,14 @@ function showToast(message) {
 }
 
 async function api(path, options = {}) {
+  const apiPath = path.startsWith("http") ? path : `${LIVE_API_ORIGIN}${path}`;
   const headers = {
     "Content-Type": "application/json",
     ...(options.headers || {})
   };
   if (state.token) headers.Authorization = `Bearer ${state.token}`;
 
-  const response = await fetch(path, {
+  const response = await fetch(apiPath, {
     ...options,
     headers
   });
