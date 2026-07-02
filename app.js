@@ -34,7 +34,8 @@ const catalog = products.map((product) => ({
 
 const STORAGE_KEYS = {
   customer: "bandevi-gourmet-customer",
-  orders: "bandevi-gourmet-orders"
+  orders: "bandevi-gourmet-orders",
+  cart: "bandevi-gourmet-cart"
 };
 
 const ORDER_STEPS = [
@@ -50,11 +51,13 @@ const state = {
   search: "",
   sort: "featured",
   couponApplied: false,
-  cart: new Map(),
+  cart: loadCart(),
   customer: loadCustomer(),
   orders: loadOrders(),
   trackedOrder: null
 };
+
+ensureStoreShell();
 
 const rupee = new Intl.NumberFormat("en-IN", {
   maximumFractionDigits: 0
@@ -80,6 +83,115 @@ const overlay = document.querySelector("[data-overlay]");
 const toast = document.querySelector("#toast");
 const couponInput = document.querySelector("#couponInput");
 const couponMessage = document.querySelector("#couponMessage");
+
+function ensureStoreShell() {
+  if (!document.querySelector(".product-detail-drawer")) {
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      `
+        <aside class="product-detail-drawer" aria-label="Product details" aria-hidden="true">
+          <div class="drawer-header">
+            <div>
+              <p class="eyebrow">Product details</p>
+              <h2>Buyer information</h2>
+            </div>
+            <button class="icon-button close-detail" type="button" aria-label="Close product details">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+          <div class="product-detail-content" id="productDetailContent"></div>
+        </aside>
+      `
+    );
+  }
+
+  if (!document.querySelector(".cart-drawer")) {
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      `
+        <aside class="cart-drawer" aria-label="Shopping cart" aria-hidden="true">
+          <div class="drawer-header">
+            <div>
+              <p class="eyebrow">Your cart</p>
+              <h2>Order summary</h2>
+            </div>
+            <button class="icon-button close-cart" type="button" aria-label="Close cart">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+          <div class="cart-items" id="cartItems"></div>
+          <div class="coupon-row">
+            <input id="couponInput" type="text" placeholder="Coupon code" aria-label="Coupon code" />
+            <button id="applyCoupon" type="button">Apply</button>
+          </div>
+          <p class="coupon-message" id="couponMessage"></p>
+          <form class="checkout-form" id="checkoutForm">
+            <label>
+              <span>Name</span>
+              <input name="name" type="text" required />
+            </label>
+            <label>
+              <span>Phone</span>
+              <input name="phone" type="tel" required />
+            </label>
+            <label>
+              <span>Email</span>
+              <input name="email" type="email" placeholder="Email for updates" />
+            </label>
+            <label>
+              <span>Country / city</span>
+              <input name="countryCity" type="text" placeholder="Example: India, Patna" required />
+            </label>
+            <label>
+              <span>Pincode / ZIP</span>
+              <input name="postalCode" type="text" placeholder="Delivery postal code" />
+            </label>
+            <label>
+              <span>Address</span>
+              <textarea name="address" rows="3" required></textarea>
+            </label>
+            <label>
+              <span>Order type</span>
+              <select name="orderType">
+                <option>Retail home order</option>
+                <option>Gift order</option>
+                <option>Wholesale sample request</option>
+                <option>Export buyer enquiry</option>
+              </select>
+            </label>
+            <label>
+              <span>Payment</span>
+              <select name="payment" id="paymentMethod">
+                <option>Cash on delivery</option>
+                <option>UPI prepaid</option>
+                <option>UPI on delivery</option>
+                <option>Card on delivery</option>
+              </select>
+            </label>
+            <div class="payment-details" id="paymentDetails"></div>
+            <div class="totals" id="cartTotals"></div>
+            <button class="whatsapp-button" id="whatsappOrder" type="button">
+              <i data-lucide="message-circle"></i>
+              Send on WhatsApp
+            </button>
+            <button class="checkout-button" type="submit">
+              <i data-lucide="badge-check"></i>
+              Place order
+            </button>
+          </form>
+        </aside>
+      `
+    );
+  }
+
+  if (!document.querySelector("[data-overlay]")) {
+    document.body.insertAdjacentHTML("beforeend", `<div class="overlay" data-overlay></div>`);
+  }
+
+  if (!document.querySelector("#toast")) {
+    document.body.insertAdjacentHTML("beforeend", `<div class="toast" id="toast" role="status" aria-live="polite"></div>`);
+  }
+}
 
 function money(value) {
   return `Rs. ${rupee.format(value)}`;
@@ -151,6 +263,20 @@ function loadCustomer() {
 
 function loadOrders() {
   return readJson(STORAGE_KEYS.orders, []);
+}
+
+function loadCart() {
+  const saved = readJson(STORAGE_KEYS.cart, []);
+  const entries = Array.isArray(saved) ? saved : [];
+  return new Map(
+    entries
+      .map(([id, quantity]) => [String(id), Number(quantity)])
+      .filter(([id, quantity]) => catalog.some((product) => product.id === id) && quantity > 0)
+  );
+}
+
+function saveCart() {
+  writeJson(STORAGE_KEYS.cart, [...state.cart.entries()]);
 }
 
 function saveCustomer(customer) {
@@ -256,6 +382,7 @@ function bindDetailButtons(root) {
 }
 
 function renderProducts() {
+  if (!productGrid) return;
   const visible = getFilteredProducts();
 
   productGrid.innerHTML = visible.length
@@ -276,6 +403,7 @@ function renderCategoryProducts() {
   ];
 
   categorySections.forEach(({ category, grid }) => {
+    if (!grid) return;
     const categoryProducts = catalog.filter((product) => product.category === category);
     grid.innerHTML = categoryProducts.map(renderCategoryCard).join("");
     bindAddButtons(grid);
@@ -372,6 +500,7 @@ function closeProductDetail() {
 
 function addToCart(id) {
   state.cart.set(id, (state.cart.get(id) || 0) + 1);
+  saveCart();
   renderCart();
   showToast("Added to cart");
 }
@@ -382,14 +511,18 @@ function setQuantity(id, quantity) {
   } else {
     state.cart.set(id, quantity);
   }
+  saveCart();
   renderCart();
 }
 
 function getCartLines() {
-  return [...state.cart.entries()].map(([id, quantity]) => {
-    const product = catalog.find((item) => item.id === id);
-    return { ...product, quantity, lineTotal: product.price * quantity };
-  });
+  return [...state.cart.entries()]
+    .map(([id, quantity]) => {
+      const product = catalog.find((item) => item.id === id);
+      if (!product) return null;
+      return { ...product, quantity, lineTotal: product.price * quantity };
+    })
+    .filter(Boolean);
 }
 
 function getTotals() {
@@ -641,7 +774,7 @@ function renderOrderCard(order) {
 }
 
 function prefillCheckoutFromCustomer() {
-  if (!state.customer) return;
+  if (!state.customer || !checkoutForm) return;
 
   const nameInput = checkoutForm.elements.name;
   const phoneInput = checkoutForm.elements.phone;
@@ -778,6 +911,7 @@ function getWhatsAppUrl(message) {
 }
 
 function renderPaymentDetails() {
+  if (!paymentMethod || !paymentDetails) return;
   const totals = getTotals();
   const payment = paymentMethod.value;
   const upiReady = Boolean(STORE_CONFIG.upiId.trim());
@@ -820,9 +954,12 @@ function renderPaymentDetails() {
 }
 
 function renderCart() {
+  if (!cartItems || !cartTotals) return;
   const lines = getCartLines();
   const count = lines.reduce((sum, item) => sum + item.quantity, 0);
-  document.querySelector("[data-cart-count]").textContent = count;
+  document.querySelectorAll("[data-cart-count]").forEach((item) => {
+    item.textContent = count;
+  });
 
   cartItems.innerHTML = lines.length
     ? lines
@@ -866,18 +1003,21 @@ function renderCart() {
 function openCart() {
   closeProductDetail();
   prefillCheckoutFromCustomer();
+  if (!cartDrawer || !overlay) return;
   cartDrawer.classList.add("is-open");
   overlay.classList.add("is-open");
   cartDrawer.setAttribute("aria-hidden", "false");
 }
 
 function closeCart() {
+  if (!cartDrawer || !overlay) return;
   cartDrawer.classList.remove("is-open");
   overlay.classList.remove("is-open");
   cartDrawer.setAttribute("aria-hidden", "true");
 }
 
 function showToast(message) {
+  if (!toast) return;
   toast.textContent = message;
   toast.classList.add("is-visible");
   window.clearTimeout(showToast.timer);
@@ -922,27 +1062,29 @@ document.querySelectorAll("[data-category-jump]").forEach((link) => {
   });
 });
 
-document.querySelector("#searchInput").addEventListener("input", (event) => {
+document.querySelector("#searchInput")?.addEventListener("input", (event) => {
   state.search = event.target.value;
   renderProducts();
 });
 
-document.querySelector("#sortSelect").addEventListener("change", (event) => {
+document.querySelector("#sortSelect")?.addEventListener("change", (event) => {
   state.sort = event.target.value;
   renderProducts();
 });
 
-paymentMethod.addEventListener("change", renderPaymentDetails);
+paymentMethod?.addEventListener("change", renderPaymentDetails);
 
-document.querySelector(".cart-trigger").addEventListener("click", openCart);
-document.querySelector(".close-cart").addEventListener("click", closeCart);
-document.querySelector(".close-detail").addEventListener("click", closeProductDetail);
-overlay.addEventListener("click", () => {
+document.querySelectorAll(".cart-trigger").forEach((button) => {
+  button.addEventListener("click", openCart);
+});
+document.querySelector(".close-cart")?.addEventListener("click", closeCart);
+document.querySelector(".close-detail")?.addEventListener("click", closeProductDetail);
+overlay?.addEventListener("click", () => {
   closeCart();
   closeProductDetail();
 });
 
-document.querySelector("#applyCoupon").addEventListener("click", () => {
+document.querySelector("#applyCoupon")?.addEventListener("click", () => {
   const code = couponInput.value.trim().toUpperCase();
   if (code === "SPICE10") {
     state.couponApplied = true;
@@ -955,7 +1097,7 @@ document.querySelector("#applyCoupon").addEventListener("click", () => {
   }
 });
 
-document.querySelector("#whatsappOrder").addEventListener("click", () => {
+document.querySelector("#whatsappOrder")?.addEventListener("click", () => {
   if (!state.cart.size) {
     showToast("Add at least one product first");
     return;
@@ -971,7 +1113,7 @@ document.querySelector("#whatsappOrder").addEventListener("click", () => {
   showToast(`Order ${orderId} ready in WhatsApp`);
 });
 
-checkoutForm.addEventListener("submit", (event) => {
+checkoutForm?.addEventListener("submit", (event) => {
   event.preventDefault();
   if (!state.cart.size) {
     showToast("Add at least one product first");
@@ -982,6 +1124,7 @@ checkoutForm.addEventListener("submit", (event) => {
   const order = createOrderRecord(event.currentTarget, orderId, "Website cart booking");
   saveOrderRecord(order);
   state.cart.clear();
+  saveCart();
   state.couponApplied = false;
   couponInput.value = "";
   couponMessage.textContent = "";
@@ -991,7 +1134,7 @@ checkoutForm.addEventListener("submit", (event) => {
   showToast(`Order ${orderId} placed successfully`);
 });
 
-customerLoginForm.addEventListener("submit", async (event) => {
+customerLoginForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = new FormData(event.currentTarget);
   const customer = {
@@ -1009,7 +1152,7 @@ customerLoginForm.addEventListener("submit", async (event) => {
   showToast("Customer login saved");
 });
 
-orderLookupForm.addEventListener("submit", async (event) => {
+orderLookupForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = new FormData(event.currentTarget);
   const orderId = String(data.get("orderId") || "").trim().toUpperCase();
@@ -1039,7 +1182,7 @@ orderLookupForm.addEventListener("submit", async (event) => {
   showToast(`Tracking ${order.id}`);
 });
 
-wholesaleForm.addEventListener("submit", (event) => {
+wholesaleForm?.addEventListener("submit", (event) => {
   event.preventDefault();
   const message = buildWholesaleMessage(event.currentTarget);
   syncWholesaleEnquiry(event.currentTarget);

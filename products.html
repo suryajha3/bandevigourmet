@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Shop BandEvi Gourmet makhana, masala, poha, whole spices, and combo packs with cart booking and order tracking."
+    />
+    <link rel="canonical" href="https://bandevigourmet.com/products.html" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:title" content="Products | BandEvi Gourmet" />
+    <meta property="og:description" content="Makhana, masala, poha, whole spices, and pantry bundles from BandEvi Gourmet." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bandevigourmet.com/products.html" />
+    <title>Products | BandEvi Gourmet</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./index.html#top" aria-label="BandEvi Gourmet home">
+        <span class="brand-mark">B</span>
+        <span>
+          <strong>BandEvi Gourmet</strong>
+          <small>Global snack and spice brand</small>
+        </span>
+      </a>
+
+      <nav class="main-nav" aria-label="Primary navigation">
+        <a href="./products.html">Products</a>
+        <a href="./products.html#makhana-products">Makhana</a>
+        <a href="./products.html#masala-products">Masala</a>
+        <a href="./products.html#poha-products">Poha</a>
+        <a href="./about.html">About</a>
+        <a href="./account.html">Track</a>
+        <a href="./wholesale.html">Wholesale</a>
+        <a href="./policies.html">Policies</a>
+      </nav>
+
+      <div class="header-actions">
+        <a class="portal-shortcut" href="./account.html">
+          <i data-lucide="badge-check"></i>
+          <span>Track order</span>
+        </a>
+        <button class="icon-button cart-trigger" type="button" aria-label="Open cart">
+          <i data-lucide="shopping-bag"></i>
+          <span class="cart-count" data-cart-count>0</span>
+        </button>
+      </div>
+      <div class="header-trust-row" aria-label="Trust highlights">
+        <span>Live cart booking</span>
+        <span>Shared cart across pages</span>
+        <span>Product details drawer</span>
+        <span>Wholesale-ready catalog</span>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="page-hero product-page-hero" aria-labelledby="products-page-title">
+        <div>
+          <p class="eyebrow">Online product catalog</p>
+          <h1 id="products-page-title">Browse, compare, and book every BandEvi product.</h1>
+          <p>
+            Search the full catalog, filter by category, view buyer details, add products to cart, and create a live booking ID from the same page.
+          </p>
+          <div class="hero-actions">
+            <a class="primary-link" href="#products">
+              <i data-lucide="store"></i>
+              Start shopping
+            </a>
+            <a class="secondary-link" href="./account.html">
+              <i data-lucide="badge-check"></i>
+              Track booking
+            </a>
+          </div>
+        </div>
+        <img src="./assets/product-snack-combo.png" alt="BandEvi Gourmet snack combo product range" />
+      </section>
+
+      <section class="category-overview" aria-label="Product category overview">
+        <article>
+          <strong>Makhana</strong>
+          <span>Roasted snack packs for home, gifting, and retail counters.</span>
+          <a href="#makhana-products">View makhana</a>
+        </article>
+        <article>
+          <strong>Masala</strong>
+          <span>Daily cooking blends, spice powders, and refill-ready pantry packs.</span>
+          <a href="#masala-products">View masala</a>
+        </article>
+        <article>
+          <strong>Poha</strong>
+          <span>Breakfast staples for families, food service, and pantry replenishment.</span>
+          <a href="#poha-products">View poha</a>
+        </article>
+        <article>
+          <strong>Combos</strong>
+          <span>Snack, masala, and whole-spice bundles for monthly ordering.</span>
+          <a href="#products" data-category-jump="combo">View combos</a>
+        </article>
+      </section>
+
+      <section class="shop-shell" id="products" aria-labelledby="products-title">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Live catalog</p>
+            <h2 id="products-title">Shop makhana, masala, poha, and combos</h2>
+          </div>
+          <div class="search-wrap">
+            <i data-lucide="search"></i>
+            <input id="searchInput" type="search" placeholder="Search products" aria-label="Search products" />
+          </div>
+        </div>
+
+        <div class="shop-controls" aria-label="Product controls">
+          <div class="tabs" role="tablist" aria-label="Product categories">
+            <button class="tab is-active" type="button" data-filter="all">All</button>
+            <button class="tab" type="button" data-filter="makhana">Makhana</button>
+            <button class="tab" type="button" data-filter="masala">Masala</button>
+            <button class="tab" type="button" data-filter="poha">Poha</button>
+            <button class="tab" type="button" data-filter="combo">Combos</button>
+          </div>
+          <label class="sort-control">
+            <span>Sort</span>
+            <select id="sortSelect" aria-label="Sort products">
+              <option value="featured">Featured</option>
+              <option value="low">Price low to high</option>
+              <option value="high">Price high to low</option>
+              <option value="rating">Top rated</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="product-grid" id="productGrid" aria-live="polite"></div>
+      </section>
+
+      <section class="category-lanes" aria-label="Separate product categories">
+        <div class="category-section" id="makhana-products">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Makhana</p>
+              <h2>Makhana products</h2>
+            </div>
+            <a class="category-link" href="#products" data-category-jump="makhana">View makhana</a>
+          </div>
+          <div class="category-grid" id="makhanaProductGrid"></div>
+        </div>
+
+        <div class="category-section" id="masala-products">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Masala</p>
+              <h2>Masala products</h2>
+            </div>
+            <a class="category-link" href="#products" data-category-jump="masala">View masala</a>
+          </div>
+          <div class="category-grid" id="masalaProductGrid"></div>
+        </div>
+
+        <div class="category-section" id="poha-products">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Poha</p>
+              <h2>Poha products</h2>
+            </div>
+            <a class="category-link" href="#products" data-category-jump="poha">View poha</a>
+          </div>
+          <div class="category-grid" id="pohaProductGrid"></div>
+        </div>
+      </section>
+
+      <section class="bundle-band" id="bundles" aria-labelledby="bundle-title">
+        <div class="bundle-copy">
+          <p class="eyebrow">Pantry bundles</p>
+          <h2 id="bundle-title">Popular carts for repeat buyers.</h2>
+          <p>Use these bundles as a quick buying plan, then add individual products from the live catalog above.</p>
+        </div>
+        <div class="bundle-list" aria-label="Popular bundles">
+          <article>
+            <span>Snack Box</span>
+            <strong>4 makhana flavors</strong>
+            <small>Rs. 749</small>
+          </article>
+          <article>
+            <span>Masala Starter</span>
+            <strong>8 kitchen essentials</strong>
+            <small>Rs. 899</small>
+          </article>
+          <article>
+            <span>Family Refill</span>
+            <strong>12 packs with free delivery</strong>
+            <small>Rs. 1,499</small>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer" aria-label="Brand footer">
+      <div class="footer-intro">
+        <a class="brand footer-brand" href="./index.html#top" aria-label="BandEvi Gourmet home">
+          <span class="brand-mark">B</span>
+          <span>
+            <strong>BandEvi Gourmet</strong>
+            <small>Makhana, masala, poha, and Indian pantry products</small>
+          </span>
+        </a>
+        <p>Products can be added to cart here and tracked later from the customer account page.</p>
+      </div>
+      <nav class="footer-links" aria-label="Shop links">
+        <strong>Shop</strong>
+        <a href="./products.html">Products</a>
+        <a href="./products.html#makhana-products">Makhana</a>
+        <a href="./products.html#masala-products">Masala</a>
+        <a href="./products.html#poha-products">Poha</a>
+      </nav>
+      <nav class="footer-links" aria-label="Support links">
+        <strong>Support</strong>
+        <a href="./account.html">Login / Track order</a>
+        <a href="./wholesale.html">Wholesale enquiry</a>
+        <a href="./policies.html">Policies</a>
+      </nav>
+      <div class="footer-note">
+        <strong>Live order flow</strong>
+        <span>Cart bookings create an order ID and sync to the backend order desk.</span>
+      </div>
+    </footer>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>

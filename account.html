@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="BandEvi Gourmet customer account, order booking history, and live booking status tracking."
+    />
+    <link rel="canonical" href="https://bandevigourmet.com/account.html" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:title" content="Account & Order Tracking | BandEvi Gourmet" />
+    <meta property="og:description" content="Save customer details, track BandEvi Gourmet booking IDs, and view order status." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bandevigourmet.com/account.html" />
+    <title>Account & Order Tracking | BandEvi Gourmet</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./index.html#top" aria-label="BandEvi Gourmet home">
+        <span class="brand-mark">B</span>
+        <span>
+          <strong>BandEvi Gourmet</strong>
+          <small>Global snack and spice brand</small>
+        </span>
+      </a>
+
+      <nav class="main-nav" aria-label="Primary navigation">
+        <a href="./products.html">Products</a>
+        <a href="./about.html">About</a>
+        <a href="./account.html">Track</a>
+        <a href="./wholesale.html">Wholesale</a>
+        <a href="./policies.html">Policies</a>
+      </nav>
+
+      <div class="header-actions">
+        <a class="portal-shortcut" href="./account.html">
+          <i data-lucide="badge-check"></i>
+          <span>Track order</span>
+        </a>
+        <button class="icon-button cart-trigger" type="button" aria-label="Open cart">
+          <i data-lucide="shopping-bag"></i>
+          <span class="cart-count" data-cart-count>0</span>
+        </button>
+      </div>
+      <div class="header-trust-row" aria-label="Trust highlights">
+        <span>Customer profile</span>
+        <span>Booking status timeline</span>
+        <span>Backend order lookup</span>
+        <span>WhatsApp support</span>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="page-hero account-page-hero" aria-labelledby="account-page-title">
+        <div>
+          <p class="eyebrow">Customer account</p>
+          <h1 id="account-page-title">Track bookings from cart to delivery.</h1>
+          <p>
+            Save your customer profile, place orders from the cart, and track each booking ID using the phone number used at checkout.
+          </p>
+          <div class="hero-actions">
+            <a class="primary-link" href="./products.html">
+              <i data-lucide="store"></i>
+              Shop products
+            </a>
+            <button class="secondary-link cart-trigger" type="button">
+              <i data-lucide="shopping-bag"></i>
+              Open cart
+            </button>
+          </div>
+        </div>
+        <img src="./assets/packaging-makhana-pouch.png" alt="BandEvi Gourmet packaged makhana pouch" />
+      </section>
+
+      <section class="customer-portal-section" id="customer-portal" aria-labelledby="customer-portal-title">
+        <div class="portal-copy">
+          <p class="eyebrow">Customer booking desk</p>
+          <h2 id="customer-portal-title">Login, track, and manage your BandEvi bookings.</h2>
+          <p>
+            This page is connected to the live backend. Saved customer details prefill checkout, while order IDs can be tracked from any device using the same phone number.
+          </p>
+          <div class="portal-highlights" aria-label="Booking desk features">
+            <span>Customer profile</span>
+            <span>Backend order lookup</span>
+            <span>Status timeline</span>
+            <span>Support shortcut</span>
+          </div>
+          <div class="portal-note">
+            For admin-side status updates, use the protected admin panel after orders are placed.
+          </div>
+        </div>
+        <div class="portal-panel">
+          <form class="portal-form" id="customerLoginForm">
+            <h3>Customer login</h3>
+            <label>
+              <span>Name</span>
+              <input name="customerName" type="text" placeholder="Your name" required />
+            </label>
+            <label>
+              <span>Phone</span>
+              <input name="customerPhone" type="tel" placeholder="Phone number" required />
+            </label>
+            <label>
+              <span>Email</span>
+              <input name="customerEmail" type="email" placeholder="Email for order updates" />
+            </label>
+            <label>
+              <span>Country / city</span>
+              <input name="customerLocation" type="text" placeholder="Example: India, Patna" />
+            </label>
+            <button class="portal-button" type="submit">
+              <i data-lucide="badge-check"></i>
+              Save login
+            </button>
+          </form>
+
+          <form class="portal-form" id="orderLookupForm">
+            <h3>Track booking / order</h3>
+            <label>
+              <span>Order ID</span>
+              <input name="orderId" type="text" placeholder="Example: MM12345" required />
+            </label>
+            <label>
+              <span>Phone</span>
+              <input name="phone" type="tel" placeholder="Phone used in order" required />
+            </label>
+            <button class="portal-button secondary" type="submit">
+              <i data-lucide="search"></i>
+              Track status
+            </button>
+          </form>
+        </div>
+        <div class="portal-dashboard" id="customerDashboard" aria-live="polite"></div>
+      </section>
+
+      <section class="operations-section" aria-labelledby="account-flow-title">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">How it works</p>
+            <h2 id="account-flow-title">A real booking flow customers can understand.</h2>
+          </div>
+        </div>
+        <div class="operations-grid">
+          <article>
+            <i data-lucide="store"></i>
+            <h3>1. Add products</h3>
+            <p>Browse the catalog and add products to the shared cart from any product page.</p>
+          </article>
+          <article>
+            <i data-lucide="badge-check"></i>
+            <h3>2. Place booking</h3>
+            <p>Checkout creates a booking ID and sends the order to the backend order desk.</p>
+          </article>
+          <article>
+            <i data-lucide="package-open"></i>
+            <h3>3. Track progress</h3>
+            <p>Status moves through booked, confirmed, packed, dispatched, and delivered.</p>
+          </article>
+          <article>
+            <i data-lucide="message-circle"></i>
+            <h3>4. Get support</h3>
+            <p>Each order card has a WhatsApp support shortcut with the booking ID ready.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer" aria-label="Brand footer">
+      <div class="footer-intro">
+        <a class="brand footer-brand" href="./index.html#top" aria-label="BandEvi Gourmet home">
+          <span class="brand-mark">B</span>
+          <span>
+            <strong>BandEvi Gourmet</strong>
+            <small>Customer account and order tracking</small>
+          </span>
+        </a>
+        <p>Track retail, gift, sample, and export enquiry bookings from one customer page.</p>
+      </div>
+      <nav class="footer-links" aria-label="Footer links">
+        <strong>Quick links</strong>
+        <a href="./products.html">Products</a>
+        <a href="./wholesale.html">Wholesale</a>
+        <a href="./policies.html#refund">Refunds</a>
+        <a href="./policies.html#shipping">Shipping</a>
+      </nav>
+      <div class="footer-note">
+        <strong>Admin status updates</strong>
+        <span>Order status can be updated from the admin panel after login.</span>
+      </div>
+    </footer>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
