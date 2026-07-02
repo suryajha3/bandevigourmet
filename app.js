@@ -53,6 +53,9 @@ const state = {
   couponApplied: false,
   cart: loadCart(),
   customer: loadCustomer(),
+  customerSummary: null,
+  customerEnquiries: [],
+  customerSyncStatus: "local",
   orders: loadOrders(),
   trackedOrder: null
 };
@@ -287,6 +290,24 @@ function saveCustomer(customer) {
 function saveOrders(orders) {
   state.orders = orders;
   writeJson(STORAGE_KEYS.orders, orders);
+}
+
+async function syncCustomerProfile(customer) {
+  try {
+    const payload = await apiRequest("/api/customers", {
+      method: "POST",
+      body: JSON.stringify(customer)
+    });
+    if (payload.customer) {
+      state.customer = { ...customer, ...payload.customer };
+      writeJson(STORAGE_KEYS.customer, state.customer);
+    }
+    state.customerSyncStatus = "synced";
+    return payload.customer || null;
+  } catch {
+    state.customerSyncStatus = "local";
+    return null;
+  }
 }
 
 function getStatusIndex(status) {
@@ -634,6 +655,7 @@ function createOrderRecord(form, orderId, source) {
     postalCode,
     address,
     payment,
+    paymentState: "Payment pending",
     paymentNote: getPaymentNote(payment, totals.total),
     totals,
     items: lines.map((item) => ({
@@ -690,13 +712,28 @@ function saveOrderRecord(order, options = {}) {
 }
 
 async function loadCustomerOrdersFromBackend(phone) {
+  const cleanPhone = normalizePhone(phone);
   try {
-    const params = new URLSearchParams({ phone: normalizePhone(phone) });
-    const payload = await apiRequest(`/api/orders/customer?${params.toString()}`);
+    const params = new URLSearchParams({ phone: cleanPhone });
+    const payload = await apiRequest(`/api/customer/dashboard?${params.toString()}`);
+    if (payload.customer) {
+      state.customer = { ...(state.customer || {}), ...payload.customer };
+      writeJson(STORAGE_KEYS.customer, state.customer);
+    }
+    state.customerSummary = payload.summary || null;
+    state.customerEnquiries = payload.enquiries || [];
     if (payload.orders?.length) upsertOrderRecords(payload.orders);
+    else renderCustomerPortal();
     return payload.orders || [];
   } catch {
-    return [];
+    try {
+      const params = new URLSearchParams({ phone: cleanPhone });
+      const payload = await apiRequest(`/api/orders/customer?${params.toString()}`);
+      if (payload.orders?.length) upsertOrderRecords(payload.orders);
+      return payload.orders || [];
+    } catch {
+      return [];
+    }
   }
 }
 
@@ -746,13 +783,19 @@ function renderOrderCard(order) {
   const countryCity = order.countryCity || order.customer?.location || "Location to be confirmed";
   const total = order.totals?.total || 0;
   const supportUrl = getWhatsAppUrl(`Support request for ${STORE_CONFIG.shopName} booking ${order.id}`);
+  const trackingItems = [
+    order.paymentState ? `<span><strong>Payment status</strong>${escapeHtml(order.paymentState)}</span>` : "",
+    order.courier ? `<span><strong>Courier</strong>${escapeHtml(order.courier)}</span>` : "",
+    order.trackingCode ? `<span><strong>Tracking code</strong>${escapeHtml(order.trackingCode)}</span>` : "",
+    order.eta ? `<span><strong>Expected delivery</strong>${escapeHtml(order.eta)}</span>` : ""
+  ].filter(Boolean);
 
   return `
     <article class="order-card">
       <header>
         <div>
           <h4>${escapeHtml(order.id)}</h4>
-          <p>${escapeHtml(order.source)} - ${formatOrderDate(order.placedAt)}</p>
+          <p>${escapeHtml(order.source || "Website booking")} - ${formatOrderDate(order.placedAt)}</p>
         </div>
         <span class="status-pill">${statusLabel}</span>
       </header>
@@ -764,6 +807,12 @@ function renderOrderCard(order) {
         <span><strong>Location</strong>${escapeHtml(countryCity)}</span>
       </div>
       <p class="order-next"><strong>Next step:</strong> ${getOrderNextAction(order)}</p>
+      ${
+        trackingItems.length
+          ? `<div class="tracking-panel" aria-label="Delivery tracking details">${trackingItems.join("")}</div>`
+          : ""
+      }
+      ${order.adminNote ? `<p class="order-note"><strong>Seller note:</strong> ${escapeHtml(order.adminNote)}</p>` : ""}
       <div class="status-steps" aria-label="Order status timeline">${renderStatusSteps(order)}</div>
       <div class="order-actions">
         <button type="button" data-copy-order="${escapeHtml(order.id)}">Copy booking ID</button>
@@ -800,11 +849,18 @@ function renderCustomerPortal() {
 
   const customer = state.customer;
   const ordersForCustomer = customer
-    ? state.orders.filter((order) => normalizePhone(order.customer.phone) === normalizePhone(customer.phone))
+    ? state.orders.filter((order) => normalizePhone(order.customer?.phone) === normalizePhone(customer.phone))
     : state.orders;
   const visibleOrders = state.trackedOrder ? [state.trackedOrder] : ordersForCustomer.slice(0, 3);
   const activeOrders = ordersForCustomer.filter((order) => order.status !== "delivered").length;
   const latestOrder = ordersForCustomer[0];
+  const localSpend = ordersForCustomer.reduce((sum, order) => sum + Number(order.totals?.total || 0), 0);
+  const summary = state.customerSummary || {
+    totalOrders: ordersForCustomer.length,
+    activeOrders,
+    totalSpend: localSpend,
+    latestStatus: latestOrder?.status || ""
+  };
 
   customerDashboard.innerHTML = `
     <h3>${customer ? `Welcome, ${escapeHtml(customer.name)}` : "Customer dashboard"}</h3>
@@ -814,15 +870,17 @@ function renderCustomerPortal() {
             <span>${escapeHtml(customer.phone)}</span>
             ${customer.email ? `<span>${escapeHtml(customer.email)}</span>` : ""}
             ${customer.location ? `<span>${escapeHtml(customer.location)}</span>` : ""}
+            <span>${state.customerSyncStatus === "synced" ? "Backend synced" : "Saved on this device"}</span>
           </div>`
         : `<p class="portal-empty">Save your login details first, then place an order or track an existing order ID.</p>`
     }
     ${
       customer
         ? `<div class="portal-stats" aria-label="Customer booking summary">
-            <span><strong>${ordersForCustomer.length}</strong><small>Total bookings</small></span>
-            <span><strong>${activeOrders}</strong><small>Active orders</small></span>
-            <span><strong>${latestOrder ? ORDER_STEPS[getStatusIndex(latestOrder.status)].label : "None"}</strong><small>Latest status</small></span>
+            <span><strong>${summary.totalOrders || ordersForCustomer.length}</strong><small>Total bookings</small></span>
+            <span><strong>${summary.activeOrders ?? activeOrders}</strong><small>Active orders</small></span>
+            <span><strong>${money(summary.totalSpend || localSpend)}</strong><small>Total value</small></span>
+            <span><strong>${summary.latestStatus ? ORDER_STEPS[getStatusIndex(summary.latestStatus)].label : latestOrder ? ORDER_STEPS[getStatusIndex(latestOrder.status)].label : "None"}</strong><small>Latest status</small></span>
           </div>`
         : ""
     }
@@ -832,10 +890,29 @@ function renderCustomerPortal() {
         ? visibleOrders.map(renderOrderCard).join("")
         : `<p class="portal-empty">No saved orders yet. Place an order from the cart to create your first booking ID.</p>`
     }
+    ${
+      state.customerEnquiries.length
+        ? `<h4 class="portal-subtitle">Wholesale enquiries</h4>
+          <div class="customer-enquiry-list">
+            ${state.customerEnquiries.map(renderCustomerEnquiry).join("")}
+          </div>`
+        : ""
+    }
   `;
 
   bindPortalActions();
   refreshIcons();
+}
+
+function renderCustomerEnquiry(enquiry) {
+  return `
+    <article class="customer-enquiry-card">
+      <strong>${escapeHtml(enquiry.id)}</strong>
+      <span>${escapeHtml(enquiry.status || "new")}</span>
+      <p>${escapeHtml(enquiry.businessName || "Wholesale enquiry")} | ${escapeHtml(enquiry.country || "Location pending")}</p>
+      ${enquiry.note ? `<p>${escapeHtml(enquiry.note)}</p>` : ""}
+    </article>
+  `;
 }
 
 function copyText(value) {
@@ -872,6 +949,8 @@ function buildWholesaleMessage(form) {
     "",
     `Business: ${data.get("businessName")}`,
     `Contact: ${data.get("contactName")}`,
+    `Phone: ${data.get("phone") || "Not added"}`,
+    `Email: ${data.get("email") || "Not added"}`,
     `Country / City: ${data.get("country")}`,
     `Monthly Volume: ${data.get("volume")}`,
     "",
@@ -885,6 +964,8 @@ async function syncWholesaleEnquiry(form) {
   const enquiry = {
     businessName: data.get("businessName"),
     contactName: data.get("contactName"),
+    phone: data.get("phone"),
+    email: data.get("email"),
     country: data.get("country"),
     volume: data.get("volume"),
     message: data.get("message")
@@ -1145,11 +1226,14 @@ customerLoginForm?.addEventListener("submit", async (event) => {
   };
 
   saveCustomer(customer);
+  state.customerSummary = null;
+  state.customerEnquiries = [];
   state.trackedOrder = null;
   prefillCheckoutFromCustomer();
   renderCustomerPortal();
+  await syncCustomerProfile(customer);
   await loadCustomerOrdersFromBackend(customer.phone);
-  showToast("Customer login saved");
+  showToast("Customer profile saved");
 });
 
 orderLookupForm?.addEventListener("submit", async (event) => {
@@ -1168,7 +1252,7 @@ orderLookupForm?.addEventListener("submit", async (event) => {
     // Fall back to this browser's saved orders when the backend is not active yet.
   }
 
-  const order = state.orders.find((item) => item.id.toUpperCase() === orderId && normalizePhone(item.customer.phone) === phone);
+  const order = state.orders.find((item) => item.id.toUpperCase() === orderId && normalizePhone(item.customer?.phone) === phone);
 
   if (!order) {
     state.trackedOrder = null;

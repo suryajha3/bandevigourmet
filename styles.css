@@ -1492,7 +1492,7 @@ a {
 
 .portal-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 8px;
 }
 
@@ -1581,6 +1581,57 @@ a {
   padding: 10px 12px;
   border-radius: 8px;
   background: #f4f1e8;
+}
+
+.tracking-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tracking-panel span,
+.customer-enquiry-card {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfaf5;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.tracking-panel strong,
+.customer-enquiry-card strong {
+  color: var(--ink);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.order-note {
+  padding: 10px 12px;
+  border-left: 3px solid var(--green);
+  border-radius: 8px;
+  background: #edf7f1;
+}
+
+.customer-enquiry-list {
+  display: grid;
+  gap: 8px;
+}
+
+.customer-enquiry-card {
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.customer-enquiry-card span {
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f4f1e8;
+  color: var(--green);
 }
 
 .status-pill {
@@ -2397,7 +2448,7 @@ a {
 
 .admin-stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 14px;
 }
 
@@ -2439,7 +2490,8 @@ a {
   gap: 14px;
 }
 
-.admin-order-card {
+.admin-order-card,
+.admin-customer-card {
   display: grid;
   gap: 12px;
   padding: 18px;
@@ -2448,29 +2500,34 @@ a {
   background: #fbfaf5;
 }
 
-.admin-order-card header {
+.admin-order-card header,
+.admin-customer-card header {
   display: flex;
   justify-content: space-between;
   gap: 16px;
 }
 
 .admin-order-card h3,
-.admin-order-card p {
+.admin-order-card p,
+.admin-customer-card h3,
+.admin-customer-card p {
   margin: 0;
 }
 
-.admin-order-card h3 {
+.admin-order-card h3,
+.admin-customer-card h3 {
   font-size: 22px;
 }
 
-.admin-order-card p {
+.admin-order-card p,
+.admin-customer-card p {
   color: var(--muted);
   line-height: 1.55;
 }
 
 .admin-order-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 8px;
 }
 
@@ -2509,7 +2566,7 @@ a {
 
 .admin-status-form {
   display: grid;
-  grid-template-columns: minmax(160px, 0.28fr) minmax(0, 1fr) auto;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 8px;
 }
 
@@ -2670,7 +2727,6 @@ a {
   }
 
   .admin-hero,
-  .admin-stats,
   .admin-order-grid {
     grid-template-columns: 1fr;
   }
@@ -2861,6 +2917,7 @@ a {
   .cert-list,
   .policy-grid,
   .about-proof-grid,
+  .tracking-panel,
   .order-meta-grid,
   .portal-stats {
     grid-template-columns: 1fr;

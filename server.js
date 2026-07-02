@@ -14,6 +14,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 const TOKEN_SECRET = process.env.ADMIN_TOKEN_SECRET || ADMIN_PASSWORD || randomUUID();
 const TOKEN_TTL_MS = 1000 * 60 * 60 * 12;
 const ORDER_STATUSES = new Set(["booked", "confirmed", "packed", "dispatched", "delivered"]);
+const WHOLESALE_STATUSES = new Set(["new", "contacted", "quoted", "sample-sent", "converted", "closed"]);
 const API_CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
@@ -69,33 +70,180 @@ function publicOrder(order) {
     postalCode: order.postalCode,
     address: order.address,
     payment: order.payment,
+    paymentState: order.paymentState,
     paymentNote: order.paymentNote,
+    courier: order.courier,
+    trackingCode: order.trackingCode,
+    eta: order.eta,
+    adminNote: order.adminNote,
     totals: order.totals,
     items: order.items,
     statusHistory: order.statusHistory || []
   };
 }
 
+function publicCustomer(customer) {
+  return {
+    id: customer.id,
+    name: customer.name,
+    phone: customer.phone,
+    email: customer.email,
+    location: customer.location,
+    createdAt: customer.createdAt,
+    updatedAt: customer.updatedAt,
+    lastOrderAt: customer.lastOrderAt,
+    orderCount: Number(customer.orderCount || 0),
+    totalSpend: Number(customer.totalSpend || 0),
+    tags: Array.isArray(customer.tags) ? customer.tags : []
+  };
+}
+
+function publicEnquiry(enquiry) {
+  return {
+    id: enquiry.id,
+    businessName: enquiry.businessName,
+    contactName: enquiry.contactName,
+    phone: enquiry.phone,
+    email: enquiry.email,
+    country: enquiry.country,
+    volume: enquiry.volume,
+    message: enquiry.message,
+    status: enquiry.status || "new",
+    note: enquiry.note,
+    placedAt: enquiry.placedAt,
+    updatedAt: enquiry.updatedAt,
+    history: enquiry.history || []
+  };
+}
+
+function emptyDb() {
+  return { orders: [], wholesale: [], customers: [], events: [] };
+}
+
+function normalizeDb(db) {
+  const safeDb = db && typeof db === "object" ? db : {};
+  return {
+    ...emptyDb(),
+    ...safeDb,
+    orders: Array.isArray(safeDb.orders) ? safeDb.orders : [],
+    wholesale: Array.isArray(safeDb.wholesale) ? safeDb.wholesale : [],
+    customers: Array.isArray(safeDb.customers) ? safeDb.customers : [],
+    events: Array.isArray(safeDb.events) ? safeDb.events : []
+  };
+}
+
+function normalizeCustomer(input = {}, existing = {}) {
+  const now = new Date().toISOString();
+  const tags = Array.isArray(input.tags || existing.tags) ? (input.tags || existing.tags).slice(0, 12).map((tag) => text(tag, 50)) : [];
+
+  return {
+    id: text(existing.id || input.id, 40) || `CU${Math.floor(10000 + Math.random() * 90000)}`,
+    name: text(input.name || existing.name, 120),
+    phone: cleanPhone(input.phone || existing.phone),
+    email: text(input.email || existing.email, 160),
+    location: text(input.location || existing.location, 160),
+    createdAt: existing.createdAt || input.createdAt || now,
+    updatedAt: now,
+    lastOrderAt: input.lastOrderAt || existing.lastOrderAt || "",
+    orderCount: Number(existing.orderCount || input.orderCount || 0),
+    totalSpend: Number(existing.totalSpend || input.totalSpend || 0),
+    tags
+  };
+}
+
+function upsertCustomer(db, input = {}) {
+  const phone = cleanPhone(input.phone);
+  if (!phone) return null;
+
+  db.customers = Array.isArray(db.customers) ? db.customers : [];
+  const existingIndex = db.customers.findIndex((item) => cleanPhone(item.phone) === phone);
+  const existing = existingIndex >= 0 ? db.customers[existingIndex] : {};
+  const customer = normalizeCustomer({ ...existing, ...input, phone }, existing);
+  const customerOrders = (db.orders || []).filter((order) => cleanPhone(order.customer?.phone) === phone);
+
+  if (customerOrders.length) {
+    customer.orderCount = customerOrders.length;
+    customer.totalSpend = customerOrders.reduce((sum, order) => sum + Number(order.totals?.total || 0), 0);
+    customer.lastOrderAt = customerOrders
+      .map((order) => order.updatedAt || order.placedAt)
+      .filter(Boolean)
+      .sort((a, b) => new Date(b) - new Date(a))[0];
+  }
+
+  db.customers = [customer, ...db.customers.filter((_, index) => index !== existingIndex)].slice(0, 2000);
+  return customer;
+}
+
+function buildCustomerDashboard(db, phone) {
+  const clean = cleanPhone(phone);
+  const orders = (db.orders || [])
+    .filter((item) => cleanPhone(item.customer?.phone) === clean)
+    .slice(0, 50)
+    .map(publicOrder);
+  const enquiries = (db.wholesale || [])
+    .filter((item) => cleanPhone(item.phone) === clean)
+    .slice(0, 20)
+    .map(publicEnquiry);
+  const customer =
+    (db.customers || []).find((item) => cleanPhone(item.phone) === clean) ||
+    (orders[0]?.customer ? normalizeCustomer({ ...orders[0].customer, phone: clean, lastOrderAt: orders[0].placedAt }) : null);
+  const activeOrders = orders.filter((order) => order.status !== "delivered").length;
+
+  return {
+    customer: customer ? publicCustomer(customer) : null,
+    orders,
+    enquiries,
+    summary: {
+      totalOrders: orders.length,
+      activeOrders,
+      deliveredOrders: orders.length - activeOrders,
+      totalSpend: orders.reduce((sum, order) => sum + Number(order.totals?.total || 0), 0),
+      wholesaleEnquiries: enquiries.length,
+      latestStatus: orders[0]?.status || "",
+      latestOrderId: orders[0]?.id || ""
+    }
+  };
+}
+
+function buildAdminSummary(db) {
+  const orders = db.orders || [];
+  const enquiries = db.wholesale || [];
+  const activeOrders = orders.filter((order) => order.status !== "delivered");
+  const openWholesale = enquiries.filter((item) => !["converted", "closed"].includes(item.status || "new"));
+
+  return {
+    totalOrders: orders.length,
+    activeOrders: activeOrders.length,
+    deliveredOrders: orders.length - activeOrders.length,
+    bookingValue: orders.reduce((sum, order) => sum + Number(order.totals?.total || 0), 0),
+    customers: (db.customers || []).length,
+    wholesaleEnquiries: enquiries.length,
+    openWholesale: openWholesale.length,
+    lastOrderAt: orders[0]?.updatedAt || orders[0]?.placedAt || "",
+    countries: [...new Set(orders.map((order) => text(order.countryCity, 80)).filter(Boolean))].slice(0, 12)
+  };
+}
+
 async function ensureDb() {
   await mkdir(DATA_DIR, { recursive: true });
   if (!existsSync(DB_FILE)) {
-    await writeFile(DB_FILE, JSON.stringify({ orders: [], wholesale: [] }, null, 2));
+    await writeFile(DB_FILE, JSON.stringify(emptyDb(), null, 2));
   }
 }
 
 async function readDb() {
   await ensureDb();
   try {
-    return JSON.parse(await readFile(DB_FILE, "utf8"));
+    return normalizeDb(JSON.parse(await readFile(DB_FILE, "utf8")));
   } catch {
-    return { orders: [], wholesale: [] };
+    return emptyDb();
   }
 }
 
 async function writeDb(db) {
   await ensureDb();
   const tempFile = `${DB_FILE}.${process.pid}.${Date.now()}.tmp`;
-  await writeFile(tempFile, JSON.stringify(db, null, 2));
+  await writeFile(tempFile, JSON.stringify(normalizeDb(db), null, 2));
   await rename(tempFile, DB_FILE);
 }
 
@@ -183,7 +331,12 @@ function normalizeOrder(input) {
     postalCode: text(input.postalCode, 40),
     address: text(input.address, 600),
     payment: text(input.payment || "To be confirmed", 80),
+    paymentState: text(input.paymentState || "Payment pending", 80),
     paymentNote: text(input.paymentNote, 240),
+    courier: text(input.courier, 120),
+    trackingCode: text(input.trackingCode, 120),
+    eta: text(input.eta, 80),
+    adminNote: text(input.adminNote, 400),
     totals: {
       subtotal: Number(totals.subtotal || 0),
       discount: Number(totals.discount || 0),
@@ -237,8 +390,27 @@ async function handleApi(req, res, url) {
 
     const db = await readDb();
     db.orders = [order, ...(db.orders || []).filter((item) => item.id !== order.id)].slice(0, 1000);
+    upsertCustomer(db, order.customer);
+    db.events = [
+      { id: randomUUID(), type: "order_created", ref: order.id, at: order.updatedAt },
+      ...(db.events || [])
+    ].slice(0, 1000);
     await writeDb(db);
     jsonResponse(res, 201, { order: publicOrder(order) });
+    return true;
+  }
+
+  if (url.pathname === "/api/customers" && req.method === "POST") {
+    const payload = await readBody(req);
+    const db = await readDb();
+    const customer = upsertCustomer(db, payload);
+    if (!customer) {
+      jsonResponse(res, 400, { error: "Phone is required." });
+      return true;
+    }
+
+    await writeDb(db);
+    jsonResponse(res, 201, { customer: publicCustomer(customer) });
     return true;
   }
 
@@ -273,21 +445,46 @@ async function handleApi(req, res, url) {
     return true;
   }
 
+  if (url.pathname === "/api/customer/dashboard" && req.method === "GET") {
+    const phone = cleanPhone(url.searchParams.get("phone"));
+    if (!phone) {
+      jsonResponse(res, 400, { error: "Phone is required." });
+      return true;
+    }
+
+    const db = await readDb();
+    jsonResponse(res, 200, buildCustomerDashboard(db, phone));
+    return true;
+  }
+
   if (url.pathname === "/api/wholesale" && req.method === "POST") {
     const payload = await readBody(req);
+    const now = new Date().toISOString();
     const enquiry = {
       id: `BQ${Math.floor(10000 + Math.random() * 90000)}`,
       businessName: text(payload.businessName, 180),
       contactName: text(payload.contactName, 120),
+      phone: text(payload.phone, 40),
+      email: text(payload.email, 160),
       country: text(payload.country, 120),
       volume: text(payload.volume, 80),
       message: text(payload.message, 800),
-      placedAt: new Date().toISOString()
+      status: "new",
+      note: "",
+      placedAt: now,
+      updatedAt: now,
+      history: [
+        {
+          status: "new",
+          note: "Wholesale enquiry submitted from website.",
+          at: now
+        }
+      ]
     };
     const db = await readDb();
     db.wholesale = [enquiry, ...(db.wholesale || [])].slice(0, 500);
     await writeDb(db);
-    jsonResponse(res, 201, { enquiry });
+    jsonResponse(res, 201, { enquiry: publicEnquiry(enquiry) });
     return true;
   }
 
@@ -315,10 +512,58 @@ async function handleApi(req, res, url) {
     return true;
   }
 
+  if (url.pathname === "/api/admin/summary" && req.method === "GET") {
+    if (!requireAdmin(req, res)) return true;
+    const db = await readDb();
+    jsonResponse(res, 200, { summary: buildAdminSummary(db) });
+    return true;
+  }
+
+  if (url.pathname === "/api/admin/customers" && req.method === "GET") {
+    if (!requireAdmin(req, res)) return true;
+    const db = await readDb();
+    jsonResponse(res, 200, { customers: (db.customers || []).map(publicCustomer) });
+    return true;
+  }
+
   if (url.pathname === "/api/admin/wholesale" && req.method === "GET") {
     if (!requireAdmin(req, res)) return true;
     const db = await readDb();
-    jsonResponse(res, 200, { enquiries: db.wholesale || [] });
+    jsonResponse(res, 200, { enquiries: (db.wholesale || []).map(publicEnquiry) });
+    return true;
+  }
+
+  const wholesaleMatch = url.pathname.match(/^\/api\/admin\/wholesale\/([^/]+)$/);
+  if (wholesaleMatch && req.method === "PATCH") {
+    if (!requireAdmin(req, res)) return true;
+    const enquiryId = cleanOrderId(wholesaleMatch[1]);
+    const payload = await readBody(req);
+    const nextStatus = text(payload.status, 40) || "new";
+    if (!WHOLESALE_STATUSES.has(nextStatus)) {
+      jsonResponse(res, 400, { error: "Invalid wholesale status." });
+      return true;
+    }
+
+    const db = await readDb();
+    const enquiry = (db.wholesale || []).find((item) => cleanOrderId(item.id) === enquiryId);
+    if (!enquiry) {
+      jsonResponse(res, 404, { error: "Wholesale enquiry not found." });
+      return true;
+    }
+
+    enquiry.status = nextStatus;
+    enquiry.note = text(payload.note || enquiry.note, 500);
+    enquiry.updatedAt = new Date().toISOString();
+    enquiry.history = [
+      ...(enquiry.history || []),
+      {
+        status: nextStatus,
+        note: text(payload.note || "Wholesale enquiry updated from admin panel.", 240),
+        at: enquiry.updatedAt
+      }
+    ];
+    await writeDb(db);
+    jsonResponse(res, 200, { enquiry: publicEnquiry(enquiry) });
     return true;
   }
 
@@ -342,14 +587,20 @@ async function handleApi(req, res, url) {
 
     order.status = nextStatus;
     order.updatedAt = new Date().toISOString();
+    order.paymentState = text(payload.paymentState || order.paymentState || "Payment pending", 80);
+    order.courier = text(payload.courier || order.courier, 120);
+    order.trackingCode = text(payload.trackingCode || order.trackingCode, 120);
+    order.eta = text(payload.eta || order.eta, 80);
+    order.adminNote = text(payload.adminNote || order.adminNote, 400);
     order.statusHistory = [
       ...(order.statusHistory || []),
       {
         status: nextStatus,
-        note: text(payload.note || "Status updated from admin panel.", 240),
+        note: text(payload.note || "Order details updated from admin panel.", 240),
         at: order.updatedAt
       }
     ];
+    upsertCustomer(db, order.customer);
     await writeDb(db);
     jsonResponse(res, 200, { order: publicOrder(order) });
     return true;
