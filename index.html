@@ -63,12 +63,18 @@
       <div class="header-actions">
         <a class="portal-shortcut" href="#customer-portal">
           <i data-lucide="badge-check"></i>
-          <span>Track</span>
+          <span>Track order</span>
         </a>
         <button class="icon-button cart-trigger" type="button" aria-label="Open cart">
           <i data-lucide="shopping-bag"></i>
           <span class="cart-count" data-cart-count>0</span>
         </button>
+      </div>
+      <div class="header-trust-row" aria-label="Trust highlights">
+        <span>Order ID generated</span>
+        <span>WhatsApp support</span>
+        <span>Policy-backed checkout</span>
+        <span>Wholesale and export desk</span>
       </div>
     </header>
 
@@ -101,16 +107,20 @@
 
       <section class="trust-strip" aria-label="Store benefits">
         <div>
-          <strong>Fresh batch direction</strong>
-          <span>Roasted and sealed for crispness</span>
+          <strong>Fresh batch packing</strong>
+          <span>Roasted and sealed for crispness.</span>
         </div>
         <div>
-          <strong>Retail and export enquiries</strong>
-          <span>Built for distributors and buyers</span>
+          <strong>Booking ID for every order</strong>
+          <span>Customers can track by order ID and phone.</span>
         </div>
         <div>
-          <strong>No artificial color</strong>
-          <span>Clean pantry staples and blends</span>
+          <strong>Buyer document roadmap</strong>
+          <span>Prepared for FSSAI, GST, lab reports, and export docs.</span>
+        </div>
+        <div>
+          <strong>Wholesale support</strong>
+          <span>Retail, distributor, gifting, and export enquiries.</span>
         </div>
       </section>
 
@@ -161,7 +171,7 @@
           <p class="eyebrow">About us</p>
           <h2 id="about-title">A modern Indian food brand for everyday kitchens and global shelves.</h2>
           <p>
-            BandEvi Gourmet brings two trusted Indian pantry categories together: roasted fox nuts for clean snacking and spice blends for daily cooking. The brand is built for families, gifting, retail counters, hospitality buyers, and distributors who want consistent taste with premium presentation.
+            BandEvi Gourmet brings trusted Indian pantry staples together: roasted makhana for clean snacking, poha for quick breakfast, and spice blends for daily cooking. The brand is built for families, gifting, retail counters, hospitality buyers, and distributors who want consistent taste with premium presentation.
           </p>
           <p>
             Our direction is simple: source carefully, process in small batches, pack neatly, and make Indian flavors easier to understand for buyers across markets.
@@ -171,6 +181,16 @@
             <span>Wholesale enquiry flow</span>
             <span>Policy-backed buyer journey</span>
             <span>Customer tracking portal</span>
+          </div>
+          <div class="about-proof-grid" aria-label="Brand promise">
+            <article>
+              <strong>For families</strong>
+              <span>Easy pantry ordering, booking ID, and simple tracking.</span>
+            </article>
+            <article>
+              <strong>For buyers</strong>
+              <span>Clear products, pack formats, and wholesale enquiry flow.</span>
+            </article>
           </div>
         </div>
         <div class="about-values">
@@ -227,7 +247,7 @@
         <div class="section-head">
           <div>
             <p class="eyebrow">International buyer assurance</p>
-            <h2 id="operations-title">A clearer order journey from enquiry to delivery.</h2>
+            <h2 id="operations-title">A bookable order journey from cart to delivery.</h2>
           </div>
         </div>
         <div class="operations-grid">
@@ -239,12 +259,12 @@
           <article>
             <i data-lucide="clipboard"></i>
             <h3>2. Confirmation and quote</h3>
-            <p>Order ID, product list, payment method, and buyer details are recorded before confirmation or final quotation.</p>
+            <p>Order ID, product list, payment method, delivery location, and buyer details are recorded before confirmation or final quotation.</p>
           </article>
           <article>
             <i data-lucide="package-open"></i>
             <h3>3. Packing and dispatch</h3>
-            <p>Customers can track the order status from pending confirmation through packing, dispatch, and delivery.</p>
+            <p>Customers can track the order status from booking through confirmation, packing, dispatch, and delivery.</p>
           </article>
           <article>
             <i data-lucide="shield-check"></i>
@@ -524,11 +544,17 @@
 
       <section class="customer-portal-section" id="customer-portal" aria-labelledby="customer-portal-title">
         <div class="portal-copy">
-          <p class="eyebrow">Customer login and order tracking</p>
-          <h2 id="customer-portal-title">Book an order, save your details, and track status.</h2>
+          <p class="eyebrow">Customer account and booking desk</p>
+          <h2 id="customer-portal-title">Book orders online and track every booking ID.</h2>
           <p>
-            Customers can create a simple login profile on this website, place an order, and track the latest order status by order ID and phone number.
+            Customers can save their profile, place a cart booking, send a WhatsApp order request, and track the latest booking status by order ID and phone number.
           </p>
+          <div class="portal-highlights" aria-label="Booking desk features">
+            <span>Customer login profile</span>
+            <span>Booking ID history</span>
+            <span>Payment note saved</span>
+            <span>Status timeline</span>
+          </div>
           <div class="portal-note">
             Live backend activation is the next step for cross-device accounts, admin status updates, email OTP, and full customer history.
           </div>
@@ -547,6 +573,10 @@
             <label>
               <span>Email</span>
               <input name="customerEmail" type="email" placeholder="Email for order updates" />
+            </label>
+            <label>
+              <span>Country / city</span>
+              <input name="customerLocation" type="text" placeholder="Example: India, Patna" />
             </label>
             <button class="portal-button" type="submit">
               <i data-lucide="badge-check"></i>
@@ -647,7 +677,7 @@
     </main>
 
     <footer class="site-footer" aria-label="Brand footer">
-      <div>
+      <div class="footer-intro">
         <a class="brand footer-brand" href="#top" aria-label="BandEvi Gourmet home">
           <span class="brand-mark">B</span>
           <span>
@@ -658,9 +688,22 @@
         <p>
           A premium Indian food brand direction for retail shelves, gifting, online orders, distributor supply, and export buyer conversations.
         </p>
+        <div class="footer-trust-points" aria-label="Footer trust points">
+          <span>Booking ID tracking</span>
+          <span>Policy center</span>
+          <span>Wholesale desk</span>
+        </div>
       </div>
-      <div class="footer-links" aria-label="Footer links">
+      <nav class="footer-links" aria-label="Shop links">
+        <strong>Shop</strong>
         <a href="#products">Products</a>
+        <a href="#makhana-products">Makhana</a>
+        <a href="#masala-products">Masala</a>
+        <a href="#poha-products">Poha</a>
+        <a href="#bundles">Bundles</a>
+      </nav>
+      <nav class="footer-links" aria-label="Support links">
+        <strong>Support</strong>
         <a href="#export">Export buyer desk</a>
         <a href="#trust">Trust center</a>
         <a href="./policies.html#terms">Terms</a>
@@ -670,10 +713,16 @@
         <a href="./policies.html#faq">FAQ</a>
         <a href="#customer-portal">Login / Track order</a>
         <a href="#wholesale">Wholesale enquiry</a>
-      </div>
+      </nav>
       <div class="footer-note">
         <strong>Business details</strong>
         <span>FSSAI, GST, address, phone, email, and IEC can be added after final verification.</span>
+        <strong>Customer desk</strong>
+        <span>Orders can be booked from the cart and tracked by booking ID on the same website.</span>
+      </div>
+      <div class="footer-bottom">
+        <span>BandEvi Gourmet, India</span>
+        <span>Premium Indian pantry brand for retail, gifting, wholesale, and export conversations.</span>
       </div>
     </footer>
 
@@ -719,8 +768,29 @@
           <input name="phone" type="tel" required />
         </label>
         <label>
+          <span>Email</span>
+          <input name="email" type="email" placeholder="Email for updates" />
+        </label>
+        <label>
+          <span>Country / city</span>
+          <input name="countryCity" type="text" placeholder="Example: India, Patna" required />
+        </label>
+        <label>
+          <span>Pincode / ZIP</span>
+          <input name="postalCode" type="text" placeholder="Delivery postal code" />
+        </label>
+        <label>
           <span>Address</span>
           <textarea name="address" rows="3" required></textarea>
+        </label>
+        <label>
+          <span>Order type</span>
+          <select name="orderType">
+            <option>Retail home order</option>
+            <option>Gift order</option>
+            <option>Wholesale sample request</option>
+            <option>Export buyer enquiry</option>
+          </select>
         </label>
         <label>
           <span>Payment</span>

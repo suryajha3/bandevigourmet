@@ -35,10 +35,11 @@ const STORAGE_KEYS = {
 };
 
 const ORDER_STEPS = [
-  { key: "booked", label: "Booked" },
-  { key: "confirmed", label: "Confirmed" },
-  { key: "packed", label: "Packed" },
-  { key: "dispatched", label: "Dispatched" }
+  { key: "booked", label: "Booked", helper: "ID created" },
+  { key: "confirmed", label: "Confirmed", helper: "Seller approved" },
+  { key: "packed", label: "Packed", helper: "Ready to ship" },
+  { key: "dispatched", label: "Dispatched", helper: "On the way" },
+  { key: "delivered", label: "Delivered", helper: "Completed" }
 ];
 
 const state = {
@@ -424,7 +425,11 @@ function buildWhatsAppMessage(form, orderId) {
     "Customer:",
     `Name: ${data.get("name")}`,
     `Phone: ${data.get("phone")}`,
+    `Email: ${data.get("email") || "Not shared"}`,
+    `Country / City: ${data.get("countryCity")}`,
+    `Pincode / ZIP: ${data.get("postalCode") || "Not shared"}`,
     `Address: ${data.get("address")}`,
+    `Order Type: ${data.get("orderType")}`,
     `Payment: ${payment}`,
     `Payment Note: ${getPaymentNote(payment, totals.total)}`
   ].join("\n");
@@ -437,6 +442,10 @@ function createOrderRecord(form, orderId, source) {
   const payment = data.get("payment");
   const phone = String(data.get("phone") || "").trim();
   const name = String(data.get("name") || "").trim();
+  const email = String(data.get("email") || state.customer?.email || "").trim();
+  const countryCity = String(data.get("countryCity") || state.customer?.location || "").trim();
+  const postalCode = String(data.get("postalCode") || "").trim();
+  const orderType = String(data.get("orderType") || "Retail home order").trim();
   const address = String(data.get("address") || "").trim();
 
   return {
@@ -444,11 +453,15 @@ function createOrderRecord(form, orderId, source) {
     source,
     status: "booked",
     placedAt: new Date().toISOString(),
+    orderType,
     customer: {
       name,
       phone,
-      email: state.customer?.email || ""
+      email,
+      location: countryCity
     },
+    countryCity,
+    postalCode,
     address,
     payment,
     paymentNote: getPaymentNote(payment, totals.total),
@@ -484,14 +497,39 @@ function formatOrderDate(value) {
 function renderStatusSteps(order) {
   const current = getStatusIndex(order.status);
   return ORDER_STEPS.map(
-    (step, index) => `<span class="${index <= current ? "is-done" : ""}">${step.label}</span>`
+    (step, index) => `
+      <span class="${index <= current ? "is-done" : ""}">
+        <strong>${step.label}</strong>
+        <small>${step.helper}</small>
+      </span>
+    `
   ).join("");
 }
 
+function getOrderNextAction(order) {
+  const status = order.status || "booked";
+  const messages = {
+    booked: "Seller confirmation and stock check are pending.",
+    confirmed: "Order is confirmed and will move to packing.",
+    packed: "Packing is complete and dispatch details will be shared next.",
+    dispatched: "Order is on the way. Delivery confirmation is the next step.",
+    delivered: "Order is marked delivered. Support remains available for product concerns."
+  };
+
+  return messages[status] || messages.booked;
+}
+
 function renderOrderCard(order) {
-  const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
-  const itemSummary = order.items.map((item) => `${escapeHtml(item.name)} x ${item.quantity}`).join(", ");
+  const items = order.items || [];
+  const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+  const itemSummary = items.length
+    ? items.map((item) => `${escapeHtml(item.name)} x ${item.quantity}`).join(", ")
+    : "Products to be confirmed";
   const statusLabel = ORDER_STEPS[getStatusIndex(order.status)].label;
+  const orderType = order.orderType || order.source || "Website booking";
+  const countryCity = order.countryCity || order.customer?.location || "Location to be confirmed";
+  const total = order.totals?.total || 0;
+  const supportUrl = getWhatsAppUrl(`Support request for ${STORE_CONFIG.shopName} booking ${order.id}`);
 
   return `
     <article class="order-card">
@@ -503,8 +541,18 @@ function renderOrderCard(order) {
         <span class="status-pill">${statusLabel}</span>
       </header>
       <p><strong>${totalQuantity} item${totalQuantity === 1 ? "" : "s"}</strong> - ${itemSummary}</p>
-      <p>Total: <strong>${money(order.totals.total)}</strong> | Payment: ${escapeHtml(order.payment)}</p>
+      <div class="order-meta-grid">
+        <span><strong>Total</strong>${money(total)}</span>
+        <span><strong>Payment</strong>${escapeHtml(order.payment || "To be confirmed")}</span>
+        <span><strong>Order type</strong>${escapeHtml(orderType)}</span>
+        <span><strong>Location</strong>${escapeHtml(countryCity)}</span>
+      </div>
+      <p class="order-next"><strong>Next step:</strong> ${getOrderNextAction(order)}</p>
       <div class="status-steps" aria-label="Order status timeline">${renderStatusSteps(order)}</div>
+      <div class="order-actions">
+        <button type="button" data-copy-order="${escapeHtml(order.id)}">Copy booking ID</button>
+        <a href="${supportUrl}" target="_blank" rel="noopener noreferrer">Support on WhatsApp</a>
+      </div>
     </article>
   `;
 }
@@ -514,8 +562,12 @@ function prefillCheckoutFromCustomer() {
 
   const nameInput = checkoutForm.elements.name;
   const phoneInput = checkoutForm.elements.phone;
+  const emailInput = checkoutForm.elements.email;
+  const countryCityInput = checkoutForm.elements.countryCity;
   if (nameInput && !nameInput.value) nameInput.value = state.customer.name || "";
   if (phoneInput && !phoneInput.value) phoneInput.value = state.customer.phone || "";
+  if (emailInput && !emailInput.value) emailInput.value = state.customer.email || "";
+  if (countryCityInput && !countryCityInput.value) countryCityInput.value = state.customer.location || "";
 }
 
 function prefillCustomerLoginForm() {
@@ -524,6 +576,7 @@ function prefillCustomerLoginForm() {
   customerLoginForm.elements.customerName.value = state.customer.name || "";
   customerLoginForm.elements.customerPhone.value = state.customer.phone || "";
   customerLoginForm.elements.customerEmail.value = state.customer.email || "";
+  customerLoginForm.elements.customerLocation.value = state.customer.location || "";
 }
 
 function renderCustomerPortal() {
@@ -534,6 +587,8 @@ function renderCustomerPortal() {
     ? state.orders.filter((order) => normalizePhone(order.customer.phone) === normalizePhone(customer.phone))
     : state.orders;
   const visibleOrders = state.trackedOrder ? [state.trackedOrder] : ordersForCustomer.slice(0, 3);
+  const activeOrders = ordersForCustomer.filter((order) => order.status !== "delivered").length;
+  const latestOrder = ordersForCustomer[0];
 
   customerDashboard.innerHTML = `
     <h3>${customer ? `Welcome, ${escapeHtml(customer.name)}` : "Customer dashboard"}</h3>
@@ -542,9 +597,20 @@ function renderCustomerPortal() {
         ? `<div class="portal-profile">
             <span>${escapeHtml(customer.phone)}</span>
             ${customer.email ? `<span>${escapeHtml(customer.email)}</span>` : ""}
+            ${customer.location ? `<span>${escapeHtml(customer.location)}</span>` : ""}
           </div>`
         : `<p class="portal-empty">Save your login details first, then place an order or track an existing order ID.</p>`
     }
+    ${
+      customer
+        ? `<div class="portal-stats" aria-label="Customer booking summary">
+            <span><strong>${ordersForCustomer.length}</strong><small>Total bookings</small></span>
+            <span><strong>${activeOrders}</strong><small>Active orders</small></span>
+            <span><strong>${latestOrder ? ORDER_STEPS[getStatusIndex(latestOrder.status)].label : "None"}</strong><small>Latest status</small></span>
+          </div>`
+        : ""
+    }
+    <h4 class="portal-subtitle">${state.trackedOrder ? "Tracked booking" : "Recent bookings"}</h4>
     ${
       visibleOrders.length
         ? visibleOrders.map(renderOrderCard).join("")
@@ -552,7 +618,34 @@ function renderCustomerPortal() {
     }
   `;
 
+  bindPortalActions();
   refreshIcons();
+}
+
+function copyText(value) {
+  if (navigator.clipboard) {
+    return navigator.clipboard.writeText(value);
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
+  return Promise.resolve();
+}
+
+function bindPortalActions() {
+  customerDashboard.querySelectorAll("[data-copy-order]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      await copyText(button.dataset.copyOrder);
+      showToast("Booking ID copied");
+    });
+  });
 }
 
 function buildWholesaleMessage(form) {
@@ -797,7 +890,8 @@ customerLoginForm.addEventListener("submit", (event) => {
   const customer = {
     name: String(data.get("customerName") || "").trim(),
     phone: String(data.get("customerPhone") || "").trim(),
-    email: String(data.get("customerEmail") || "").trim()
+    email: String(data.get("customerEmail") || "").trim(),
+    location: String(data.get("customerLocation") || "").trim()
   };
 
   saveCustomer(customer);
