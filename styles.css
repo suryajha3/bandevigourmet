@@ -1713,6 +1713,12 @@ a {
 }
 
 @media (max-width: 560px) {
+  .hero-content {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
   .product-grid {
     grid-template-columns: 1fr;
   }
@@ -1763,12 +1769,15 @@ a {
   .hero h1 {
     font-size: 34px;
     line-height: 1.08;
+    max-width: calc(100vw - 32px);
     overflow-wrap: anywhere;
+    word-break: normal;
   }
 
   .hero-copy {
     font-size: 16px;
-    max-width: 100%;
+    max-width: calc(100vw - 32px);
+    overflow-wrap: anywhere;
   }
 
   .cart-drawer,
