@@ -1,7 +1,13 @@
 services:
   - type: web
+    name: bandevigourmet
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    domains: []
+  - type: web
     name: bandevigourmet-web
-    env: node
+    runtime: node
     plan: free
     buildCommand: npm install && npm run build
     startCommand: npm start
