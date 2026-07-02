@@ -1,0 +1,122 @@
+{
+  "classic-makhana": {
+    "ingredients": ["Roasted makhana", "Rock salt", "Cold-pressed edible oil"],
+    "nutrition": ["Serving: 25 g", "Energy: 95 kcal", "Protein: 3.2 g", "Carbohydrate: 15 g", "Fat: 2.4 g", "Fiber: 2.1 g"],
+    "shelfLife": "Best before 6 months from packing when sealed.",
+    "storage": "Store in a cool, dry place. Keep pouch sealed after opening.",
+    "origin": "Makhana sourced from India and roasted in small batches.",
+    "flavorNotes": "Light, crisp, mild salt finish.",
+    "usage": ["Daily tea-time snack", "Office snack bowls", "Travel-friendly light snack"],
+    "disclaimer": "Nutrition values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
+  "peri-peri-makhana": {
+    "ingredients": ["Roasted makhana", "Peri peri seasoning", "Red chilli", "Garlic powder", "Edible oil", "Salt"],
+    "nutrition": ["Serving: 25 g", "Energy: 105 kcal", "Protein: 3 g", "Carbohydrate: 16 g", "Fat: 3.1 g", "Fiber: 2 g"],
+    "shelfLife": "Best before 6 months from packing when sealed.",
+    "storage": "Keep airtight after opening to protect crunch and spice aroma.",
+    "origin": "Indian makhana with a global-style spicy seasoning profile.",
+    "flavorNotes": "Tangy, chilli-forward, lightly garlicky.",
+    "usage": ["Movie snack", "Party bowl", "Spicy travel snack"],
+    "disclaimer": "Nutrition values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
+  "pudina-makhana": {
+    "ingredients": ["Roasted makhana", "Mint seasoning", "Coriander powder", "Dry mango powder", "Edible oil", "Salt"],
+    "nutrition": ["Serving: 25 g", "Energy: 101 kcal", "Protein: 3 g", "Carbohydrate: 15.5 g", "Fat: 2.8 g", "Fiber: 2.1 g"],
+    "shelfLife": "Best before 6 months from packing when sealed.",
+    "storage": "Store away from moisture. Close the pouch tightly after each use.",
+    "origin": "Indian makhana finished with cooling mint-style masala.",
+    "flavorNotes": "Fresh, cooling, tangy herb finish.",
+    "usage": ["Summer snack", "Lunchbox add-on", "Light evening snack"],
+    "disclaimer": "Nutrition values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
+  "jaggery-makhana": {
+    "ingredients": ["Roasted makhana", "Jaggery", "Edible oil", "Cardamom"],
+    "nutrition": ["Serving: 30 g", "Energy: 132 kcal", "Protein: 2.8 g", "Carbohydrate: 23 g", "Fat: 3 g", "Fiber: 1.8 g"],
+    "shelfLife": "Best before 4 months from packing when sealed.",
+    "storage": "Keep sealed in a cool, dry place. Avoid heat to protect the jaggery coating.",
+    "origin": "Indian makhana coated with traditional jaggery-style sweetness.",
+    "flavorNotes": "Golden caramel, mild cardamom, crunchy finish.",
+    "usage": ["Sweet snack", "Gifting jar", "Dessert topping"],
+    "disclaimer": "Nutrition values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
+  "garam-masala": {
+    "ingredients": ["Coriander", "Cumin", "Black pepper", "Cloves", "Cinnamon", "Cardamom", "Bay leaf"],
+    "nutrition": ["Serving: 5 g", "Energy: 18 kcal", "Protein: 0.6 g", "Carbohydrate: 3 g", "Fat: 0.4 g", "Fiber: 1 g"],
+    "shelfLife": "Best before 9 months from grinding when sealed.",
+    "storage": "Store airtight away from sunlight to protect aroma.",
+    "origin": "Indian whole spices ground for warm everyday cooking.",
+    "flavorNotes": "Warm, aromatic, peppery, rounded spice finish.",
+    "usage": ["Curries", "Dal tadka", "Paneer gravies", "Marinades"],
+    "disclaimer": "Nutrition values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
+  "kitchen-king": {
+    "ingredients": ["Coriander", "Cumin", "Turmeric", "Red chilli", "Fenugreek leaves", "Black pepper", "Dry ginger"],
+    "nutrition": ["Serving: 5 g", "Energy: 17 kcal", "Protein: 0.5 g", "Carbohydrate: 3.2 g", "Fat: 0.3 g", "Fiber: 0.9 g"],
+    "shelfLife": "Best before 9 months from grinding when sealed.",
+    "storage": "Keep jar or pouch closed tightly after use.",
+    "origin": "Balanced Indian masala blend for daily cooking.",
+    "flavorNotes": "Savory, mildly warm, balanced curry aroma.",
+    "usage": ["Sabzi", "Paneer", "Pulao", "Snack seasoning"],
+    "disclaimer": "Nutrition values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
+  "chaat-masala": {
+    "ingredients": ["Black salt", "Dry mango powder", "Roasted cumin", "Coriander", "Black pepper", "Mint", "Asafoetida"],
+    "nutrition": ["Serving: 5 g", "Energy: 14 kcal", "Protein: 0.4 g", "Carbohydrate: 2.8 g", "Fat: 0.2 g", "Sodium: varies by salt blend"],
+    "shelfLife": "Best before 9 months from blending when sealed.",
+    "storage": "Store dry and airtight to prevent clumping.",
+    "origin": "Tangy Indian seasoning blend for snacks and fruit.",
+    "flavorNotes": "Tangy, salty, roasted cumin finish.",
+    "usage": ["Fruit bowls", "Chaat", "Buttermilk", "Roasted makhana"],
+    "disclaimer": "Nutrition values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
+  "turmeric-powder": {
+    "ingredients": ["Turmeric powder"],
+    "nutrition": ["Serving: 5 g", "Energy: 16 kcal", "Protein: 0.4 g", "Carbohydrate: 3.3 g", "Fat: 0.1 g", "Fiber: 1 g"],
+    "shelfLife": "Best before 12 months from grinding when sealed.",
+    "storage": "Keep away from direct sunlight to preserve natural color.",
+    "origin": "Single-ingredient Indian turmeric powder.",
+    "flavorNotes": "Earthy, golden, mildly bitter-warm.",
+    "usage": ["Daily cooking", "Golden milk", "Pickles", "Marinades"],
+    "disclaimer": "Nutrition values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
+  "red-chilli": {
+    "ingredients": ["Byadgi red chilli powder"],
+    "nutrition": ["Serving: 5 g", "Energy: 17 kcal", "Protein: 0.6 g", "Carbohydrate: 3 g", "Fat: 0.3 g", "Fiber: 1.2 g"],
+    "shelfLife": "Best before 12 months from grinding when sealed.",
+    "storage": "Store airtight away from sunlight to protect red color.",
+    "origin": "Indian red chilli powder selected for color and medium heat.",
+    "flavorNotes": "Vivid color, gentle heat, smoky chilli aroma.",
+    "usage": ["Curries", "Tadka", "Marinades", "Snack seasoning"],
+    "disclaimer": "Nutrition values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
+  "whole-spice-combo": {
+    "ingredients": ["Cumin", "Coriander", "Cardamom", "Cloves", "Black pepper", "Cinnamon"],
+    "nutrition": ["Serving: varies by spice", "Whole spice pantry set", "No added color", "No added flavor", "Use as required by recipe"],
+    "shelfLife": "Best before 12 months from packing when sealed.",
+    "storage": "Store jars airtight in a cool, dry cabinet.",
+    "origin": "Assorted Indian whole spices for daily cooking and grinding.",
+    "flavorNotes": "Warm, fragrant, fresh whole-spice aroma.",
+    "usage": ["Tempering", "Grinding fresh masala", "Tea blends", "Rice dishes"],
+    "disclaimer": "Nutrition values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
+  "snack-combo": {
+    "ingredients": ["Classic makhana", "Peri peri makhana", "Pudina makhana", "Jaggery caramel makhana"],
+    "nutrition": ["Serving: varies by flavor", "Assorted snack pack", "Sweet and savory selection", "Refer individual pack values"],
+    "shelfLife": "Best before 4 to 6 months depending on flavor.",
+    "storage": "Keep each pack sealed after opening. Store away from moisture.",
+    "origin": "Assorted Indian makhana flavors for gifting and family snacking.",
+    "flavorNotes": "Plain salted, spicy, minty, and sweet caramel.",
+    "usage": ["Gift box", "Family snack trial", "Retail sampler", "Office pantry"],
+    "disclaimer": "Nutrition values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
+  "masala-refill": {
+    "ingredients": ["Turmeric", "Red chilli", "Garam masala", "Coriander", "Cumin", "Chaat masala", "Kitchen king", "Pepper blend"],
+    "nutrition": ["Serving: varies by masala", "Assorted spice refill set", "Use as required by recipe", "Refer individual pack values"],
+    "shelfLife": "Best before 9 to 12 months depending on spice type.",
+    "storage": "Keep all packs airtight, dry, and away from direct sunlight.",
+    "origin": "Assorted Indian masala refill set for everyday kitchens.",
+    "flavorNotes": "Complete pantry range from earthy turmeric to warm garam masala.",
+    "usage": ["Monthly kitchen refill", "Starter pantry", "Retail bundle", "Gifting hamper"],
+    "disclaimer": "Nutrition values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  }
+}

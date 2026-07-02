@@ -1,0 +1,613 @@
+import {
+  BadgeCheck,
+  ChevronDown,
+  Clipboard,
+  Factory,
+  FlaskConical,
+  Globe2,
+  Handshake,
+  Leaf,
+  MessageCircle,
+  PackageCheck,
+  PackageOpen,
+  Plus,
+  Search,
+  Send,
+  ShoppingBag,
+  Store,
+  ShieldCheck,
+  Wheat,
+  X,
+  createIcons
+} from "lucide";
+import productDetails from "./product-details.json";
+import products from "./products.json";
+import { STORE_CONFIG } from "./store-config.js";
+
+const catalog = products.map((product) => ({
+  ...product,
+  details: productDetails[product.id] || {}
+}));
+
+const state = {
+  filter: "all",
+  search: "",
+  sort: "featured",
+  couponApplied: false,
+  cart: new Map()
+};
+
+const rupee = new Intl.NumberFormat("en-IN", {
+  maximumFractionDigits: 0
+});
+
+const productGrid = document.querySelector("#productGrid");
+const makhanaProductGrid = document.querySelector("#makhanaProductGrid");
+const masalaProductGrid = document.querySelector("#masalaProductGrid");
+const cartItems = document.querySelector("#cartItems");
+const cartTotals = document.querySelector("#cartTotals");
+const cartDrawer = document.querySelector(".cart-drawer");
+const productDetailDrawer = document.querySelector(".product-detail-drawer");
+const productDetailContent = document.querySelector("#productDetailContent");
+const checkoutForm = document.querySelector("#checkoutForm");
+const wholesaleForm = document.querySelector("#wholesaleForm");
+const paymentMethod = document.querySelector("#paymentMethod");
+const paymentDetails = document.querySelector("#paymentDetails");
+const overlay = document.querySelector("[data-overlay]");
+const toast = document.querySelector("#toast");
+const couponInput = document.querySelector("#couponInput");
+const couponMessage = document.querySelector("#couponMessage");
+
+function money(value) {
+  return `Rs. ${rupee.format(value)}`;
+}
+
+function productImage(product) {
+  return product.image || "/assets/makhana-masala-hero.png";
+}
+
+function imagePosition(product) {
+  return product.position || "center";
+}
+
+function getFilteredProducts() {
+  const search = state.search.trim().toLowerCase();
+  let visible = catalog.filter((product) => {
+    const categoryMatch = state.filter === "all" || product.category === state.filter;
+    const text = `${product.name} ${product.category} ${product.description} ${(product.details.ingredients || []).join(" ")}`.toLowerCase();
+    return categoryMatch && (!search || text.includes(search));
+  });
+
+  if (state.sort === "low") visible = visible.toSorted((a, b) => a.price - b.price);
+  if (state.sort === "high") visible = visible.toSorted((a, b) => b.price - a.price);
+  if (state.sort === "rating") visible = visible.toSorted((a, b) => b.rating - a.rating);
+
+  return visible;
+}
+
+function renderProductCard(product) {
+  return `
+    <article class="product-card">
+      <div class="product-media">
+        <img src="${productImage(product)}" alt="${product.name}" style="--position: ${imagePosition(product)}" />
+        <span class="product-badge">${product.badge}</span>
+      </div>
+      <div class="product-body">
+        <div class="product-meta">
+          <span>${product.category}</span>
+          <span class="rating">${product.rating}/5</span>
+        </div>
+        <h3>${product.name}</h3>
+        <p>${product.description}</p>
+        <div class="price-row">
+          <span class="price">${money(product.price)}</span>
+          <span class="pack-size">${product.size}</span>
+        </div>
+        <div class="card-actions">
+          <button class="detail-button" type="button" data-detail="${product.id}">View details</button>
+          <button type="button" data-add="${product.id}">
+            <i data-lucide="plus"></i>
+            Add to cart
+          </button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderCategoryCard(product) {
+  return `
+    <article class="category-card">
+      <div class="category-thumb">
+        <img src="${productImage(product)}" alt="${product.name}" style="--position: ${imagePosition(product)}" />
+      </div>
+      <div class="category-info">
+        <span>${product.badge}</span>
+        <h3>${product.name}</h3>
+        <p>${product.size} - ${money(product.price)}</p>
+        <div class="category-actions">
+          <button class="detail-button" type="button" data-detail="${product.id}">Details</button>
+          <button type="button" data-add="${product.id}">
+            <i data-lucide="plus"></i>
+            Add
+          </button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function bindAddButtons(root) {
+  root.querySelectorAll("[data-add]").forEach((button) => {
+    button.addEventListener("click", () => addToCart(button.dataset.add));
+  });
+}
+
+function bindDetailButtons(root) {
+  root.querySelectorAll("[data-detail]").forEach((button) => {
+    button.addEventListener("click", () => openProductDetail(button.dataset.detail));
+  });
+}
+
+function renderProducts() {
+  const visible = getFilteredProducts();
+
+  productGrid.innerHTML = visible.length
+    ? visible.map(renderProductCard).join("")
+    : `<div class="empty-cart">No products matched that search.</div>`;
+
+  bindAddButtons(productGrid);
+  bindDetailButtons(productGrid);
+
+  refreshIcons();
+}
+
+function renderCategoryProducts() {
+  const categorySections = [
+    { category: "makhana", grid: makhanaProductGrid },
+    { category: "masala", grid: masalaProductGrid }
+  ];
+
+  categorySections.forEach(({ category, grid }) => {
+    const categoryProducts = catalog.filter((product) => product.category === category);
+    grid.innerHTML = categoryProducts.map(renderCategoryCard).join("");
+    bindAddButtons(grid);
+    bindDetailButtons(grid);
+  });
+
+  refreshIcons();
+}
+
+function setProductFilter(filter) {
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.classList.toggle("is-active", tab.dataset.filter === filter);
+  });
+  state.filter = filter;
+  renderProducts();
+}
+
+function renderList(items) {
+  return (items || []).map((item) => `<li>${item}</li>`).join("");
+}
+
+function openProductDetail(id) {
+  const product = catalog.find((item) => item.id === id);
+  if (!product) return;
+
+  const details = product.details || {};
+  closeCart();
+  productDetailContent.innerHTML = `
+    <div class="detail-hero">
+      <img src="${productImage(product)}" alt="${product.name}" style="--position: ${imagePosition(product)}" />
+      <div>
+        <span class="product-badge">${product.badge}</span>
+        <h3>${product.name}</h3>
+        <p>${product.description}</p>
+        <div class="detail-price">
+          <strong>${money(product.price)}</strong>
+          <span>${product.size}</span>
+          <span>${product.rating}/5 rating</span>
+        </div>
+        <button type="button" data-add="${product.id}">
+          <i data-lucide="plus"></i>
+          Add to cart
+        </button>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <article>
+        <h4>Ingredients</h4>
+        <ul>${renderList(details.ingredients)}</ul>
+      </article>
+      <article>
+        <h4>Nutrition snapshot</h4>
+        <ul>${renderList(details.nutrition)}</ul>
+      </article>
+      <article>
+        <h4>Shelf life</h4>
+        <p>${details.shelfLife || "Add shelf-life details after final packaging."}</p>
+      </article>
+      <article>
+        <h4>Storage</h4>
+        <p>${details.storage || "Store sealed in a cool, dry place."}</p>
+      </article>
+      <article>
+        <h4>Origin note</h4>
+        <p>${details.origin || "Add sourcing and origin notes."}</p>
+      </article>
+      <article>
+        <h4>Flavor notes</h4>
+        <p>${details.flavorNotes || "Add flavor notes."}</p>
+      </article>
+    </div>
+
+    <div class="usage-panel">
+      <h4>Usage ideas</h4>
+      <div>${(details.usage || []).map((item) => `<span>${item}</span>`).join("")}</div>
+    </div>
+
+    <p class="detail-disclaimer">${details.disclaimer || "Replace display values with verified packaging details before final commercial launch."}</p>
+  `;
+
+  bindAddButtons(productDetailContent);
+  productDetailDrawer.classList.add("is-open");
+  overlay.classList.add("is-open");
+  productDetailDrawer.setAttribute("aria-hidden", "false");
+  refreshIcons();
+}
+
+function closeProductDetail() {
+  productDetailDrawer.classList.remove("is-open");
+  overlay.classList.remove("is-open");
+  productDetailDrawer.setAttribute("aria-hidden", "true");
+}
+
+function addToCart(id) {
+  state.cart.set(id, (state.cart.get(id) || 0) + 1);
+  renderCart();
+  showToast("Added to cart");
+}
+
+function setQuantity(id, quantity) {
+  if (quantity <= 0) {
+    state.cart.delete(id);
+  } else {
+    state.cart.set(id, quantity);
+  }
+  renderCart();
+}
+
+function getCartLines() {
+  return [...state.cart.entries()].map(([id, quantity]) => {
+    const product = catalog.find((item) => item.id === id);
+    return { ...product, quantity, lineTotal: product.price * quantity };
+  });
+}
+
+function getTotals() {
+  const subtotal = getCartLines().reduce((sum, item) => sum + item.lineTotal, 0);
+  const discount = state.couponApplied ? Math.round(subtotal * 0.1) : 0;
+  const delivery = subtotal === 0 || subtotal - discount >= 999 ? 0 : 69;
+  const total = subtotal - discount + delivery;
+  return { subtotal, discount, delivery, total };
+}
+
+function createOrderId() {
+  return `MM${Math.floor(10000 + Math.random() * 90000)}`;
+}
+
+function getUpiPayUrl(amount, orderId) {
+  const upiId = STORE_CONFIG.upiId.trim();
+  if (!upiId) return "";
+
+  const params = new URLSearchParams({
+    pa: upiId,
+    pn: STORE_CONFIG.upiPayeeName || STORE_CONFIG.shopName,
+    am: String(amount),
+    cu: "INR",
+    tn: `${STORE_CONFIG.shopName} order ${orderId}`
+  });
+
+  return `upi://pay?${params.toString()}`;
+}
+
+function getPaymentNote(payment, total) {
+  if (payment === "UPI prepaid") {
+    return STORE_CONFIG.upiId
+      ? `Pay ${money(total)} to UPI ID ${STORE_CONFIG.upiId} before delivery.`
+      : "UPI ID is not added yet. Payment details will be shared on WhatsApp.";
+  }
+
+  if (payment === "UPI on delivery") {
+    return "Customer will pay by UPI when the order is delivered.";
+  }
+
+  if (payment === "Card on delivery") {
+    return "Customer will pay by card when the order is delivered.";
+  }
+
+  return "Customer will pay cash when the order is delivered.";
+}
+
+function buildWhatsAppMessage(form, orderId) {
+  const data = new FormData(form);
+  const lines = getCartLines();
+  const totals = getTotals();
+  const payment = data.get("payment");
+  const items = lines
+    .map((item, index) => `${index + 1}. ${item.name} (${item.size}) x ${item.quantity} = ${money(item.lineTotal)}`)
+    .join("\n");
+
+  return [
+    `New ${STORE_CONFIG.shopName} Order`,
+    `Order ID: ${orderId}`,
+    `Delivery Area: ${STORE_CONFIG.deliveryArea}`,
+    "",
+    "Items:",
+    items,
+    "",
+    `Subtotal: ${money(totals.subtotal)}`,
+    `Discount: ${totals.discount ? `-${money(totals.discount)}` : money(0)}`,
+    `Delivery: ${totals.delivery ? money(totals.delivery) : "Free"}`,
+    `Total: ${money(totals.total)}`,
+    "",
+    "Customer:",
+    `Name: ${data.get("name")}`,
+    `Phone: ${data.get("phone")}`,
+    `Address: ${data.get("address")}`,
+    `Payment: ${payment}`,
+    `Payment Note: ${getPaymentNote(payment, totals.total)}`
+  ].join("\n");
+}
+
+function buildWholesaleMessage(form) {
+  const data = new FormData(form);
+
+  return [
+    `New ${STORE_CONFIG.shopName} Wholesale Enquiry`,
+    "",
+    `Business: ${data.get("businessName")}`,
+    `Contact: ${data.get("contactName")}`,
+    `Country / City: ${data.get("country")}`,
+    `Monthly Volume: ${data.get("volume")}`,
+    "",
+    "Product Interest:",
+    data.get("message") || "Not specified"
+  ].join("\n");
+}
+
+function getWhatsAppUrl(message) {
+  const number = STORE_CONFIG.whatsappNumber.replace(/\D/g, "");
+  const text = encodeURIComponent(message);
+  return number ? `https://wa.me/${number}?text=${text}` : `https://wa.me/?text=${text}`;
+}
+
+function renderPaymentDetails() {
+  const totals = getTotals();
+  const payment = paymentMethod.value;
+  const upiReady = Boolean(STORE_CONFIG.upiId.trim());
+  const pendingMessage = "UPI ID is not added yet. Add it in store-config.js to accept direct UPI payment.";
+
+  if (payment !== "UPI prepaid") {
+    paymentDetails.innerHTML = `
+      <p>${getPaymentNote(payment, totals.total)}</p>
+    `;
+    return;
+  }
+
+  const orderId = "cart";
+  const upiUrl = getUpiPayUrl(totals.total, orderId);
+  paymentDetails.innerHTML = `
+    <p>${upiReady ? `Pay ${money(totals.total)} before delivery.` : pendingMessage}</p>
+    ${
+      upiReady
+        ? `<div class="upi-row">
+            <span>${STORE_CONFIG.upiId}</span>
+            <button type="button" id="copyUpi">
+              <i data-lucide="clipboard"></i>
+              Copy
+            </button>
+          </div>
+          <a class="upi-pay-link" href="${upiUrl}">Pay with UPI App</a>`
+        : ""
+    }
+  `;
+
+  const copyUpi = document.querySelector("#copyUpi");
+  if (copyUpi) {
+    copyUpi.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(STORE_CONFIG.upiId);
+      showToast("UPI ID copied");
+    });
+  }
+
+  refreshIcons();
+}
+
+function renderCart() {
+  const lines = getCartLines();
+  const count = lines.reduce((sum, item) => sum + item.quantity, 0);
+  document.querySelector("[data-cart-count]").textContent = count;
+
+  cartItems.innerHTML = lines.length
+    ? lines
+        .map(
+          (item) => `
+          <div class="cart-line">
+            <div>
+              <h3>${item.name}</h3>
+              <p>${item.size} - ${money(item.price)} each</p>
+            </div>
+            <div>
+              <div class="quantity" aria-label="${item.name} quantity">
+                <button type="button" data-minus="${item.id}" aria-label="Decrease ${item.name}">-</button>
+                <span>${item.quantity}</span>
+                <button type="button" data-plus="${item.id}" aria-label="Increase ${item.name}">+</button>
+              </div>
+            </div>
+          </div>
+        `
+        )
+        .join("")
+    : `<div class="empty-cart">Your cart is empty.</div>`;
+
+  cartItems.querySelectorAll("[data-minus]").forEach((button) => {
+    button.addEventListener("click", () => setQuantity(button.dataset.minus, (state.cart.get(button.dataset.minus) || 0) - 1));
+  });
+  cartItems.querySelectorAll("[data-plus]").forEach((button) => {
+    button.addEventListener("click", () => setQuantity(button.dataset.plus, (state.cart.get(button.dataset.plus) || 0) + 1));
+  });
+
+  const totals = getTotals();
+  cartTotals.innerHTML = `
+    <div><span>Subtotal</span><span>${money(totals.subtotal)}</span></div>
+    <div><span>Discount</span><span>${totals.discount ? `-${money(totals.discount)}` : money(0)}</span></div>
+    <div><span>Delivery</span><span>${totals.delivery ? money(totals.delivery) : "Free"}</span></div>
+    <div><strong>Total</strong><strong>${money(totals.total)}</strong></div>
+  `;
+  renderPaymentDetails();
+}
+
+function openCart() {
+  closeProductDetail();
+  cartDrawer.classList.add("is-open");
+  overlay.classList.add("is-open");
+  cartDrawer.setAttribute("aria-hidden", "false");
+}
+
+function closeCart() {
+  cartDrawer.classList.remove("is-open");
+  overlay.classList.remove("is-open");
+  cartDrawer.setAttribute("aria-hidden", "true");
+}
+
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.add("is-visible");
+  window.clearTimeout(showToast.timer);
+  showToast.timer = window.setTimeout(() => toast.classList.remove("is-visible"), 2200);
+}
+
+function refreshIcons() {
+  createIcons({
+    icons: {
+      BadgeCheck,
+      ChevronDown,
+      Clipboard,
+      Factory,
+      FlaskConical,
+      Globe2,
+      Handshake,
+      Leaf,
+      MessageCircle,
+      PackageCheck,
+      PackageOpen,
+      Plus,
+      Search,
+      Send,
+      ShoppingBag,
+      Store,
+      ShieldCheck,
+      Wheat,
+      X
+    }
+  });
+}
+
+document.querySelectorAll(".tab").forEach((button) => {
+  button.addEventListener("click", () => {
+    setProductFilter(button.dataset.filter);
+  });
+});
+
+document.querySelectorAll("[data-category-jump]").forEach((link) => {
+  link.addEventListener("click", () => {
+    setProductFilter(link.dataset.categoryJump);
+  });
+});
+
+document.querySelector("#searchInput").addEventListener("input", (event) => {
+  state.search = event.target.value;
+  renderProducts();
+});
+
+document.querySelector("#sortSelect").addEventListener("change", (event) => {
+  state.sort = event.target.value;
+  renderProducts();
+});
+
+paymentMethod.addEventListener("change", renderPaymentDetails);
+
+document.querySelector(".cart-trigger").addEventListener("click", openCart);
+document.querySelector(".close-cart").addEventListener("click", closeCart);
+document.querySelector(".close-detail").addEventListener("click", closeProductDetail);
+overlay.addEventListener("click", () => {
+  closeCart();
+  closeProductDetail();
+});
+
+document.querySelector("#applyCoupon").addEventListener("click", () => {
+  const code = couponInput.value.trim().toUpperCase();
+  if (code === "SPICE10") {
+    state.couponApplied = true;
+    couponMessage.textContent = "SPICE10 applied.";
+    renderCart();
+  } else {
+    state.couponApplied = false;
+    couponMessage.textContent = "Try SPICE10 for 10% off.";
+    renderCart();
+  }
+});
+
+document.querySelector("#whatsappOrder").addEventListener("click", () => {
+  if (!state.cart.size) {
+    showToast("Add at least one product first");
+    return;
+  }
+
+  if (!checkoutForm.reportValidity()) return;
+
+  const orderId = createOrderId();
+  const message = buildWhatsAppMessage(checkoutForm, orderId);
+  window.open(getWhatsAppUrl(message), "_blank", "noopener,noreferrer");
+  showToast(`Order ${orderId} ready in WhatsApp`);
+});
+
+checkoutForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!state.cart.size) {
+    showToast("Add at least one product first");
+    return;
+  }
+
+  const orderId = createOrderId();
+  state.cart.clear();
+  state.couponApplied = false;
+  couponInput.value = "";
+  couponMessage.textContent = "";
+  event.currentTarget.reset();
+  renderCart();
+  closeCart();
+  showToast(`Order ${orderId} placed successfully`);
+});
+
+wholesaleForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const message = buildWholesaleMessage(event.currentTarget);
+  window.open(getWhatsAppUrl(message), "_blank", "noopener,noreferrer");
+  showToast("Wholesale enquiry ready in WhatsApp");
+});
+
+document.querySelectorAll(".faq-item button").forEach((button) => {
+  button.addEventListener("click", () => {
+    const item = button.closest(".faq-item");
+    const isOpen = item.classList.toggle("is-open");
+    button.setAttribute("aria-expanded", String(isOpen));
+  });
+});
+
+renderProducts();
+renderCategoryProducts();
+renderCart();
+refreshIcons();
