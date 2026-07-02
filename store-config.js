@@ -1,7 +1,7 @@
 export const STORE_CONFIG = {
-  shopName: "Makhana & Masala",
+  shopName: "BandEvi Gourmet",
   deliveryArea: "India delivery",
   whatsappNumber: "",
   upiId: "",
-  upiPayeeName: "Makhana & Masala"
+  upiPayeeName: "BandEvi Gourmet"
 };

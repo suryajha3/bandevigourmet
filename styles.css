@@ -285,7 +285,9 @@ a {
 .about-brand,
 .trust-center,
 .cert-section,
+.export-desk,
 .wholesale-section,
+.policy-section,
 .faq-section,
 .reviews {
   width: min(1180px, calc(100% - 36px));
@@ -749,6 +751,103 @@ a {
   font-weight: 800;
 }
 
+.export-desk {
+  display: grid;
+  grid-template-columns: minmax(0, 0.98fr) minmax(360px, 0.82fr);
+  gap: clamp(24px, 5vw, 56px);
+  align-items: start;
+  padding: clamp(24px, 5vw, 44px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 245, 235, 0.94)),
+    url("/assets/packaging-export-carton.png") center/cover;
+}
+
+.export-copy h2 {
+  margin: 0;
+  font-size: clamp(32px, 6vw, 54px);
+  line-height: 1.04;
+}
+
+.export-copy p {
+  max-width: 620px;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.75;
+}
+
+.export-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.export-summary article {
+  display: grid;
+  gap: 8px;
+  min-height: 158px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.export-summary svg,
+.policy-grid svg {
+  width: 26px;
+  height: 26px;
+  color: var(--green);
+}
+
+.export-summary strong {
+  font-size: 18px;
+}
+
+.export-summary span {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.packaging-board {
+  display: grid;
+  gap: 12px;
+}
+
+.packaging-board article {
+  display: grid;
+  grid-template-columns: 132px 1fr;
+  gap: 6px 14px;
+  align-items: center;
+  min-height: 132px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 16px 34px rgba(28, 37, 33, 0.1);
+}
+
+.packaging-board img {
+  grid-row: span 2;
+  width: 132px;
+  aspect-ratio: 1.1 / 1;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.packaging-board strong {
+  align-self: end;
+  font-size: 20px;
+}
+
+.packaging-board span {
+  align-self: start;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 .category-lanes {
   display: grid;
   gap: 58px;
@@ -900,6 +999,31 @@ a {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.94);
   color: var(--ink);
+}
+
+.policy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.policy-grid article {
+  min-height: 228px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.policy-grid h3 {
+  margin: 18px 0 8px;
+  font-size: 21px;
+}
+
+.policy-grid p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
 }
 
 .faq-list {
@@ -1409,6 +1533,58 @@ a {
   opacity: 1;
 }
 
+.site-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(220px, 0.7fr) minmax(240px, 0.75fr);
+  gap: clamp(24px, 5vw, 56px);
+  padding: clamp(28px, 5vw, 52px) clamp(18px, 4vw, 52px);
+  background: var(--green-dark);
+  color: #fff;
+}
+
+.site-footer p {
+  max-width: 540px;
+  margin: 18px 0 0;
+  color: rgba(255, 255, 255, 0.76);
+  line-height: 1.7;
+}
+
+.footer-brand .brand-mark {
+  background: var(--saffron);
+  color: #1b1608;
+}
+
+.footer-brand small,
+.footer-note span {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.footer-links,
+.footer-note {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.footer-links a {
+  width: fit-content;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 800;
+}
+
+.footer-links a:hover {
+  color: #fff;
+}
+
+.footer-note strong,
+.footer-note span {
+  display: block;
+}
+
+.footer-note strong {
+  font-size: 18px;
+}
+
 @media (max-width: 1020px) {
   .product-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1417,16 +1593,22 @@ a {
   .global-brand,
   .about-brand,
   .cert-section,
+  .export-desk,
   .wholesale-section {
     grid-template-columns: 1fr;
   }
 
   .quality-grid,
-  .trust-grid {
+  .trust-grid,
+  .policy-grid {
     grid-template-columns: 1fr;
   }
 
   .bundle-band {
+    grid-template-columns: 1fr;
+  }
+
+  .site-footer {
     grid-template-columns: 1fr;
   }
 }
@@ -1489,6 +1671,7 @@ a {
   .about-brand,
   .trust-center,
   .cert-section,
+  .export-desk,
   .wholesale-section {
     width: min(100% - 36px, 640px);
   }
@@ -1515,6 +1698,18 @@ a {
   .category-grid {
     grid-template-columns: 1fr;
   }
+
+  .export-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .packaging-board article {
+    grid-template-columns: 118px 1fr;
+  }
+
+  .packaging-board img {
+    width: 118px;
+  }
 }
 
 @media (max-width: 560px) {
@@ -1537,13 +1732,24 @@ a {
 
   .global-copy h2,
   .about-copy h2,
+  .export-copy h2,
   .cert-copy h2,
   .wholesale-copy h2 {
     font-size: 34px;
   }
 
-  .cert-list {
+  .cert-list,
+  .policy-grid {
     grid-template-columns: 1fr;
+  }
+
+  .packaging-board article {
+    grid-template-columns: 1fr;
+  }
+
+  .packaging-board img {
+    grid-row: auto;
+    width: 100%;
   }
 
   .category-info {
