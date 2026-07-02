@@ -133,6 +133,18 @@ async function apiRequest(path, options = {}) {
   }
 }
 
+async function apiWriteOnly(path, payload) {
+  await fetch(`${LIVE_API_ORIGIN}${path}`, {
+    method: "POST",
+    mode: "no-cors",
+    keepalive: true,
+    headers: {
+      "Content-Type": "text/plain;charset=UTF-8"
+    },
+    body: JSON.stringify(payload)
+  });
+}
+
 function loadCustomer() {
   return readJson(STORAGE_KEYS.customer, null);
 }
@@ -525,6 +537,12 @@ async function syncOrderRecord(order) {
     upsertOrderRecords(payload.order, payload.order);
     return payload.order;
   } catch {
+    try {
+      await apiWriteOnly("/api/orders", order);
+      return order;
+    } catch {
+      // Local booking ID remains available if the live backend is temporarily unreachable.
+    }
     return null;
   }
 }
@@ -731,19 +749,25 @@ function buildWholesaleMessage(form) {
 
 async function syncWholesaleEnquiry(form) {
   const data = new FormData(form);
+  const enquiry = {
+    businessName: data.get("businessName"),
+    contactName: data.get("contactName"),
+    country: data.get("country"),
+    volume: data.get("volume"),
+    message: data.get("message")
+  };
+
   try {
     await apiRequest("/api/wholesale", {
       method: "POST",
-      body: JSON.stringify({
-        businessName: data.get("businessName"),
-        contactName: data.get("contactName"),
-        country: data.get("country"),
-        volume: data.get("volume"),
-        message: data.get("message")
-      })
+      body: JSON.stringify(enquiry)
     });
   } catch {
-    // WhatsApp remains the fallback while backend hosting is being activated.
+    try {
+      await apiWriteOnly("/api/wholesale", enquiry);
+    } catch {
+      // WhatsApp remains the fallback while backend hosting is being activated.
+    }
   }
 }
 
