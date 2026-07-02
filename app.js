@@ -7,15 +7,19 @@ import {
   Globe2,
   Handshake,
   Leaf,
+  LogOut,
   MessageCircle,
   PackageCheck,
   PackageOpen,
   Plus,
+  RotateCw,
   Search,
   Send,
   ShoppingBag,
   Store,
   ShieldCheck,
+  Truck,
+  UserRound,
   Wheat,
   X,
   createIcons
@@ -25,7 +29,8 @@ import products from "./products.json";
 import { STORE_CONFIG } from "./store-config.js";
 
 const API_TIMEOUT_MS = 6000;
-const LIVE_API_ORIGIN = "https://bandevigourmet-web.onrender.com";
+const RENDER_API_ORIGIN = "https://bandevigourmet-web.onrender.com";
+const API_ORIGIN = ["127.0.0.1", "localhost"].includes(window.location.hostname) ? RENDER_API_ORIGIN : window.location.origin;
 
 const catalog = products.map((product) => ({
   ...product,
@@ -45,6 +50,14 @@ const ORDER_STEPS = [
   { key: "dispatched", label: "Dispatched", helper: "On the way" },
   { key: "delivered", label: "Delivered", helper: "Completed" }
 ];
+const ORDER_LABELS = {
+  booked: "Booked",
+  confirmed: "Confirmed",
+  packed: "Packed",
+  dispatched: "Dispatched",
+  delivered: "Delivered",
+  cancelled: "Cancelled"
+};
 
 const state = {
   filter: "all",
@@ -83,6 +96,7 @@ const paymentDetails = document.querySelector("#paymentDetails");
 const customerLoginForm = document.querySelector("#customerLoginForm");
 const orderLookupForm = document.querySelector("#orderLookupForm");
 const customerDashboard = document.querySelector("#customerDashboard");
+const customerLoginStatus = document.querySelector("#customerLoginStatus");
 const overlay = document.querySelector("[data-overlay]");
 const toast = document.querySelector("#toast");
 const couponInput = document.querySelector("#couponInput");
@@ -230,7 +244,7 @@ function writeJson(key, value) {
 async function apiRequest(path, options = {}) {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), API_TIMEOUT_MS);
-  const apiPath = path.startsWith("http") ? path : `${LIVE_API_ORIGIN}${path}`;
+  const apiPath = path.startsWith("http") ? path : `${API_ORIGIN}${path}`;
 
   try {
     const response = await fetch(apiPath, {
@@ -250,7 +264,7 @@ async function apiRequest(path, options = {}) {
 }
 
 async function apiWriteOnly(path, payload) {
-  await fetch(`${LIVE_API_ORIGIN}${path}`, {
+  await fetch(`${API_ORIGIN}${path}`, {
     method: "POST",
     mode: "no-cors",
     keepalive: true,
@@ -314,6 +328,14 @@ async function syncCustomerProfile(customer) {
 function getStatusIndex(status) {
   const index = ORDER_STEPS.findIndex((step) => step.key === status);
   return index >= 0 ? index : 0;
+}
+
+function getStatusLabel(status) {
+  return ORDER_LABELS[status] || status || "Booked";
+}
+
+function isClosedOrder(order) {
+  return ["delivered", "cancelled"].includes(order?.status || "");
 }
 
 function productImage(product) {
@@ -729,12 +751,14 @@ function createOrderRecord(form, orderId, source) {
   const postalCode = String(data.get("postalCode") || "").trim();
   const orderType = String(data.get("orderType") || "Retail home order").trim();
   const address = String(data.get("address") || "").trim();
+  const placedAt = new Date().toISOString();
 
   return {
     id: orderId,
     source,
     status: "booked",
-    placedAt: new Date().toISOString(),
+    placedAt,
+    updatedAt: placedAt,
     orderType,
     customer: {
       name,
@@ -748,6 +772,10 @@ function createOrderRecord(form, orderId, source) {
     payment,
     paymentState: "Payment pending",
     paymentNote: getPaymentNote(payment, totals.total),
+    courier: "",
+    trackingCode: "",
+    eta: "",
+    adminNote: "",
     totals,
     items: lines.map((item) => ({
       id: item.id,
@@ -756,7 +784,14 @@ function createOrderRecord(form, orderId, source) {
       quantity: item.quantity,
       price: item.price,
       lineTotal: item.lineTotal
-    }))
+    })),
+    statusHistory: [
+      {
+        status: "booked",
+        note: "Booking ID created from website checkout.",
+        at: placedAt
+      }
+    ]
   };
 }
 
@@ -829,16 +864,28 @@ async function loadCustomerOrdersFromBackend(phone) {
 }
 
 function formatOrderDate(value) {
+  const date = new Date(value || "");
+  if (Number.isNaN(date.getTime())) return "Date pending";
+
   return new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit"
-  }).format(new Date(value));
+  }).format(date);
 }
 
 function renderStatusSteps(order) {
+  if (order.status === "cancelled") {
+    return `
+      <span class="is-done is-cancelled">
+        <strong>Cancelled</strong>
+        <small>Order closed</small>
+      </span>
+    `;
+  }
+
   const current = getStatusIndex(order.status);
   return ORDER_STEPS.map(
     (step, index) => `
@@ -857,10 +904,32 @@ function getOrderNextAction(order) {
     confirmed: "Order is confirmed and will move to packing.",
     packed: "Packing is complete and dispatch details will be shared next.",
     dispatched: "Order is on the way. Delivery confirmation is the next step.",
-    delivered: "Order is marked delivered. Support remains available for product concerns."
+    delivered: "Order is marked delivered. Support remains available for product concerns.",
+    cancelled: "Order is closed as cancelled. Contact support if this needs review."
   };
 
   return messages[status] || messages.booked;
+}
+
+function renderOrderHistory(order) {
+  const history = Array.isArray(order.statusHistory) ? order.statusHistory.slice(-5).reverse() : [];
+  if (!history.length) return "";
+
+  return `
+    <div class="order-history" aria-label="Order update history">
+      ${history
+        .map(
+          (item) => `
+            <span>
+              <strong>${escapeHtml(getStatusLabel(item.status))}</strong>
+              <small>${escapeHtml(item.note || "Status updated")}</small>
+              <time>${formatOrderDate(item.at || order.updatedAt || order.placedAt)}</time>
+            </span>
+          `
+        )
+        .join("")}
+    </div>
+  `;
 }
 
 function renderOrderCard(order) {
@@ -869,7 +938,7 @@ function renderOrderCard(order) {
   const itemSummary = items.length
     ? items.map((item) => `${escapeHtml(item.name)} x ${item.quantity}`).join(", ")
     : "Products to be confirmed";
-  const statusLabel = ORDER_STEPS[getStatusIndex(order.status)].label;
+  const statusLabel = getStatusLabel(order.status);
   const orderType = order.orderType || order.source || "Website booking";
   const countryCity = order.countryCity || order.customer?.location || "Location to be confirmed";
   const total = order.totals?.total || 0;
@@ -905,8 +974,10 @@ function renderOrderCard(order) {
       }
       ${order.adminNote ? `<p class="order-note"><strong>Seller note:</strong> ${escapeHtml(order.adminNote)}</p>` : ""}
       <div class="status-steps" aria-label="Order status timeline">${renderStatusSteps(order)}</div>
+      ${renderOrderHistory(order)}
       <div class="order-actions">
         <button type="button" data-copy-order="${escapeHtml(order.id)}">Copy booking ID</button>
+        <button type="button" data-reorder="${escapeHtml(order.id)}">Reorder items</button>
         <a href="${supportUrl}" target="_blank" rel="noopener noreferrer">Support on WhatsApp</a>
       </div>
     </article>
@@ -943,8 +1014,8 @@ function renderCustomerPortal() {
   const ordersForCustomer = customer
     ? state.orders.filter((order) => normalizePhone(order.customer?.phone) === normalizePhone(customer.phone))
     : state.orders;
-  const visibleOrders = state.trackedOrder ? [state.trackedOrder] : ordersForCustomer.slice(0, 3);
-  const activeOrders = ordersForCustomer.filter((order) => order.status !== "delivered").length;
+  const visibleOrders = state.trackedOrder ? [state.trackedOrder] : ordersForCustomer.slice(0, portalMode === "track" ? 1 : 10);
+  const activeOrders = ordersForCustomer.filter((order) => !isClosedOrder(order)).length;
   const latestOrder = ordersForCustomer[0];
   const localSpend = ordersForCustomer.reduce((sum, order) => sum + Number(order.totals?.total || 0), 0);
   const summary = state.customerSummary || {
@@ -959,6 +1030,7 @@ function renderCustomerPortal() {
     ${
       customer
         ? `<div class="portal-profile">
+            <span><i data-lucide="user-round"></i>${escapeHtml(customer.name || "Customer")}</span>
             <span>${escapeHtml(customer.phone)}</span>
             ${customer.email ? `<span>${escapeHtml(customer.email)}</span>` : ""}
             ${customer.location ? `<span>${escapeHtml(customer.location)}</span>` : ""}
@@ -972,7 +1044,25 @@ function renderCustomerPortal() {
             <span><strong>${summary.totalOrders || ordersForCustomer.length}</strong><small>Total bookings</small></span>
             <span><strong>${summary.activeOrders ?? activeOrders}</strong><small>Active orders</small></span>
             <span><strong>${money(summary.totalSpend || localSpend)}</strong><small>Total value</small></span>
-            <span><strong>${summary.latestStatus ? ORDER_STEPS[getStatusIndex(summary.latestStatus)].label : latestOrder ? ORDER_STEPS[getStatusIndex(latestOrder.status)].label : "None"}</strong><small>Latest status</small></span>
+            <span><strong>${summary.latestStatus ? getStatusLabel(summary.latestStatus) : latestOrder ? getStatusLabel(latestOrder.status) : "None"}</strong><small>Latest status</small></span>
+          </div>`
+        : ""
+    }
+    ${
+      customer
+        ? `<div class="portal-account-actions">
+            <button type="button" data-refresh-customer>
+              <i data-lucide="rotate-cw"></i>
+              Refresh account
+            </button>
+            <a href="./products.html">
+              <i data-lucide="store"></i>
+              Shop again
+            </a>
+            <button type="button" data-logout-customer>
+              <i data-lucide="log-out"></i>
+              Log out
+            </button>
           </div>`
         : ""
     }
@@ -1024,12 +1114,72 @@ function copyText(value) {
   return Promise.resolve();
 }
 
+function setCustomerLoginStatus(message) {
+  if (customerLoginStatus) customerLoginStatus.textContent = message || "";
+}
+
+async function refreshCustomerAccount() {
+  if (!state.customer?.phone) {
+    showToast("Open your account with phone number first");
+    return;
+  }
+
+  setCustomerLoginStatus("Refreshing account...");
+  await loadCustomerOrdersFromBackend(state.customer.phone);
+  setCustomerLoginStatus(state.customerSyncStatus === "synced" ? "Account synced with live orders." : "Showing saved account details.");
+  showToast("Account refreshed");
+}
+
+function logoutCustomer() {
+  state.customer = null;
+  state.customerSummary = null;
+  state.customerEnquiries = [];
+  state.trackedOrder = null;
+  window.localStorage.removeItem(STORAGE_KEYS.customer);
+  if (customerLoginForm) customerLoginForm.reset();
+  setCustomerLoginStatus("Logged out on this device.");
+  renderCustomerPortal();
+  showToast("Customer logged out");
+}
+
+function reorderItems(orderId) {
+  const order = state.orders.find((item) => item.id === orderId) || state.trackedOrder;
+  if (!order?.items?.length) {
+    showToast("No items found for reorder");
+    return;
+  }
+
+  order.items.forEach((item) => {
+    const product = catalog.find((catalogItem) => catalogItem.id === item.id);
+    if (product) {
+      const current = state.cart.get(product.id) || 0;
+      state.cart.set(product.id, current + Number(item.quantity || 1));
+    }
+  });
+  saveCart();
+  renderCart();
+  showToast("Items added to cart");
+  openCart();
+}
+
 function bindPortalActions() {
   customerDashboard.querySelectorAll("[data-copy-order]").forEach((button) => {
     button.addEventListener("click", async () => {
       await copyText(button.dataset.copyOrder);
       showToast("Booking ID copied");
     });
+  });
+
+  customerDashboard.querySelectorAll("[data-reorder]").forEach((button) => {
+    button.addEventListener("click", () => reorderItems(button.dataset.reorder));
+  });
+
+  customerDashboard.querySelectorAll("[data-refresh-customer]").forEach((button) => {
+    button.addEventListener("click", refreshCustomerAccount);
+  });
+
+  customerDashboard.querySelectorAll("[data-logout-customer]").forEach((button) => {
+    button.addEventListener("click", logoutCustomer);
   });
 }
 
@@ -1208,15 +1358,19 @@ function refreshIcons() {
       Globe2,
       Handshake,
       Leaf,
+      LogOut,
       MessageCircle,
       PackageCheck,
       PackageOpen,
       Plus,
+      RotateCw,
       Search,
       Send,
       ShoppingBag,
       Store,
       ShieldCheck,
+      Truck,
+      UserRound,
       Wheat,
       X
     }
@@ -1295,6 +1449,8 @@ checkoutForm?.addEventListener("submit", (event) => {
 
   const orderId = createOrderId();
   const order = createOrderRecord(event.currentTarget, orderId, "Website cart booking");
+  saveCustomer(order.customer);
+  syncCustomerProfile(order.customer);
   saveOrderRecord(order);
   state.cart.clear();
   saveCart();
@@ -1305,6 +1461,7 @@ checkoutForm?.addEventListener("submit", (event) => {
   renderCart();
   closeCart();
   showToast(`Order ${orderId} placed successfully`);
+  loadCustomerOrdersFromBackend(order.customer.phone);
 });
 
 customerLoginForm?.addEventListener("submit", async (event) => {
@@ -1323,8 +1480,10 @@ customerLoginForm?.addEventListener("submit", async (event) => {
   state.trackedOrder = null;
   prefillCheckoutFromCustomer();
   renderCustomerPortal();
+  setCustomerLoginStatus("Opening account...");
   await syncCustomerProfile(customer);
   await loadCustomerOrdersFromBackend(customer.phone);
+  setCustomerLoginStatus(state.customerSyncStatus === "synced" ? "Account synced with live orders." : "Saved on this device.");
   showToast("Customer profile saved");
 });
 
@@ -1337,6 +1496,14 @@ orderLookupForm?.addEventListener("submit", async (event) => {
   try {
     const params = new URLSearchParams({ id: orderId, phone });
     const payload = await apiRequest(`/api/orders/track?${params.toString()}`);
+    if (payload.order?.customer?.phone) {
+      saveCustomer({
+        ...(state.customer || {}),
+        ...payload.order.customer,
+        location: payload.order.countryCity || payload.order.customer.location || state.customer?.location || ""
+      });
+      prefillCustomerLoginForm();
+    }
     upsertOrderRecords(payload.order, payload.order);
     showToast(`Tracking ${payload.order.id}`);
     return;
@@ -1357,6 +1524,21 @@ orderLookupForm?.addEventListener("submit", async (event) => {
   renderCustomerPortal();
   showToast(`Tracking ${order.id}`);
 });
+
+document.querySelector("#refreshCustomerOrders")?.addEventListener("click", refreshCustomerAccount);
+document.querySelector("#customerLogout")?.addEventListener("click", logoutCustomer);
+
+async function hydrateTrackingFromUrl() {
+  if (!orderLookupForm) return;
+  const params = new URLSearchParams(window.location.search);
+  const orderId = params.get("id") || "";
+  const phone = params.get("phone") || "";
+  if (!orderId || !phone) return;
+
+  orderLookupForm.elements.orderId.value = orderId;
+  orderLookupForm.elements.phone.value = phone;
+  orderLookupForm.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+}
 
 wholesaleForm?.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -1380,4 +1562,8 @@ renderSingleProductPage();
 renderCart();
 prefillCustomerLoginForm();
 renderCustomerPortal();
+if (state.customer?.phone) {
+  loadCustomerOrdersFromBackend(state.customer.phone);
+}
+hydrateTrackingFromUrl();
 refreshIcons();

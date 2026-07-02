@@ -58,6 +58,7 @@
 
       <section class="admin-dashboard" id="adminDashboard" hidden>
         <div class="admin-stats" id="adminStats" aria-label="Order summary"></div>
+        <div class="admin-pipeline" id="adminPipeline" aria-label="Order pipeline"></div>
         <div class="admin-storage" id="adminStorage" aria-live="polite"></div>
 
         <section class="admin-panel" id="orders" aria-labelledby="orders-title">
@@ -80,6 +81,7 @@
                   <option value="packed">Packed</option>
                   <option value="dispatched">Dispatched</option>
                   <option value="delivered">Delivered</option>
+                  <option value="cancelled">Cancelled</option>
                 </select>
               </label>
               <button class="admin-export-button" type="button" data-export="orders">Export orders</button>

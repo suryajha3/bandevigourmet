@@ -1511,9 +1511,30 @@ a {
   color: var(--green);
 }
 
+.portal-button.quiet {
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
 .portal-button svg {
   width: 18px;
   height: 18px;
+}
+
+.portal-form-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.portal-form-status {
+  min-height: 22px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
 }
 
 .portal-dashboard {
@@ -1537,6 +1558,7 @@ a {
 .portal-profile span {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   min-height: 32px;
   padding: 0 10px;
   border-radius: 8px;
@@ -1544,6 +1566,11 @@ a {
   color: rgba(255, 255, 255, 0.86);
   font-size: 13px;
   font-weight: 900;
+}
+
+.portal-profile svg {
+  width: 14px;
+  height: 14px;
 }
 
 .portal-stats {
@@ -1572,6 +1599,35 @@ a {
   color: rgba(255, 255, 255, 0.72);
   font-size: 12px;
   font-weight: 900;
+}
+
+.portal-account-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.portal-account-actions button,
+.portal-account-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.portal-account-actions svg {
+  width: 16px;
+  height: 16px;
 }
 
 .portal-subtitle {
@@ -1671,6 +1727,35 @@ a {
   border-left: 3px solid var(--green);
   border-radius: 8px;
   background: #edf7f1;
+}
+
+.order-history {
+  display: grid;
+  gap: 8px;
+}
+
+.order-history span {
+  display: grid;
+  grid-template-columns: minmax(88px, 0.32fr) minmax(0, 1fr) minmax(110px, 0.36fr);
+  gap: 8px;
+  align-items: start;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfaf5;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.order-history strong {
+  color: var(--green);
+}
+
+.order-history time {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .customer-enquiry-list {
@@ -1829,6 +1914,11 @@ a {
 .status-steps span.is-done {
   background: var(--green);
   color: #fff;
+}
+
+.status-steps span.is-cancelled {
+  grid-column: 1 / -1;
+  background: var(--chili);
 }
 
 .order-actions {
@@ -2626,6 +2716,42 @@ a {
   font-weight: 900;
 }
 
+.admin-pipeline {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-pipeline button {
+  display: grid;
+  gap: 6px;
+  min-height: 92px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  text-align: left;
+  font-weight: 900;
+}
+
+.admin-pipeline button.is-active {
+  border-color: rgba(30, 89, 75, 0.42);
+  background: #edf7f1;
+  color: var(--green);
+}
+
+.admin-pipeline strong {
+  color: var(--green);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.admin-pipeline span {
+  font-size: 13px;
+}
+
 .admin-storage {
   display: grid;
   grid-template-columns: 1.4fr 0.7fr 0.7fr;
@@ -2787,6 +2913,39 @@ a {
   padding: 10px 12px;
   border-radius: 8px;
   background: var(--surface);
+}
+
+.admin-quick-status {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admin-quick-status button,
+.admin-quick-status a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--green);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.admin-quick-status button.is-active {
+  background: var(--green);
+  color: #fff;
+}
+
+.admin-quick-status button:disabled {
+  cursor: wait;
+  opacity: 0.72;
 }
 
 .admin-status-form {
@@ -2957,6 +3116,10 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .admin-pipeline {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .journey-grid,
   .single-product-hero {
     grid-template-columns: 1fr;
@@ -3103,6 +3266,10 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .admin-quick-status {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .legal-hero h1 {
     font-size: 40px;
   }
@@ -3158,7 +3325,10 @@ a {
   .about-proof-grid,
   .tracking-panel,
   .order-meta-grid,
-  .portal-stats {
+  .portal-stats,
+  .portal-form-actions,
+  .portal-account-actions,
+  .order-history span {
     grid-template-columns: 1fr;
   }
 
@@ -3223,6 +3393,10 @@ a {
 
   .status-steps {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .admin-pipeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .legal-hero h1 {

@@ -1,12 +1,15 @@
 const TOKEN_KEY = "bandevi-admin-token";
-const LIVE_API_ORIGIN = "https://bandevigourmet-web.onrender.com";
+const RENDER_API_ORIGIN = "https://bandevigourmet-web.onrender.com";
+const API_ORIGIN = ["127.0.0.1", "localhost"].includes(window.location.hostname) ? RENDER_API_ORIGIN : window.location.origin;
 const STATUS_LABELS = {
   booked: "Booked",
   confirmed: "Confirmed",
   packed: "Packed",
   dispatched: "Dispatched",
-  delivered: "Delivered"
+  delivered: "Delivered",
+  cancelled: "Cancelled"
 };
+const ORDER_FLOW = ["booked", "confirmed", "packed", "dispatched", "delivered", "cancelled"];
 const WHOLESALE_LABELS = {
   new: "New",
   contacted: "Contacted",
@@ -35,6 +38,7 @@ const loginMessage = document.querySelector("#adminLoginMessage");
 const dashboard = document.querySelector("#adminDashboard");
 const statusBox = document.querySelector("#adminStatus");
 const statsBox = document.querySelector("#adminStats");
+const pipelineBox = document.querySelector("#adminPipeline");
 const storageBox = document.querySelector("#adminStorage");
 const orderList = document.querySelector("#adminOrderList");
 const wholesaleList = document.querySelector("#adminWholesaleList");
@@ -65,7 +69,7 @@ function showToast(message) {
 }
 
 async function api(path, options = {}) {
-  const apiPath = path.startsWith("http") ? path : `${LIVE_API_ORIGIN}${path}`;
+  const apiPath = path.startsWith("http") ? path : `${API_ORIGIN}${path}`;
   const headers = {
     "Content-Type": "application/json",
     ...(options.headers || {})
@@ -86,14 +90,15 @@ function setStatus(message, type = "info") {
 }
 
 function formatDate(value) {
-  if (!value) return "No date";
+  const date = new Date(value || "");
+  if (Number.isNaN(date.getTime())) return "No date";
   return new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit"
-  }).format(new Date(value));
+  }).format(date);
 }
 
 function matchesSearch(values) {
@@ -139,10 +144,14 @@ function customerMatchesSearch(customer) {
   return matchesSearch([customer.name, customer.phone, customer.email, customer.location, customer.orderCount, customer.totalSpend]);
 }
 
+function isClosedOrder(order) {
+  return ["delivered", "cancelled"].includes(order?.status || "");
+}
+
 function renderStats() {
   const summary = state.summary || {
     totalOrders: state.orders.length,
-    activeOrders: state.orders.filter((order) => order.status !== "delivered").length,
+    activeOrders: state.orders.filter((order) => !isClosedOrder(order)).length,
     bookingValue: state.orders.reduce((sum, order) => sum + Number(order.totals?.total || 0), 0),
     customers: state.customers.length,
     wholesaleEnquiries: state.enquiries.length
@@ -155,6 +164,33 @@ function renderStats() {
     <article><strong>${summary.customers}</strong><span>Customers</span></article>
     <article><strong>${summary.wholesaleEnquiries}</strong><span>Wholesale leads</span></article>
   `;
+}
+
+function renderPipeline() {
+  if (!pipelineBox) return;
+
+  const counts = ORDER_FLOW.reduce((acc, status) => {
+    acc[status] = state.orders.filter((order) => order.status === status).length;
+    return acc;
+  }, {});
+
+  pipelineBox.innerHTML = ORDER_FLOW.map(
+    (status) => `
+      <button class="${state.orderFilter === status ? "is-active" : ""}" type="button" data-pipeline-status="${status}">
+        <strong>${counts[status] || 0}</strong>
+        <span>${escapeHtml(STATUS_LABELS[status])}</span>
+      </button>
+    `
+  ).join("");
+
+  pipelineBox.querySelectorAll("[data-pipeline-status]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.orderFilter = state.orderFilter === button.dataset.pipelineStatus ? "all" : button.dataset.pipelineStatus;
+      if (orderFilterInput) orderFilterInput.value = state.orderFilter;
+      renderPipeline();
+      renderOrders();
+    });
+  });
 }
 
 function renderStorage() {
@@ -193,12 +229,17 @@ function renderOrders() {
   orderList.querySelectorAll("[data-status-form]").forEach((form) => {
     form.addEventListener("submit", updateOrderStatus);
   });
+  orderList.querySelectorAll("[data-quick-status]").forEach((button) => {
+    button.addEventListener("click", updateOrderQuickStatus);
+  });
 }
 
 function renderOrder(order) {
   const items = (order.items || []).map((item) => `${escapeHtml(item.name)} x ${item.quantity}`).join(", ");
   const history = order.statusHistory || [];
   const latestHistory = history[history.length - 1];
+  const customerPhone = order.customer?.phone || "";
+  const trackingUrl = `./track.html?id=${encodeURIComponent(order.id)}&phone=${encodeURIComponent(customerPhone)}`;
   const statusOptions = Object.entries(STATUS_LABELS)
     .map(([value, label]) => `<option value="${value}" ${order.status === value ? "selected" : ""}>${label}</option>`)
     .join("");
@@ -225,6 +266,16 @@ function renderOrder(order) {
       <p class="admin-items">${items || "No item details"}</p>
       <p class="admin-address">${escapeHtml(order.address || "No address")}</p>
       <p class="admin-history">${latestHistory ? `${escapeHtml(STATUS_LABELS[latestHistory.status] || latestHistory.status)}: ${escapeHtml(latestHistory.note || "")}` : "No status history"}</p>
+      <div class="admin-quick-status" aria-label="Quick order status actions">
+        ${ORDER_FLOW.map(
+          (status) => `
+            <button class="${order.status === status ? "is-active" : ""}" type="button" data-quick-status="${status}" data-order-id="${escapeHtml(order.id)}">
+              ${escapeHtml(STATUS_LABELS[status])}
+            </button>
+          `
+        ).join("")}
+        <a href="${trackingUrl}" target="_blank" rel="noopener noreferrer">Customer view</a>
+      </div>
       <form class="admin-status-form" data-status-form="${escapeHtml(order.id)}">
         <select name="status" aria-label="Order status">${statusOptions}</select>
         <select name="paymentState" aria-label="Payment status">${paymentOptions}</select>
@@ -330,6 +381,7 @@ function renderCustomer(customer) {
 
 function renderAll() {
   renderStats();
+  renderPipeline();
   renderStorage();
   renderOrders();
   renderWholesale();
@@ -394,6 +446,32 @@ async function updateOrderStatus(event) {
   }
 }
 
+async function updateOrderQuickStatus(event) {
+  const button = event.currentTarget;
+  const orderId = button.dataset.orderId;
+  const status = button.dataset.quickStatus;
+  const order = state.orders.find((item) => item.id === orderId);
+  if (!orderId || !status || order?.status === status) return;
+
+  button.disabled = true;
+  try {
+    const payload = await api(`/api/admin/orders/${encodeURIComponent(orderId)}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        status,
+        note: `Order moved to ${STATUS_LABELS[status]} from admin quick action.`
+      })
+    });
+    state.orders = state.orders.map((item) => (item.id === payload.order.id ? payload.order : item));
+    renderAll();
+    showToast(`${orderId} moved to ${STATUS_LABELS[status]}`);
+    loadDashboard();
+  } catch (error) {
+    button.disabled = false;
+    showToast(error.message);
+  }
+}
+
 async function updateWholesaleStatus(event) {
   event.preventDefault();
   const form = event.currentTarget;
@@ -444,7 +522,7 @@ async function updateCustomerStatus(event) {
 
 async function downloadAdminExport(type) {
   try {
-    const response = await fetch(`${LIVE_API_ORIGIN}/api/admin/export?type=${encodeURIComponent(type)}`, {
+    const response = await fetch(`${API_ORIGIN}/api/admin/export?type=${encodeURIComponent(type)}`, {
       headers: { Authorization: `Bearer ${state.token}` }
     });
     if (!response.ok) {
@@ -493,6 +571,7 @@ searchInput.addEventListener("input", (event) => {
 
 orderFilterInput?.addEventListener("change", (event) => {
   state.orderFilter = event.target.value;
+  renderPipeline();
   renderOrders();
 });
 

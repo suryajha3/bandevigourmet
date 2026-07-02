@@ -15,7 +15,8 @@ const TOKEN_SECRET = process.env.ADMIN_TOKEN_SECRET || ADMIN_PASSWORD || randomU
 const DATABASE_URL = process.env.DATABASE_URL || "";
 const STORAGE_DRIVER = DATABASE_URL ? "postgres" : "json";
 const TOKEN_TTL_MS = 1000 * 60 * 60 * 12;
-const ORDER_STATUSES = new Set(["booked", "confirmed", "packed", "dispatched", "delivered"]);
+const CLOSED_ORDER_STATUSES = new Set(["delivered", "cancelled"]);
+const ORDER_STATUSES = new Set(["booked", "confirmed", "packed", "dispatched", "delivered", "cancelled"]);
 const WHOLESALE_STATUSES = new Set(["new", "contacted", "quoted", "sample-sent", "converted", "closed"]);
 const API_CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -149,6 +150,10 @@ function publicEnquiry(enquiry) {
   };
 }
 
+function isClosedOrder(order) {
+  return CLOSED_ORDER_STATUSES.has(order.status || "");
+}
+
 function emptyDb() {
   return { orders: [], wholesale: [], customers: [], events: [] };
 }
@@ -222,7 +227,7 @@ function buildCustomerDashboard(db, phone) {
   const customer =
     (db.customers || []).find((item) => cleanPhone(item.phone) === clean) ||
     (orders[0]?.customer ? normalizeCustomer({ ...orders[0].customer, phone: clean, lastOrderAt: orders[0].placedAt }) : null);
-  const activeOrders = orders.filter((order) => order.status !== "delivered").length;
+  const activeOrders = orders.filter((order) => !isClosedOrder(order)).length;
 
   return {
     customer: customer ? publicCustomer(customer) : null,
@@ -231,7 +236,8 @@ function buildCustomerDashboard(db, phone) {
     summary: {
       totalOrders: orders.length,
       activeOrders,
-      deliveredOrders: orders.length - activeOrders,
+      deliveredOrders: orders.filter((order) => order.status === "delivered").length,
+      closedOrders: orders.filter((order) => isClosedOrder(order)).length,
       totalSpend: orders.reduce((sum, order) => sum + Number(order.totals?.total || 0), 0),
       wholesaleEnquiries: enquiries.length,
       latestStatus: orders[0]?.status || "",
@@ -243,13 +249,14 @@ function buildCustomerDashboard(db, phone) {
 function buildAdminSummary(db) {
   const orders = db.orders || [];
   const enquiries = db.wholesale || [];
-  const activeOrders = orders.filter((order) => order.status !== "delivered");
+  const activeOrders = orders.filter((order) => !isClosedOrder(order));
   const openWholesale = enquiries.filter((item) => !["converted", "closed"].includes(item.status || "new"));
 
   return {
     totalOrders: orders.length,
     activeOrders: activeOrders.length,
-    deliveredOrders: orders.length - activeOrders.length,
+    deliveredOrders: orders.filter((order) => order.status === "delivered").length,
+    closedOrders: orders.filter((order) => isClosedOrder(order)).length,
     bookingValue: orders.reduce((sum, order) => sum + Number(order.totals?.total || 0), 0),
     customers: (db.customers || []).length,
     wholesaleEnquiries: enquiries.length,
