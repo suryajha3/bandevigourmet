@@ -54,13 +54,20 @@
         <a href="#about">About</a>
         <a href="#trust">Trust</a>
         <a href="./policies.html">Policies</a>
+        <a href="#customer-portal">Login</a>
         <a href="#wholesale">Wholesale</a>
       </nav>
 
-      <button class="icon-button cart-trigger" type="button" aria-label="Open cart">
-        <i data-lucide="shopping-bag"></i>
-        <span class="cart-count" data-cart-count>0</span>
-      </button>
+      <div class="header-actions">
+        <a class="portal-shortcut" href="#customer-portal">
+          <i data-lucide="badge-check"></i>
+          <span>Track</span>
+        </a>
+        <button class="icon-button cart-trigger" type="button" aria-label="Open cart">
+          <i data-lucide="shopping-bag"></i>
+          <span class="cart-count" data-cart-count>0</span>
+        </button>
+      </div>
     </header>
 
     <main id="top">
@@ -157,6 +164,12 @@
           <p>
             Our direction is simple: source carefully, process in small batches, pack neatly, and make Indian flavors easier to understand for buyers across markets.
           </p>
+          <div class="about-snapshot" aria-label="Company readiness snapshot">
+            <span>Retail-ready catalog</span>
+            <span>Wholesale enquiry flow</span>
+            <span>Policy-backed buyer journey</span>
+            <span>Customer tracking portal</span>
+          </div>
         </div>
         <div class="about-values">
           <article>
@@ -204,6 +217,37 @@
             <i data-lucide="leaf"></i>
             <h3>Clean label direction</h3>
             <p>Use this area for verified claims like no artificial color, no artificial flavor, or no preservatives when confirmed.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="operations-section" aria-labelledby="operations-title">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">International buyer assurance</p>
+            <h2 id="operations-title">A clearer order journey from enquiry to delivery.</h2>
+          </div>
+        </div>
+        <div class="operations-grid">
+          <article>
+            <i data-lucide="message-circle"></i>
+            <h3>1. Enquiry or cart order</h3>
+            <p>Retail customers can place a cart order, while distributors and export buyers can send structured wholesale enquiries.</p>
+          </article>
+          <article>
+            <i data-lucide="clipboard"></i>
+            <h3>2. Confirmation and quote</h3>
+            <p>Order ID, product list, payment method, and buyer details are recorded before confirmation or final quotation.</p>
+          </article>
+          <article>
+            <i data-lucide="package-open"></i>
+            <h3>3. Packing and dispatch</h3>
+            <p>Customers can track the order status from pending confirmation through packing, dispatch, and delivery.</p>
+          </article>
+          <article>
+            <i data-lucide="shield-check"></i>
+            <h3>4. Policy-backed support</h3>
+            <p>Terms, privacy, cancellation, refund, shipping, and FAQ pages are linked across the site for buyer confidence.</p>
           </article>
         </div>
       </section>
@@ -464,6 +508,57 @@
         </div>
       </section>
 
+      <section class="customer-portal-section" id="customer-portal" aria-labelledby="customer-portal-title">
+        <div class="portal-copy">
+          <p class="eyebrow">Customer login and order tracking</p>
+          <h2 id="customer-portal-title">Book an order, save your details, and track status.</h2>
+          <p>
+            Customers can create a simple login profile on this website, place an order, and track the latest order status by order ID and phone number.
+          </p>
+          <div class="portal-note">
+            Live backend activation is the next step for cross-device accounts, admin status updates, email OTP, and full customer history.
+          </div>
+        </div>
+        <div class="portal-panel">
+          <form class="portal-form" id="customerLoginForm">
+            <h3>Customer login</h3>
+            <label>
+              <span>Name</span>
+              <input name="customerName" type="text" placeholder="Your name" required />
+            </label>
+            <label>
+              <span>Phone</span>
+              <input name="customerPhone" type="tel" placeholder="Phone number" required />
+            </label>
+            <label>
+              <span>Email</span>
+              <input name="customerEmail" type="email" placeholder="Email for order updates" />
+            </label>
+            <button class="portal-button" type="submit">
+              <i data-lucide="badge-check"></i>
+              Save login
+            </button>
+          </form>
+
+          <form class="portal-form" id="orderLookupForm">
+            <h3>Track booking / order</h3>
+            <label>
+              <span>Order ID</span>
+              <input name="orderId" type="text" placeholder="Example: MM12345" required />
+            </label>
+            <label>
+              <span>Phone</span>
+              <input name="phone" type="tel" placeholder="Phone used in order" required />
+            </label>
+            <button class="portal-button secondary" type="submit">
+              <i data-lucide="search"></i>
+              Track status
+            </button>
+          </form>
+        </div>
+        <div class="portal-dashboard" id="customerDashboard" aria-live="polite"></div>
+      </section>
+
       <section class="faq-section" id="faq" aria-labelledby="faq-title">
         <div class="section-head">
           <div>
@@ -559,6 +654,7 @@
         <a href="./policies.html#cancellation">Cancellation</a>
         <a href="./policies.html#refund">Refunds</a>
         <a href="./policies.html#faq">FAQ</a>
+        <a href="#customer-portal">Login / Track order</a>
         <a href="#wholesale">Wholesale enquiry</a>
       </div>
       <div class="footer-note">

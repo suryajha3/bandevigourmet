@@ -29,12 +29,27 @@ const catalog = products.map((product) => ({
   details: productDetails[product.id] || {}
 }));
 
+const STORAGE_KEYS = {
+  customer: "bandevi-gourmet-customer",
+  orders: "bandevi-gourmet-orders"
+};
+
+const ORDER_STEPS = [
+  { key: "booked", label: "Booked" },
+  { key: "confirmed", label: "Confirmed" },
+  { key: "packed", label: "Packed" },
+  { key: "dispatched", label: "Dispatched" }
+];
+
 const state = {
   filter: "all",
   search: "",
   sort: "featured",
   couponApplied: false,
-  cart: new Map()
+  cart: new Map(),
+  customer: loadCustomer(),
+  orders: loadOrders(),
+  trackedOrder: null
 };
 
 const rupee = new Intl.NumberFormat("en-IN", {
@@ -53,6 +68,9 @@ const checkoutForm = document.querySelector("#checkoutForm");
 const wholesaleForm = document.querySelector("#wholesaleForm");
 const paymentMethod = document.querySelector("#paymentMethod");
 const paymentDetails = document.querySelector("#paymentDetails");
+const customerLoginForm = document.querySelector("#customerLoginForm");
+const orderLookupForm = document.querySelector("#orderLookupForm");
+const customerDashboard = document.querySelector("#customerDashboard");
 const overlay = document.querySelector("[data-overlay]");
 const toast = document.querySelector("#toast");
 const couponInput = document.querySelector("#couponInput");
@@ -60,6 +78,55 @@ const couponMessage = document.querySelector("#couponMessage");
 
 function money(value) {
   return `Rs. ${rupee.format(value)}`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function normalizePhone(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function readJson(key, fallback) {
+  try {
+    const value = window.localStorage.getItem(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJson(key, value) {
+  window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+function loadCustomer() {
+  return readJson(STORAGE_KEYS.customer, null);
+}
+
+function loadOrders() {
+  return readJson(STORAGE_KEYS.orders, []);
+}
+
+function saveCustomer(customer) {
+  state.customer = customer;
+  writeJson(STORAGE_KEYS.customer, customer);
+}
+
+function saveOrders(orders) {
+  state.orders = orders;
+  writeJson(STORAGE_KEYS.orders, orders);
+}
+
+function getStatusIndex(status) {
+  const index = ORDER_STEPS.findIndex((step) => step.key === status);
+  return index >= 0 ? index : 0;
 }
 
 function productImage(product) {
@@ -361,6 +428,131 @@ function buildWhatsAppMessage(form, orderId) {
   ].join("\n");
 }
 
+function createOrderRecord(form, orderId, source) {
+  const data = new FormData(form);
+  const lines = getCartLines();
+  const totals = getTotals();
+  const payment = data.get("payment");
+  const phone = String(data.get("phone") || "").trim();
+  const name = String(data.get("name") || "").trim();
+  const address = String(data.get("address") || "").trim();
+
+  return {
+    id: orderId,
+    source,
+    status: "booked",
+    placedAt: new Date().toISOString(),
+    customer: {
+      name,
+      phone,
+      email: state.customer?.email || ""
+    },
+    address,
+    payment,
+    paymentNote: getPaymentNote(payment, totals.total),
+    totals,
+    items: lines.map((item) => ({
+      id: item.id,
+      name: item.name,
+      size: item.size,
+      quantity: item.quantity,
+      price: item.price,
+      lineTotal: item.lineTotal
+    }))
+  };
+}
+
+function saveOrderRecord(order) {
+  const nextOrders = [order, ...state.orders.filter((item) => item.id !== order.id)].slice(0, 30);
+  saveOrders(nextOrders);
+  state.trackedOrder = order;
+  renderCustomerPortal();
+}
+
+function formatOrderDate(value) {
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(value));
+}
+
+function renderStatusSteps(order) {
+  const current = getStatusIndex(order.status);
+  return ORDER_STEPS.map(
+    (step, index) => `<span class="${index <= current ? "is-done" : ""}">${step.label}</span>`
+  ).join("");
+}
+
+function renderOrderCard(order) {
+  const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
+  const itemSummary = order.items.map((item) => `${escapeHtml(item.name)} x ${item.quantity}`).join(", ");
+  const statusLabel = ORDER_STEPS[getStatusIndex(order.status)].label;
+
+  return `
+    <article class="order-card">
+      <header>
+        <div>
+          <h4>${escapeHtml(order.id)}</h4>
+          <p>${escapeHtml(order.source)} - ${formatOrderDate(order.placedAt)}</p>
+        </div>
+        <span class="status-pill">${statusLabel}</span>
+      </header>
+      <p><strong>${totalQuantity} item${totalQuantity === 1 ? "" : "s"}</strong> - ${itemSummary}</p>
+      <p>Total: <strong>${money(order.totals.total)}</strong> | Payment: ${escapeHtml(order.payment)}</p>
+      <div class="status-steps" aria-label="Order status timeline">${renderStatusSteps(order)}</div>
+    </article>
+  `;
+}
+
+function prefillCheckoutFromCustomer() {
+  if (!state.customer) return;
+
+  const nameInput = checkoutForm.elements.name;
+  const phoneInput = checkoutForm.elements.phone;
+  if (nameInput && !nameInput.value) nameInput.value = state.customer.name || "";
+  if (phoneInput && !phoneInput.value) phoneInput.value = state.customer.phone || "";
+}
+
+function prefillCustomerLoginForm() {
+  if (!state.customer || !customerLoginForm) return;
+
+  customerLoginForm.elements.customerName.value = state.customer.name || "";
+  customerLoginForm.elements.customerPhone.value = state.customer.phone || "";
+  customerLoginForm.elements.customerEmail.value = state.customer.email || "";
+}
+
+function renderCustomerPortal() {
+  if (!customerDashboard) return;
+
+  const customer = state.customer;
+  const ordersForCustomer = customer
+    ? state.orders.filter((order) => normalizePhone(order.customer.phone) === normalizePhone(customer.phone))
+    : state.orders;
+  const visibleOrders = state.trackedOrder ? [state.trackedOrder] : ordersForCustomer.slice(0, 3);
+
+  customerDashboard.innerHTML = `
+    <h3>${customer ? `Welcome, ${escapeHtml(customer.name)}` : "Customer dashboard"}</h3>
+    ${
+      customer
+        ? `<div class="portal-profile">
+            <span>${escapeHtml(customer.phone)}</span>
+            ${customer.email ? `<span>${escapeHtml(customer.email)}</span>` : ""}
+          </div>`
+        : `<p class="portal-empty">Save your login details first, then place an order or track an existing order ID.</p>`
+    }
+    ${
+      visibleOrders.length
+        ? visibleOrders.map(renderOrderCard).join("")
+        : `<p class="portal-empty">No saved orders yet. Place an order from the cart to create your first booking ID.</p>`
+    }
+  `;
+
+  refreshIcons();
+}
+
 function buildWholesaleMessage(form) {
   const data = new FormData(form);
 
@@ -471,6 +663,7 @@ function renderCart() {
 
 function openCart() {
   closeProductDetail();
+  prefillCheckoutFromCustomer();
   cartDrawer.classList.add("is-open");
   overlay.classList.add("is-open");
   cartDrawer.setAttribute("aria-hidden", "false");
@@ -569,7 +762,9 @@ document.querySelector("#whatsappOrder").addEventListener("click", () => {
   if (!checkoutForm.reportValidity()) return;
 
   const orderId = createOrderId();
+  const order = createOrderRecord(checkoutForm, orderId, "WhatsApp order request");
   const message = buildWhatsAppMessage(checkoutForm, orderId);
+  saveOrderRecord(order);
   window.open(getWhatsAppUrl(message), "_blank", "noopener,noreferrer");
   showToast(`Order ${orderId} ready in WhatsApp`);
 });
@@ -582,6 +777,8 @@ checkoutForm.addEventListener("submit", (event) => {
   }
 
   const orderId = createOrderId();
+  const order = createOrderRecord(event.currentTarget, orderId, "Website cart booking");
+  saveOrderRecord(order);
   state.cart.clear();
   state.couponApplied = false;
   couponInput.value = "";
@@ -590,6 +787,41 @@ checkoutForm.addEventListener("submit", (event) => {
   renderCart();
   closeCart();
   showToast(`Order ${orderId} placed successfully`);
+});
+
+customerLoginForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const data = new FormData(event.currentTarget);
+  const customer = {
+    name: String(data.get("customerName") || "").trim(),
+    phone: String(data.get("customerPhone") || "").trim(),
+    email: String(data.get("customerEmail") || "").trim()
+  };
+
+  saveCustomer(customer);
+  state.trackedOrder = null;
+  prefillCheckoutFromCustomer();
+  renderCustomerPortal();
+  showToast("Customer login saved");
+});
+
+orderLookupForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const data = new FormData(event.currentTarget);
+  const orderId = String(data.get("orderId") || "").trim().toUpperCase();
+  const phone = normalizePhone(data.get("phone"));
+  const order = state.orders.find((item) => item.id.toUpperCase() === orderId && normalizePhone(item.customer.phone) === phone);
+
+  if (!order) {
+    state.trackedOrder = null;
+    renderCustomerPortal();
+    showToast("No matching order found on this device");
+    return;
+  }
+
+  state.trackedOrder = order;
+  renderCustomerPortal();
+  showToast(`Tracking ${order.id}`);
 });
 
 wholesaleForm.addEventListener("submit", (event) => {
@@ -610,4 +842,6 @@ document.querySelectorAll(".faq-item button").forEach((button) => {
 renderProducts();
 renderCategoryProducts();
 renderCart();
+prefillCustomerLoginForm();
+renderCustomerPortal();
 refreshIcons();

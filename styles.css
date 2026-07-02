@@ -114,6 +114,32 @@ a {
   height: 20px;
 }
 
+.header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.portal-shortcut {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.portal-shortcut svg {
+  width: 17px;
+  height: 17px;
+}
+
 .cart-count {
   position: absolute;
   top: -7px;
@@ -648,6 +674,26 @@ a {
   line-height: 1.75;
 }
 
+.about-snapshot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.about-snapshot span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 900;
+}
+
 .about-values {
   display: grid;
   gap: 14px;
@@ -717,6 +763,45 @@ a {
   margin: 0;
   color: var(--muted);
   line-height: 1.55;
+}
+
+.operations-section {
+  width: min(1180px, calc(100% - 36px));
+  margin: 74px auto;
+}
+
+.operations-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.operations-grid article {
+  min-height: 248px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(251, 250, 245, 0.96)),
+    url("/assets/packaging-makhana-pouch.png") center/cover;
+}
+
+.operations-grid svg {
+  width: 28px;
+  height: 28px;
+  color: var(--green);
+}
+
+.operations-grid h3 {
+  margin: 18px 0 8px;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.operations-grid p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.58;
 }
 
 .cert-section {
@@ -1032,6 +1117,199 @@ a {
   margin-top: 14px;
   color: var(--green);
   font-weight: 900;
+}
+
+.customer-portal-section {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(420px, 1fr);
+  gap: clamp(22px, 5vw, 54px);
+  align-items: start;
+  width: min(1180px, calc(100% - 36px));
+  margin: 74px auto;
+  padding: clamp(24px, 5vw, 44px);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(18, 61, 52, 0.96), rgba(28, 37, 33, 0.94)),
+    url("/assets/product-snack-combo.png") center/cover;
+  color: #fff;
+}
+
+.portal-copy h2 {
+  margin: 0;
+  font-size: clamp(32px, 6vw, 54px);
+  line-height: 1.04;
+}
+
+.portal-copy p {
+  max-width: 560px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.portal-note {
+  margin-top: 22px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.84);
+  line-height: 1.6;
+  font-weight: 800;
+}
+
+.portal-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.portal-form,
+.portal-dashboard {
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.portal-form {
+  display: grid;
+  gap: 12px;
+}
+
+.portal-form h3,
+.portal-dashboard h3 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.portal-form label {
+  display: grid;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.portal-form input {
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--ink);
+}
+
+.portal-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 46px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--saffron);
+  color: #1b1608;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.portal-button.secondary {
+  background: #fff;
+  color: var(--green);
+}
+
+.portal-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.portal-dashboard {
+  grid-column: 2;
+  display: grid;
+  gap: 14px;
+}
+
+.portal-empty {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.6;
+}
+
+.portal-profile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.portal-profile span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.order-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--ink);
+}
+
+.order-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.order-card h4,
+.order-card p {
+  margin: 0;
+}
+
+.order-card p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.status-pill {
+  width: fit-content;
+  min-height: 30px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eaf5ef;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.status-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.status-steps span {
+  min-height: 34px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #ece7d8;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.status-steps span.is-done {
+  background: var(--green);
+  color: #fff;
 }
 
 .policy-page {
@@ -1733,6 +2011,7 @@ a {
   .about-brand,
   .cert-section,
   .export-desk,
+  .customer-portal-section,
   .wholesale-section {
     grid-template-columns: 1fr;
   }
@@ -1740,7 +2019,8 @@ a {
   .quality-grid,
   .trust-grid,
   .policy-grid,
-  .legal-grid {
+  .legal-grid,
+  .operations-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1755,6 +2035,10 @@ a {
   .legal-jump-nav {
     position: static;
   }
+
+  .portal-dashboard {
+    grid-column: auto;
+  }
 }
 
 @media (max-width: 780px) {
@@ -1768,6 +2052,10 @@ a {
 
   .brand small,
   .main-nav {
+    display: none;
+  }
+
+  .portal-shortcut span {
     display: none;
   }
 
@@ -1816,6 +2104,7 @@ a {
   .trust-center,
   .cert-section,
   .export-desk,
+  .operations-section,
   .wholesale-section {
     width: min(100% - 36px, 640px);
   }
@@ -1844,6 +2133,10 @@ a {
   }
 
   .export-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-panel {
     grid-template-columns: 1fr;
   }
 
@@ -1903,8 +2196,24 @@ a {
 
   .legal-hero,
   .legal-layout,
-  .legal-jump-nav {
+  .legal-jump-nav,
+  .customer-portal-section {
     width: min(100% - 32px, 640px);
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+
+  .portal-shortcut,
+  .icon-button {
+    width: 42px;
+    min-width: 42px;
+    padding: 0;
+  }
+
+  .status-steps {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .legal-hero h1 {
