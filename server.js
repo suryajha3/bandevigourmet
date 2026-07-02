@@ -12,6 +12,8 @@ const DB_FILE = join(DATA_DIR, "store.json");
 const PUBLIC_DIR = resolve(__dirname, "dist");
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 const TOKEN_SECRET = process.env.ADMIN_TOKEN_SECRET || ADMIN_PASSWORD || randomUUID();
+const DATABASE_URL = process.env.DATABASE_URL || "";
+const STORAGE_DRIVER = DATABASE_URL ? "postgres" : "json";
 const TOKEN_TTL_MS = 1000 * 60 * 60 * 12;
 const ORDER_STATUSES = new Set(["booked", "confirmed", "packed", "dispatched", "delivered"]);
 const WHOLESALE_STATUSES = new Set(["new", "contacted", "quoted", "sample-sent", "converted", "closed"]);
@@ -45,6 +47,17 @@ function jsonResponse(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
+function csvResponse(res, filename, rows) {
+  const csv = rowsToCsv(rows);
+  res.writeHead(200, {
+    "Content-Type": "text/csv; charset=utf-8",
+    "Cache-Control": "no-store",
+    "Content-Disposition": `attachment; filename="${filename}"`,
+    ...API_CORS_HEADERS
+  });
+  res.end(csv);
+}
+
 function text(value, max = 500) {
   return String(value ?? "").trim().slice(0, max);
 }
@@ -55,6 +68,18 @@ function cleanPhone(value) {
 
 function cleanOrderId(value) {
   return text(value, 32).toUpperCase().replace(/[^A-Z0-9-]/g, "");
+}
+
+function csvCell(value) {
+  const raw = String(value ?? "");
+  if (/[",\n\r]/.test(raw)) return `"${raw.replaceAll('"', '""')}"`;
+  return raw;
+}
+
+function rowsToCsv(rows) {
+  if (!rows.length) return "";
+  const headers = Object.keys(rows[0]);
+  return [headers.join(","), ...rows.map((row) => headers.map((header) => csvCell(row[header])).join(","))].join("\n");
 }
 
 function publicOrder(order) {
@@ -89,12 +114,20 @@ function publicCustomer(customer) {
     phone: customer.phone,
     email: customer.email,
     location: customer.location,
+    status: customer.status || "active",
     createdAt: customer.createdAt,
     updatedAt: customer.updatedAt,
     lastOrderAt: customer.lastOrderAt,
     orderCount: Number(customer.orderCount || 0),
     totalSpend: Number(customer.totalSpend || 0),
     tags: Array.isArray(customer.tags) ? customer.tags : []
+  };
+}
+
+function adminCustomer(customer) {
+  return {
+    ...publicCustomer(customer),
+    adminNote: customer.adminNote || ""
   };
 }
 
@@ -147,6 +180,8 @@ function normalizeCustomer(input = {}, existing = {}) {
     lastOrderAt: input.lastOrderAt || existing.lastOrderAt || "",
     orderCount: Number(existing.orderCount || input.orderCount || 0),
     totalSpend: Number(existing.totalSpend || input.totalSpend || 0),
+    status: text(input.status || existing.status || "active", 40),
+    adminNote: text(input.adminNote || existing.adminNote, 500),
     tags
   };
 }
@@ -224,15 +259,112 @@ function buildAdminSummary(db) {
   };
 }
 
-async function ensureDb() {
+function orderExportRows(db) {
+  return (db.orders || []).map((order) => ({
+    id: order.id,
+    status: order.status,
+    placedAt: order.placedAt,
+    updatedAt: order.updatedAt,
+    customerName: order.customer?.name || "",
+    phone: order.customer?.phone || "",
+    email: order.customer?.email || "",
+    location: order.countryCity || order.customer?.location || "",
+    total: order.totals?.total || 0,
+    payment: order.payment || "",
+    paymentState: order.paymentState || "",
+    courier: order.courier || "",
+    trackingCode: order.trackingCode || "",
+    eta: order.eta || "",
+    items: (order.items || []).map((item) => `${item.name} x ${item.quantity}`).join("; ")
+  }));
+}
+
+function customerExportRows(db) {
+  return (db.customers || []).map((customer) => ({
+    id: customer.id,
+    name: customer.name || "",
+    phone: customer.phone || "",
+    email: customer.email || "",
+    location: customer.location || "",
+    status: customer.status || "active",
+    orderCount: customer.orderCount || 0,
+    totalSpend: customer.totalSpend || 0,
+    lastOrderAt: customer.lastOrderAt || "",
+    tags: (customer.tags || []).join("; "),
+    adminNote: customer.adminNote || ""
+  }));
+}
+
+function wholesaleExportRows(db) {
+  return (db.wholesale || []).map((enquiry) => ({
+    id: enquiry.id,
+    status: enquiry.status || "new",
+    businessName: enquiry.businessName || "",
+    contactName: enquiry.contactName || "",
+    phone: enquiry.phone || "",
+    email: enquiry.email || "",
+    country: enquiry.country || "",
+    volume: enquiry.volume || "",
+    placedAt: enquiry.placedAt || "",
+    updatedAt: enquiry.updatedAt || "",
+    note: enquiry.note || "",
+    message: enquiry.message || ""
+  }));
+}
+
+function exportRows(type, db) {
+  if (type === "customers") return customerExportRows(db);
+  if (type === "wholesale") return wholesaleExportRows(db);
+  return orderExportRows(db);
+}
+
+let pgPoolPromise = null;
+
+function postgresSslConfig() {
+  if (!DATABASE_URL || process.env.DATABASE_SSL === "false" || DATABASE_URL.includes("localhost")) return false;
+  return { rejectUnauthorized: false };
+}
+
+async function getPgPool() {
+  if (!pgPoolPromise) {
+    pgPoolPromise = (async () => {
+      const { Pool } = await import("pg");
+      const pool = new Pool({
+        connectionString: DATABASE_URL,
+        ssl: postgresSslConfig()
+      });
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS store_documents (
+          id text PRIMARY KEY,
+          data jsonb NOT NULL,
+          updated_at timestamptz NOT NULL DEFAULT now()
+        )
+      `);
+      return pool;
+    })();
+  }
+  return pgPoolPromise;
+}
+
+function storageInfo() {
+  return {
+    driver: STORAGE_DRIVER,
+    durable: STORAGE_DRIVER === "postgres",
+    databaseConfigured: Boolean(DATABASE_URL),
+    jsonFallback: STORAGE_DRIVER === "json",
+    jsonFile: STORAGE_DRIVER === "json" ? DB_FILE : ""
+  };
+}
+
+async function ensureJsonDb() {
   await mkdir(DATA_DIR, { recursive: true });
   if (!existsSync(DB_FILE)) {
     await writeFile(DB_FILE, JSON.stringify(emptyDb(), null, 2));
   }
 }
 
-async function readDb() {
-  await ensureDb();
+async function readJsonDb() {
+  await ensureJsonDb();
   try {
     return normalizeDb(JSON.parse(await readFile(DB_FILE, "utf8")));
   } catch {
@@ -240,11 +372,46 @@ async function readDb() {
   }
 }
 
-async function writeDb(db) {
-  await ensureDb();
+async function writeJsonDb(db) {
+  await ensureJsonDb();
   const tempFile = `${DB_FILE}.${process.pid}.${Date.now()}.tmp`;
   await writeFile(tempFile, JSON.stringify(normalizeDb(db), null, 2));
   await rename(tempFile, DB_FILE);
+}
+
+async function readPostgresDb() {
+  const pool = await getPgPool();
+  const result = await pool.query("SELECT data FROM store_documents WHERE id = $1", ["main"]);
+  if (!result.rows.length) {
+    const db = emptyDb();
+    await pool.query(
+      "INSERT INTO store_documents (id, data, updated_at) VALUES ($1, $2::jsonb, now()) ON CONFLICT (id) DO NOTHING",
+      ["main", JSON.stringify(db)]
+    );
+    return db;
+  }
+  return normalizeDb(result.rows[0].data);
+}
+
+async function writePostgresDb(db) {
+  const pool = await getPgPool();
+  await pool.query(
+    `INSERT INTO store_documents (id, data, updated_at)
+     VALUES ($1, $2::jsonb, now())
+     ON CONFLICT (id)
+     DO UPDATE SET data = EXCLUDED.data, updated_at = now()`,
+    ["main", JSON.stringify(normalizeDb(db))]
+  );
+}
+
+async function readDb() {
+  if (STORAGE_DRIVER === "postgres") return readPostgresDb();
+  return readJsonDb();
+}
+
+async function writeDb(db) {
+  if (STORAGE_DRIVER === "postgres") return writePostgresDb(db);
+  return writeJsonDb(db);
 }
 
 async function readBody(req) {
@@ -375,7 +542,12 @@ async function handleApi(req, res, url) {
     jsonResponse(res, 200, {
       ok: true,
       service: "BandEvi Gourmet order backend",
-      adminConfigured: Boolean(ADMIN_PASSWORD)
+      adminConfigured: Boolean(ADMIN_PASSWORD),
+      storage: {
+        driver: STORAGE_DRIVER,
+        durable: STORAGE_DRIVER === "postgres",
+        databaseConfigured: Boolean(DATABASE_URL)
+      }
     });
     return true;
   }
@@ -519,10 +691,58 @@ async function handleApi(req, res, url) {
     return true;
   }
 
+  if (url.pathname === "/api/admin/storage" && req.method === "GET") {
+    if (!requireAdmin(req, res)) return true;
+    jsonResponse(res, 200, { storage: storageInfo() });
+    return true;
+  }
+
+  if (url.pathname === "/api/admin/export" && req.method === "GET") {
+    if (!requireAdmin(req, res)) return true;
+    const type = text(url.searchParams.get("type") || "orders", 40);
+    const format = text(url.searchParams.get("format") || "csv", 20);
+    const db = await readDb();
+    const rows = exportRows(type, db);
+    if (format === "json") {
+      jsonResponse(res, 200, { type, exportedAt: new Date().toISOString(), rows });
+      return true;
+    }
+    csvResponse(res, `bandevi-${type}-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+    return true;
+  }
+
   if (url.pathname === "/api/admin/customers" && req.method === "GET") {
     if (!requireAdmin(req, res)) return true;
     const db = await readDb();
-    jsonResponse(res, 200, { customers: (db.customers || []).map(publicCustomer) });
+    jsonResponse(res, 200, { customers: (db.customers || []).map(adminCustomer) });
+    return true;
+  }
+
+  const customerMatch = url.pathname.match(/^\/api\/admin\/customers\/([^/]+)$/);
+  if (customerMatch && req.method === "PATCH") {
+    if (!requireAdmin(req, res)) return true;
+    const customerKey = decodeURIComponent(customerMatch[1]);
+    const phone = cleanPhone(customerKey);
+    const payload = await readBody(req);
+    const db = await readDb();
+    const customer = (db.customers || []).find((item) => cleanPhone(item.phone) === phone || item.id === customerKey);
+    if (!customer) {
+      jsonResponse(res, 404, { error: "Customer not found." });
+      return true;
+    }
+
+    customer.status = text(payload.status || customer.status || "active", 40);
+    customer.adminNote = text(payload.adminNote || customer.adminNote, 500);
+    customer.tags = Array.isArray(payload.tags)
+      ? payload.tags.slice(0, 12).map((tag) => text(tag, 50)).filter(Boolean)
+      : text(payload.tags || "", 300)
+          .split(",")
+          .map((tag) => text(tag, 50))
+          .filter(Boolean)
+          .slice(0, 12);
+    customer.updatedAt = new Date().toISOString();
+    await writeDb(db);
+    jsonResponse(res, 200, { customer: adminCustomer(customer) });
     return true;
   }
 

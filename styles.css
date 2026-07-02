@@ -2626,6 +2626,32 @@ a {
   font-weight: 900;
 }
 
+.admin-storage {
+  display: grid;
+  grid-template-columns: 1.4fr 0.7fr 0.7fr;
+  gap: 14px;
+}
+
+.admin-storage article {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #edf7f1;
+}
+
+.admin-storage strong {
+  color: var(--green);
+  font-size: 18px;
+}
+
+.admin-storage span {
+  color: var(--muted);
+  line-height: 1.45;
+  font-weight: 800;
+}
+
 .admin-panel {
   padding: clamp(20px, 4vw, 32px);
   border: 1px solid var(--line);
@@ -2635,6 +2661,52 @@ a {
 
 .admin-search span {
   color: var(--muted);
+  font-weight: 900;
+}
+
+.admin-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-tools.compact {
+  align-items: end;
+}
+
+.admin-filter {
+  display: grid;
+  gap: 5px;
+  min-width: 150px;
+}
+
+.admin-filter span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.admin-filter select {
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.admin-export-button {
+  align-self: end;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--green);
+  cursor: pointer;
   font-weight: 900;
 }
 
@@ -2880,6 +2952,7 @@ a {
   }
 
   .admin-hero,
+  .admin-storage,
   .admin-order-grid {
     grid-template-columns: 1fr;
   }
@@ -2955,6 +3028,7 @@ a {
   }
 
   .section-head,
+  .admin-tools,
   .shop-controls {
     display: grid;
   }

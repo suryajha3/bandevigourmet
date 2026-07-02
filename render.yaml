@@ -21,3 +21,5 @@ services:
         sync: false
       - key: ADMIN_TOKEN_SECRET
         generateValue: true
+      - key: DATABASE_URL
+        sync: false

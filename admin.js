@@ -16,14 +16,18 @@ const WHOLESALE_LABELS = {
   closed: "Closed"
 };
 const PAYMENT_STATES = ["Payment pending", "Advance requested", "Paid", "COD", "Refund pending", "Refunded"];
+const CUSTOMER_STATUSES = ["active", "repeat", "wholesale", "watchlist", "inactive"];
 
 const state = {
   token: window.sessionStorage.getItem(TOKEN_KEY) || "",
   summary: null,
+  storage: null,
   orders: [],
   enquiries: [],
   customers: [],
-  search: ""
+  search: "",
+  orderFilter: "all",
+  leadFilter: "all"
 };
 
 const loginForm = document.querySelector("#adminLoginForm");
@@ -31,10 +35,13 @@ const loginMessage = document.querySelector("#adminLoginMessage");
 const dashboard = document.querySelector("#adminDashboard");
 const statusBox = document.querySelector("#adminStatus");
 const statsBox = document.querySelector("#adminStats");
+const storageBox = document.querySelector("#adminStorage");
 const orderList = document.querySelector("#adminOrderList");
 const wholesaleList = document.querySelector("#adminWholesaleList");
 const customerList = document.querySelector("#adminCustomerList");
 const searchInput = document.querySelector("#adminSearchInput");
+const orderFilterInput = document.querySelector("#adminOrderFilter");
+const leadFilterInput = document.querySelector("#adminLeadFilter");
 const toast = document.querySelector("#adminToast");
 
 function money(value) {
@@ -150,8 +157,34 @@ function renderStats() {
   `;
 }
 
+function renderStorage() {
+  if (!storageBox) return;
+  const storage = state.storage || {};
+  const durable = storage.durable ? "Database storage active" : "JSON fallback active";
+  const helper = storage.durable
+    ? "Orders, customers, and leads are connected to PostgreSQL."
+    : "Add DATABASE_URL on Render to switch this project to permanent PostgreSQL storage.";
+
+  storageBox.innerHTML = `
+    <article>
+      <strong>${escapeHtml(durable)}</strong>
+      <span>${escapeHtml(helper)}</span>
+    </article>
+    <article>
+      <strong>${escapeHtml(storage.driver || "json")}</strong>
+      <span>Current storage driver</span>
+    </article>
+    <article>
+      <strong>${storage.databaseConfigured ? "Ready" : "Not connected"}</strong>
+      <span>Database URL</span>
+    </article>
+  `;
+}
+
 function renderOrders() {
-  const visibleOrders = state.orders.filter(orderMatchesSearch);
+  const visibleOrders = state.orders.filter(orderMatchesSearch).filter((order) => {
+    return state.orderFilter === "all" || order.status === state.orderFilter;
+  });
 
   orderList.innerHTML = visibleOrders.length
     ? visibleOrders.map(renderOrder).join("")
@@ -207,7 +240,9 @@ function renderOrder(order) {
 }
 
 function renderWholesale() {
-  const visibleEnquiries = state.enquiries.filter(enquiryMatchesSearch);
+  const visibleEnquiries = state.enquiries.filter(enquiryMatchesSearch).filter((enquiry) => {
+    return state.leadFilter === "all" || enquiry.status === state.leadFilter;
+  });
 
   wholesaleList.innerHTML = visibleEnquiries.length
     ? visibleEnquiries.map(renderEnquiry).join("")
@@ -255,9 +290,19 @@ function renderCustomers() {
   customerList.innerHTML = visibleCustomers.length
     ? visibleCustomers.map(renderCustomer).join("")
     : `<div class="admin-empty">No customer records yet.</div>`;
+
+  customerList.querySelectorAll("[data-customer-form]").forEach((form) => {
+    form.addEventListener("submit", updateCustomerStatus);
+  });
 }
 
 function renderCustomer(customer) {
+  const statusOptions = CUSTOMER_STATUSES.map(
+    (status) => `<option value="${status}" ${customer.status === status ? "selected" : ""}>${status}</option>`
+  ).join("");
+  const tags = Array.isArray(customer.tags) ? customer.tags.join(", ") : "";
+  const customerKey = customer.phone || customer.id;
+
   return `
     <article class="admin-customer-card">
       <header>
@@ -265,19 +310,27 @@ function renderCustomer(customer) {
           <h3>${escapeHtml(customer.name || "Unnamed customer")}</h3>
           <p>${escapeHtml(customer.phone || "No phone")} ${customer.email ? `| ${escapeHtml(customer.email)}` : ""}</p>
         </div>
-        <span class="status-pill">${Number(customer.orderCount || 0)} orders</span>
+        <span class="status-pill">${escapeHtml(customer.status || "active")}</span>
       </header>
       <div class="admin-order-grid">
         <span><strong>Location</strong>${escapeHtml(customer.location || "Not added")}<small>Customer profile</small></span>
         <span><strong>Total spend</strong>${money(customer.totalSpend)}<small>Website bookings</small></span>
         <span><strong>Last order</strong>${formatDate(customer.lastOrderAt)}<small>${escapeHtml(customer.updatedAt ? `Updated ${formatDate(customer.updatedAt)}` : "")}</small></span>
+        <span><strong>Orders</strong>${Number(customer.orderCount || 0)}<small>${escapeHtml(tags || "No tags")}</small></span>
       </div>
+      <form class="admin-status-form" data-customer-form="${escapeHtml(customerKey)}">
+        <select name="status" aria-label="Customer status">${statusOptions}</select>
+        <input name="tags" type="text" placeholder="Tags: wholesale, repeat" value="${escapeHtml(tags)}" />
+        <input name="adminNote" type="text" placeholder="Internal customer note" value="${escapeHtml(customer.adminNote || "")}" />
+        <button type="submit">Update customer</button>
+      </form>
     </article>
   `;
 }
 
 function renderAll() {
   renderStats();
+  renderStorage();
   renderOrders();
   renderWholesale();
   renderCustomers();
@@ -292,16 +345,18 @@ async function loadDashboard() {
 
   try {
     setStatus("Loading admin data...");
-    const [ordersPayload, wholesalePayload, summaryPayload, customersPayload] = await Promise.all([
+    const [ordersPayload, wholesalePayload, summaryPayload, customersPayload, storagePayload] = await Promise.all([
       api("/api/admin/orders"),
       api("/api/admin/wholesale"),
       api("/api/admin/summary").catch(() => ({ summary: null })),
-      api("/api/admin/customers").catch(() => ({ customers: [] }))
+      api("/api/admin/customers").catch(() => ({ customers: [] })),
+      api("/api/admin/storage").catch(() => ({ storage: null }))
     ]);
     state.orders = ordersPayload.orders || [];
     state.enquiries = wholesalePayload.enquiries || [];
     state.summary = summaryPayload.summary || null;
     state.customers = customersPayload.customers || [];
+    state.storage = storagePayload.storage || null;
     dashboard.hidden = false;
     setStatus("Admin backend connected.", "success");
     renderAll();
@@ -361,6 +416,56 @@ async function updateWholesaleStatus(event) {
   }
 }
 
+async function updateCustomerStatus(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const customerKey = form.dataset.customerForm;
+  const data = new FormData(form);
+
+  try {
+    const payload = await api(`/api/admin/customers/${encodeURIComponent(customerKey)}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        status: data.get("status"),
+        tags: data.get("tags"),
+        adminNote: data.get("adminNote")
+      })
+    });
+    state.customers = state.customers.map((customer) => {
+      const key = customer.phone || customer.id;
+      return key === customerKey ? payload.customer : customer;
+    });
+    renderAll();
+    showToast("Customer updated");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function downloadAdminExport(type) {
+  try {
+    const response = await fetch(`${LIVE_API_ORIGIN}/api/admin/export?type=${encodeURIComponent(type)}`, {
+      headers: { Authorization: `Bearer ${state.token}` }
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || "Export failed");
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `bandevi-${type}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    showToast(`${type} export ready`);
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = new FormData(event.currentTarget);
@@ -386,10 +491,25 @@ searchInput.addEventListener("input", (event) => {
   renderAll();
 });
 
+orderFilterInput?.addEventListener("change", (event) => {
+  state.orderFilter = event.target.value;
+  renderOrders();
+});
+
+leadFilterInput?.addEventListener("change", (event) => {
+  state.leadFilter = event.target.value;
+  renderWholesale();
+});
+
+document.querySelectorAll("[data-export]").forEach((button) => {
+  button.addEventListener("click", () => downloadAdminExport(button.dataset.export));
+});
+
 document.querySelector("#refreshAdmin").addEventListener("click", loadDashboard);
 document.querySelector("#logoutAdmin").addEventListener("click", () => {
   state.token = "";
   state.summary = null;
+  state.storage = null;
   state.orders = [];
   state.enquiries = [];
   state.customers = [];

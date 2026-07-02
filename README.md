@@ -67,15 +67,19 @@ It provides:
 - Admin login
 - Admin order list
 - Admin order status updates: booked, confirmed, packed, dispatched, delivered
+- Admin customer status, tags, and internal customer notes
+- Admin CSV export for orders, customers, and wholesale leads
+- Optional PostgreSQL storage when `DATABASE_URL` is configured
 
 Set these private environment variables on Render when running as a Web Service:
 
 ```text
 ADMIN_PASSWORD=your-private-admin-password
 ADMIN_TOKEN_SECRET=random-private-secret
+DATABASE_URL=postgresql://... optional but recommended for permanent storage
 ```
 
-The server stores order data in `server-data/` by default. For a serious production launch, connect this backend to a managed database such as PostgreSQL or Supabase so order data is permanent across deployments.
+The server stores order data in `server-data/` by default. For a serious production launch, add a managed PostgreSQL database and set `DATABASE_URL` on Render. When `DATABASE_URL` is present, the backend stores the order/customer/wholesale database in PostgreSQL. Without it, the site continues working with the JSON fallback.
 
 ## Product Setup
 

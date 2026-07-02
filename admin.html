@@ -58,6 +58,7 @@
 
       <section class="admin-dashboard" id="adminDashboard" hidden>
         <div class="admin-stats" id="adminStats" aria-label="Order summary"></div>
+        <div class="admin-storage" id="adminStorage" aria-live="polite"></div>
 
         <section class="admin-panel" id="orders" aria-labelledby="orders-title">
           <div class="section-head">
@@ -65,10 +66,24 @@
               <p class="eyebrow">Order management</p>
               <h2 id="orders-title">Customer bookings</h2>
             </div>
-            <label class="search-wrap admin-search">
-              <span>Search</span>
-              <input id="adminSearchInput" type="search" placeholder="Order ID, phone, name, product" />
-            </label>
+            <div class="admin-tools">
+              <label class="search-wrap admin-search">
+                <span>Search</span>
+                <input id="adminSearchInput" type="search" placeholder="Order ID, phone, name, product" />
+              </label>
+              <label class="admin-filter">
+                <span>Status</span>
+                <select id="adminOrderFilter">
+                  <option value="all">All orders</option>
+                  <option value="booked">Booked</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="packed">Packed</option>
+                  <option value="dispatched">Dispatched</option>
+                  <option value="delivered">Delivered</option>
+                </select>
+              </label>
+              <button class="admin-export-button" type="button" data-export="orders">Export orders</button>
+            </div>
           </div>
           <div class="admin-order-list" id="adminOrderList"></div>
         </section>
@@ -78,6 +93,21 @@
             <div>
               <p class="eyebrow">Wholesale</p>
               <h2 id="wholesale-admin-title">Buyer enquiries</h2>
+            </div>
+            <div class="admin-tools compact">
+              <label class="admin-filter">
+                <span>Status</span>
+                <select id="adminLeadFilter">
+                  <option value="all">All leads</option>
+                  <option value="new">New</option>
+                  <option value="contacted">Contacted</option>
+                  <option value="quoted">Quoted</option>
+                  <option value="sample-sent">Sample sent</option>
+                  <option value="converted">Converted</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </label>
+              <button class="admin-export-button" type="button" data-export="wholesale">Export leads</button>
             </div>
           </div>
           <div class="admin-order-list" id="adminWholesaleList"></div>
@@ -89,6 +119,7 @@
               <p class="eyebrow">Customer records</p>
               <h2 id="customers-admin-title">Profiles and repeat buyers</h2>
             </div>
+            <button class="admin-export-button" type="button" data-export="customers">Export customers</button>
           </div>
           <div class="admin-order-list" id="adminCustomerList"></div>
         </section>
