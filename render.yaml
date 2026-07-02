@@ -5,6 +5,9 @@ services:
     plan: free
     buildCommand: npm install && npm run build
     startCommand: npm start
+    domains:
+      - bandevigourmet.com
+      - www.bandevigourmet.com
     envVars:
       - key: NODE_VERSION
         value: 22
