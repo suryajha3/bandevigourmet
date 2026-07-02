@@ -1,7 +1,9 @@
 import {
   BadgeCheck,
   ChevronDown,
+  CheckCircle2,
   Clipboard,
+  FileText,
   Factory,
   FlaskConical,
   Globe2,
@@ -11,6 +13,7 @@ import {
   MessageCircle,
   PackageCheck,
   PackageOpen,
+  Printer,
   Plus,
   RotateCw,
   Search,
@@ -97,6 +100,7 @@ const customerLoginForm = document.querySelector("#customerLoginForm");
 const orderLookupForm = document.querySelector("#orderLookupForm");
 const customerDashboard = document.querySelector("#customerDashboard");
 const customerLoginStatus = document.querySelector("#customerLoginStatus");
+const confirmationPage = document.querySelector("#confirmationPage");
 const overlay = document.querySelector("[data-overlay]");
 const toast = document.querySelector("#toast");
 const couponInput = document.querySelector("#couponInput");
@@ -984,6 +988,220 @@ function renderOrderCard(order) {
   `;
 }
 
+function getConfirmationUrl(order) {
+  const orderId = encodeURIComponent(order?.id || "");
+  const phone = encodeURIComponent(normalizePhone(order?.customer?.phone || ""));
+  return `./confirmation.html?id=${orderId}&phone=${phone}`;
+}
+
+function redirectToConfirmation(order) {
+  window.location.assign(getConfirmationUrl(order));
+}
+
+function findLocalOrder(orderId, phone) {
+  const cleanOrderId = String(orderId || "").trim().toUpperCase();
+  const cleanPhone = normalizePhone(phone);
+  return state.orders.find((order) => order.id?.toUpperCase() === cleanOrderId && normalizePhone(order.customer?.phone) === cleanPhone);
+}
+
+function renderConfirmationItems(order) {
+  const items = Array.isArray(order.items) ? order.items : [];
+  if (!items.length) {
+    return `<p class="confirmation-empty">Product details are not available for this booking yet.</p>`;
+  }
+
+  return `
+    <div class="invoice-table" role="table" aria-label="Invoice items">
+      <div class="invoice-row invoice-head" role="row">
+        <span role="columnheader">Product</span>
+        <span role="columnheader">Pack</span>
+        <span role="columnheader">Qty</span>
+        <span role="columnheader">Amount</span>
+      </div>
+      ${items
+        .map(
+          (item) => `
+            <div class="invoice-row" role="row">
+              <span role="cell">${escapeHtml(item.name || "Product")}</span>
+              <span role="cell">${escapeHtml(item.size || "-")}</span>
+              <span role="cell">${Number(item.quantity || 0)}</span>
+              <span role="cell">${money(Number(item.lineTotal || 0))}</span>
+            </div>
+          `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderConfirmationTotals(order) {
+  const totals = order.totals || {};
+  return `
+    <div class="invoice-totals" aria-label="Invoice totals">
+      <span><strong>Subtotal</strong>${money(Number(totals.subtotal || 0))}</span>
+      <span><strong>Discount</strong>${totals.discount ? `-${money(Number(totals.discount || 0))}` : money(0)}</span>
+      <span><strong>Delivery</strong>${totals.delivery ? money(Number(totals.delivery || 0)) : "Free"}</span>
+      <span class="invoice-total"><strong>Total</strong>${money(Number(totals.total || 0))}</span>
+    </div>
+  `;
+}
+
+function renderConfirmationPage(order, source = "saved") {
+  if (!confirmationPage) return;
+
+  const statusLabel = getStatusLabel(order.status);
+  const phone = normalizePhone(order.customer?.phone || "");
+  const trackUrl = `./track.html?id=${encodeURIComponent(order.id)}&phone=${encodeURIComponent(phone)}`;
+  const supportUrl = getWhatsAppUrl(`Support request for ${STORE_CONFIG.shopName} booking ${order.id}`);
+  const invoiceId = `INV-${order.id}`;
+
+  confirmationPage.innerHTML = `
+    <section class="confirmation-hero" aria-labelledby="confirmation-title">
+      <div>
+        <p class="eyebrow">Booking confirmed</p>
+        <h1 id="confirmation-title">Order ${escapeHtml(order.id)} is received.</h1>
+        <p>
+          Your booking ID has been generated. Keep this page for your invoice summary, tracking link, and support reference.
+        </p>
+        <div class="confirmation-badges" aria-label="Confirmation highlights">
+          <span><i data-lucide="check-circle-2"></i>${escapeHtml(statusLabel)}</span>
+          <span><i data-lucide="file-text"></i>${escapeHtml(invoiceId)}</span>
+          <span><i data-lucide="badge-check"></i>${source === "live" ? "Live order desk synced" : "Saved on this device"}</span>
+        </div>
+      </div>
+      <div class="confirmation-actions" aria-label="Order actions">
+        <a class="primary-link" href="${trackUrl}">
+          <i data-lucide="search"></i>
+          Track order
+        </a>
+        <button type="button" data-copy-confirmation="${escapeHtml(order.id)}">
+          <i data-lucide="clipboard"></i>
+          Copy ID
+        </button>
+        <button type="button" data-print-confirmation>
+          <i data-lucide="printer"></i>
+          Print / Save PDF
+        </button>
+        <a href="${supportUrl}" target="_blank" rel="noopener noreferrer">
+          <i data-lucide="message-circle"></i>
+          WhatsApp support
+        </a>
+      </div>
+    </section>
+
+    <section class="invoice-card" aria-labelledby="invoice-title">
+      <header class="invoice-header">
+        <div>
+          <p class="eyebrow">Invoice summary</p>
+          <h2 id="invoice-title">${escapeHtml(invoiceId)}</h2>
+          <p>Booking date: ${formatOrderDate(order.placedAt)}</p>
+        </div>
+        <div>
+          <strong>${escapeHtml(STORE_CONFIG.shopName)}</strong>
+          <span>${escapeHtml(STORE_CONFIG.deliveryArea)}</span>
+          <span>Support: ${escapeHtml(STORE_CONFIG.whatsappNumber || "WhatsApp support")}</span>
+        </div>
+      </header>
+
+      <div class="invoice-parties">
+        <article>
+          <strong>Customer</strong>
+          <span>${escapeHtml(order.customer?.name || "Customer")}</span>
+          <span>${escapeHtml(order.customer?.phone || "")}</span>
+          ${order.customer?.email ? `<span>${escapeHtml(order.customer.email)}</span>` : ""}
+        </article>
+        <article>
+          <strong>Delivery</strong>
+          <span>${escapeHtml(order.countryCity || order.customer?.location || "Location pending")}</span>
+          ${order.postalCode ? `<span>${escapeHtml(order.postalCode)}</span>` : ""}
+          <span>${escapeHtml(order.address || "Address to be confirmed")}</span>
+        </article>
+        <article>
+          <strong>Payment</strong>
+          <span>${escapeHtml(order.payment || "To be confirmed")}</span>
+          <span>${escapeHtml(order.paymentState || "Payment pending")}</span>
+          <span>${escapeHtml(order.paymentNote || "Payment will be confirmed by the order desk.")}</span>
+        </article>
+      </div>
+
+      ${renderConfirmationItems(order)}
+      ${renderConfirmationTotals(order)}
+
+      <div class="invoice-status-panel">
+        <div class="status-steps" aria-label="Order status timeline">${renderStatusSteps(order)}</div>
+        <p><strong>Next step:</strong> ${escapeHtml(getOrderNextAction(order))}</p>
+      </div>
+
+      <p class="invoice-disclaimer">
+        This page is a booking confirmation and invoice summary. Final tax invoice, GST/FSSAI details, and export documentation should be issued after verified business registration and packaging details are finalized.
+      </p>
+    </section>
+  `;
+
+  confirmationPage.querySelector("[data-copy-confirmation]")?.addEventListener("click", async (event) => {
+    await copyText(event.currentTarget.dataset.copyConfirmation);
+    showToast("Booking ID copied");
+  });
+  confirmationPage.querySelector("[data-print-confirmation]")?.addEventListener("click", () => window.print());
+  refreshIcons();
+}
+
+function renderConfirmationFallback(title, message) {
+  if (!confirmationPage) return;
+
+  confirmationPage.innerHTML = `
+    <section class="confirmation-hero is-empty" aria-labelledby="confirmation-title">
+      <div>
+        <p class="eyebrow">Order confirmation</p>
+        <h1 id="confirmation-title">${escapeHtml(title)}</h1>
+        <p>${escapeHtml(message)}</p>
+      </div>
+      <div class="confirmation-actions">
+        <a class="primary-link" href="./track.html">
+          <i data-lucide="search"></i>
+          Track order
+        </a>
+        <a href="./products.html">
+          <i data-lucide="store"></i>
+          Continue shopping
+        </a>
+      </div>
+    </section>
+  `;
+  refreshIcons();
+}
+
+async function hydrateConfirmationPage() {
+  if (!confirmationPage) return;
+
+  const params = new URLSearchParams(window.location.search);
+  const orderId = String(params.get("id") || "").trim().toUpperCase();
+  const phone = normalizePhone(params.get("phone"));
+  if (!orderId || !phone) {
+    renderConfirmationFallback("Booking details needed.", "Open this page from checkout or use the tracking page with your booking ID and phone number.");
+    return;
+  }
+
+  try {
+    const payload = await apiRequest(`/api/orders/track?${new URLSearchParams({ id: orderId, phone }).toString()}`);
+    if (payload.order) {
+      upsertOrderRecords(payload.order, payload.order);
+      renderConfirmationPage(payload.order, "live");
+      return;
+    }
+  } catch {
+    // Local order fallback keeps the confirmation usable immediately after checkout.
+  }
+
+  const localOrder = findLocalOrder(orderId, phone);
+  if (localOrder) {
+    renderConfirmationPage(localOrder, "saved");
+    return;
+  }
+
+  renderConfirmationFallback("Booking not found.", "Please check the booking ID and phone number, or contact WhatsApp support with your order details.");
+}
+
 function prefillCheckoutFromCustomer() {
   if (!state.customer || !checkoutForm) return;
 
@@ -1352,7 +1570,9 @@ function refreshIcons() {
     icons: {
       BadgeCheck,
       ChevronDown,
+      CheckCircle2,
       Clipboard,
+      FileText,
       Factory,
       FlaskConical,
       Globe2,
@@ -1362,6 +1582,7 @@ function refreshIcons() {
       MessageCircle,
       PackageCheck,
       PackageOpen,
+      Printer,
       Plus,
       RotateCw,
       Search,
@@ -1440,7 +1661,7 @@ document.querySelector("#whatsappOrder")?.addEventListener("click", () => {
   showToast(`Order ${orderId} ready in WhatsApp`);
 });
 
-checkoutForm?.addEventListener("submit", (event) => {
+checkoutForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!state.cart.size) {
     showToast("Add at least one product first");
@@ -1450,8 +1671,10 @@ checkoutForm?.addEventListener("submit", (event) => {
   const orderId = createOrderId();
   const order = createOrderRecord(event.currentTarget, orderId, "Website cart booking");
   saveCustomer(order.customer);
-  syncCustomerProfile(order.customer);
-  saveOrderRecord(order);
+  const customerSync = syncCustomerProfile(order.customer);
+  saveOrderRecord(order, { sync: false });
+  const syncedOrder = await syncOrderRecord(order);
+  await customerSync;
   state.cart.clear();
   saveCart();
   state.couponApplied = false;
@@ -1461,7 +1684,7 @@ checkoutForm?.addEventListener("submit", (event) => {
   renderCart();
   closeCart();
   showToast(`Order ${orderId} placed successfully`);
-  loadCustomerOrdersFromBackend(order.customer.phone);
+  redirectToConfirmation(syncedOrder || order);
 });
 
 customerLoginForm?.addEventListener("submit", async (event) => {
@@ -1566,4 +1789,5 @@ if (state.customer?.phone) {
   loadCustomerOrdersFromBackend(state.customer.phone);
 }
 hydrateTrackingFromUrl();
+hydrateConfirmationPage();
 refreshIcons();

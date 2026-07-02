@@ -11,6 +11,7 @@ export default defineConfig({
         products: resolve(__dirname, "products.html"),
         product: resolve(__dirname, "product.html"),
         account: resolve(__dirname, "account.html"),
+        confirmation: resolve(__dirname, "confirmation.html"),
         track: resolve(__dirname, "track.html"),
         wholesale: resolve(__dirname, "wholesale.html"),
         about: resolve(__dirname, "about.html")

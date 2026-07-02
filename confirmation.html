@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="BandEvi Gourmet order confirmation, invoice summary, tracking link, and customer support actions."
+    />
+    <link rel="canonical" href="https://bandevigourmet.com/confirmation.html" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:title" content="Order Confirmation | BandEvi Gourmet" />
+    <meta property="og:description" content="Review your BandEvi Gourmet booking ID, invoice summary, and tracking link." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bandevigourmet.com/confirmation.html" />
+    <title>Order Confirmation | BandEvi Gourmet</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./index.html#top" aria-label="BandEvi Gourmet home">
+        <span class="brand-mark">B</span>
+        <span>
+          <strong>BandEvi Gourmet</strong>
+          <small>Global snack and spice brand</small>
+        </span>
+      </a>
+
+      <nav class="main-nav" aria-label="Primary navigation">
+        <a href="./products.html">Products</a>
+        <a href="./account.html">Account</a>
+        <a href="./track.html">Track</a>
+        <a href="./wholesale.html">Wholesale</a>
+        <a href="./policies.html">Policies</a>
+      </nav>
+
+      <div class="header-actions">
+        <a class="portal-shortcut" href="./track.html">
+          <i data-lucide="search"></i>
+          <span>Track order</span>
+        </a>
+        <button class="icon-button cart-trigger" type="button" aria-label="Open cart">
+          <i data-lucide="shopping-bag"></i>
+          <span class="cart-count" data-cart-count>0</span>
+        </button>
+      </div>
+      <div class="header-trust-row" aria-label="Trust highlights">
+        <span>Booking ID generated</span>
+        <span>Invoice summary</span>
+        <span>Tracking link</span>
+        <span>WhatsApp support</span>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="confirmation-shell" id="confirmationPage" aria-live="polite">
+        <div class="confirmation-loading">
+          <p class="eyebrow">Order confirmation</p>
+          <h1>Loading your booking details.</h1>
+          <p>Please keep this page open while we prepare your invoice summary.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer" aria-label="Brand footer">
+      <div class="footer-intro">
+        <a class="brand footer-brand" href="./index.html#top" aria-label="BandEvi Gourmet home">
+          <span class="brand-mark">B</span>
+          <span>
+            <strong>BandEvi Gourmet</strong>
+            <small>Order confirmation desk</small>
+          </span>
+        </a>
+        <p>Keep your booking ID safely. It is required for tracking, support, cancellation, and refund conversations.</p>
+      </div>
+      <nav class="footer-links" aria-label="Footer links">
+        <strong>Support</strong>
+        <a href="./track.html">Track order</a>
+        <a href="./account.html">Customer account</a>
+        <a href="./policies.html#shipping">Shipping policy</a>
+        <a href="./policies.html#refund">Refund policy</a>
+      </nav>
+      <div class="footer-note">
+        <strong>Invoice note</strong>
+        <span>This confirmation is a booking summary. Final tax invoice details should match verified business and packaging records.</span>
+      </div>
+    </footer>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
