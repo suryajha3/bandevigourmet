@@ -24,6 +24,8 @@ import productDetails from "./product-details.json";
 import products from "./products.json";
 import { STORE_CONFIG } from "./store-config.js";
 
+const API_TIMEOUT_MS = 6000;
+
 const catalog = products.map((product) => ({
   ...product,
   details: productDetails[product.id] || {}
@@ -106,6 +108,27 @@ function readJson(key, fallback) {
 
 function writeJson(key, value) {
   window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+async function apiRequest(path, options = {}) {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(path, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      }
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || "Request failed");
+    return payload;
+  } finally {
+    window.clearTimeout(timer);
+  }
 }
 
 function loadCustomer() {
@@ -477,11 +500,51 @@ function createOrderRecord(form, orderId, source) {
   };
 }
 
-function saveOrderRecord(order) {
+function upsertOrderRecords(orders, trackedOrder = null) {
+  const incoming = Array.isArray(orders) ? orders : [orders];
+  const byId = new Map(state.orders.map((item) => [item.id, item]));
+  incoming.forEach((order) => {
+    if (order?.id) byId.set(order.id, order);
+  });
+  const nextOrders = [...byId.values()]
+    .toSorted((a, b) => new Date(b.updatedAt || b.placedAt || 0) - new Date(a.updatedAt || a.placedAt || 0))
+    .slice(0, 30);
+  saveOrders(nextOrders);
+  if (trackedOrder) state.trackedOrder = trackedOrder;
+  renderCustomerPortal();
+}
+
+async function syncOrderRecord(order) {
+  try {
+    const payload = await apiRequest("/api/orders", {
+      method: "POST",
+      body: JSON.stringify(order)
+    });
+    upsertOrderRecords(payload.order, payload.order);
+    return payload.order;
+  } catch {
+    return null;
+  }
+}
+
+function saveOrderRecord(order, options = {}) {
+  const { sync = true } = options;
   const nextOrders = [order, ...state.orders.filter((item) => item.id !== order.id)].slice(0, 30);
   saveOrders(nextOrders);
   state.trackedOrder = order;
   renderCustomerPortal();
+  if (sync) syncOrderRecord(order);
+}
+
+async function loadCustomerOrdersFromBackend(phone) {
+  try {
+    const params = new URLSearchParams({ phone: normalizePhone(phone) });
+    const payload = await apiRequest(`/api/orders/customer?${params.toString()}`);
+    if (payload.orders?.length) upsertOrderRecords(payload.orders);
+    return payload.orders || [];
+  } catch {
+    return [];
+  }
 }
 
 function formatOrderDate(value) {
@@ -662,6 +725,24 @@ function buildWholesaleMessage(form) {
     "Product Interest:",
     data.get("message") || "Not specified"
   ].join("\n");
+}
+
+async function syncWholesaleEnquiry(form) {
+  const data = new FormData(form);
+  try {
+    await apiRequest("/api/wholesale", {
+      method: "POST",
+      body: JSON.stringify({
+        businessName: data.get("businessName"),
+        contactName: data.get("contactName"),
+        country: data.get("country"),
+        volume: data.get("volume"),
+        message: data.get("message")
+      })
+    });
+  } catch {
+    // WhatsApp remains the fallback while backend hosting is being activated.
+  }
 }
 
 function getWhatsAppUrl(message) {
@@ -884,7 +965,7 @@ checkoutForm.addEventListener("submit", (event) => {
   showToast(`Order ${orderId} placed successfully`);
 });
 
-customerLoginForm.addEventListener("submit", (event) => {
+customerLoginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = new FormData(event.currentTarget);
   const customer = {
@@ -898,20 +979,32 @@ customerLoginForm.addEventListener("submit", (event) => {
   state.trackedOrder = null;
   prefillCheckoutFromCustomer();
   renderCustomerPortal();
+  await loadCustomerOrdersFromBackend(customer.phone);
   showToast("Customer login saved");
 });
 
-orderLookupForm.addEventListener("submit", (event) => {
+orderLookupForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = new FormData(event.currentTarget);
   const orderId = String(data.get("orderId") || "").trim().toUpperCase();
   const phone = normalizePhone(data.get("phone"));
+
+  try {
+    const params = new URLSearchParams({ id: orderId, phone });
+    const payload = await apiRequest(`/api/orders/track?${params.toString()}`);
+    upsertOrderRecords(payload.order, payload.order);
+    showToast(`Tracking ${payload.order.id}`);
+    return;
+  } catch {
+    // Fall back to this browser's saved orders when the backend is not active yet.
+  }
+
   const order = state.orders.find((item) => item.id.toUpperCase() === orderId && normalizePhone(item.customer.phone) === phone);
 
   if (!order) {
     state.trackedOrder = null;
     renderCustomerPortal();
-    showToast("No matching order found on this device");
+    showToast("No matching order found");
     return;
   }
 
@@ -923,6 +1016,7 @@ orderLookupForm.addEventListener("submit", (event) => {
 wholesaleForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const message = buildWholesaleMessage(event.currentTarget);
+  syncWholesaleEnquiry(event.currentTarget);
   window.open(getWhatsAppUrl(message), "_blank", "noopener,noreferrer");
   showToast("Wholesale enquiry ready in WhatsApp");
 });

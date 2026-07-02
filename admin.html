@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>BandEvi Gourmet Admin | Orders</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="admin-page">
+    <header class="site-header admin-header">
+      <a class="brand" href="./index.html" aria-label="BandEvi Gourmet home">
+        <span class="brand-mark">B</span>
+        <span>
+          <strong>BandEvi Gourmet</strong>
+          <small>Admin order desk</small>
+        </span>
+      </a>
+      <nav class="main-nav" aria-label="Admin navigation">
+        <a href="./index.html">Storefront</a>
+        <a href="./policies.html">Policies</a>
+        <a href="#orders">Orders</a>
+        <a href="#wholesale">Wholesale</a>
+      </nav>
+      <div class="header-actions">
+        <button class="portal-shortcut" id="refreshAdmin" type="button">
+          <span>Refresh</span>
+        </button>
+        <button class="icon-button" id="logoutAdmin" type="button" aria-label="Logout admin">
+          <span>Out</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="admin-shell">
+      <section class="admin-hero" aria-labelledby="admin-title">
+        <div>
+          <p class="eyebrow">Private admin panel</p>
+          <h1 id="admin-title">Orders, bookings, and customer tracking.</h1>
+          <p>
+            Manage website bookings, update customer order status, and review wholesale enquiries from one focused desk.
+          </p>
+        </div>
+        <form class="admin-login" id="adminLoginForm">
+          <h2>Admin login</h2>
+          <label>
+            <span>Password</span>
+            <input name="password" type="password" autocomplete="current-password" required />
+          </label>
+          <button class="portal-button" type="submit">Login</button>
+          <p id="adminLoginMessage"></p>
+        </form>
+      </section>
+
+      <section class="admin-status" id="adminStatus" aria-live="polite"></section>
+
+      <section class="admin-dashboard" id="adminDashboard" hidden>
+        <div class="admin-stats" id="adminStats" aria-label="Order summary"></div>
+
+        <section class="admin-panel" id="orders" aria-labelledby="orders-title">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Order management</p>
+              <h2 id="orders-title">Customer bookings</h2>
+            </div>
+            <label class="search-wrap admin-search">
+              <span>Search</span>
+              <input id="adminSearchInput" type="search" placeholder="Order ID, phone, name, product" />
+            </label>
+          </div>
+          <div class="admin-order-list" id="adminOrderList"></div>
+        </section>
+
+        <section class="admin-panel" id="wholesale" aria-labelledby="wholesale-admin-title">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Wholesale</p>
+              <h2 id="wholesale-admin-title">Buyer enquiries</h2>
+            </div>
+          </div>
+          <div class="admin-order-list" id="adminWholesaleList"></div>
+        </section>
+      </section>
+    </main>
+
+    <div class="toast" id="adminToast" role="status" aria-live="polite"></div>
+    <script type="module" src="./admin.js"></script>
+  </body>
+</html>

@@ -22,6 +22,20 @@ npm run build
 npm run preview
 ```
 
+For the backend/admin version:
+
+```bash
+npm run build
+$env:ADMIN_PASSWORD="choose-a-private-password"
+npm start
+```
+
+Then open:
+
+```text
+http://127.0.0.1:4174/admin.html
+```
+
 ## Store Features
 
 - Product grid with category tabs, search, and sorting
@@ -36,7 +50,32 @@ npm run preview
 - WhatsApp order button with full cart and customer details
 - Wholesale enquiry form
 - Checkout form with order confirmation
+- Backend-ready order API for bookings, tracking, and admin status updates
+- Admin panel at `/admin.html` for order status management
 - Responsive layout for desktop and mobile
+
+## Backend and Admin Setup
+
+The project includes a small Node server in `server.js`.
+
+It provides:
+
+- Public order creation API
+- Public order tracking by booking ID and phone
+- Customer order lookup by phone
+- Wholesale enquiry saving
+- Admin login
+- Admin order list
+- Admin order status updates: booked, confirmed, packed, dispatched, delivered
+
+Set these private environment variables on Render when running as a Web Service:
+
+```text
+ADMIN_PASSWORD=your-private-admin-password
+ADMIN_TOKEN_SECRET=random-private-secret
+```
+
+The server stores order data in `server-data/` by default. For a serious production launch, connect this backend to a managed database such as PostgreSQL or Supabase so order data is permanent across deployments.
 
 ## Product Setup
 
