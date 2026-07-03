@@ -31,6 +31,7 @@ const state = {
   customers: [],
   notifications: [],
   supportRequests: [],
+  products: [],
   notificationConfig: null,
   search: "",
   orderFilter: "all",
@@ -49,6 +50,7 @@ const wholesaleList = document.querySelector("#adminWholesaleList");
 const customerList = document.querySelector("#adminCustomerList");
 const notificationList = document.querySelector("#adminNotificationList");
 const supportList = document.querySelector("#adminSupportList");
+const productList = document.querySelector("#adminProductList");
 const searchInput = document.querySelector("#adminSearchInput");
 const orderFilterInput = document.querySelector("#adminOrderFilter");
 const leadFilterInput = document.querySelector("#adminLeadFilter");
@@ -175,6 +177,21 @@ function supportMatchesSearch(request) {
   ]);
 }
 
+function productMatchesSearch(product) {
+  return matchesSearch([
+    product.id,
+    product.name,
+    product.category,
+    product.size,
+    product.badge,
+    product.description,
+    product.stock,
+    product.stockStatus,
+    product.tags,
+    product.adminNote
+  ]);
+}
+
 function notificationMatchesSearch(notification) {
   return matchesSearch([
     notification.id,
@@ -202,6 +219,8 @@ function renderStats() {
     customers: state.customers.length,
     wholesaleEnquiries: state.enquiries.length,
     openSupportRequests: state.supportRequests.filter((item) => !["resolved", "closed"].includes(item.status)).length,
+    products: state.products.length,
+    lowStockProducts: state.products.filter((item) => ["low-stock", "out-of-stock"].includes(item.stockStatus)).length,
     pendingNotifications: state.notifications.filter((item) => ["queued", "ready", "failed"].includes(item.status)).length
   };
 
@@ -211,6 +230,8 @@ function renderStats() {
     <article><strong>${money(summary.bookingValue)}</strong><span>Booking value</span></article>
     <article><strong>${summary.customers}</strong><span>Customers</span></article>
     <article><strong>${summary.wholesaleEnquiries}</strong><span>Wholesale leads</span></article>
+    <article><strong>${summary.products || 0}</strong><span>Products</span></article>
+    <article><strong>${summary.lowStockProducts || 0}</strong><span>Low stock</span></article>
     <article><strong>${summary.openSupportRequests || 0}</strong><span>Open support</span></article>
     <article><strong>${summary.pendingNotifications || 0}</strong><span>Open alerts</span></article>
   `;
@@ -594,6 +615,98 @@ function renderSupportRequest(request) {
   `;
 }
 
+function productCategoryOptions(value = "masala") {
+  return ["makhana", "masala", "poha", "combo"].map(
+    (category) => `<option value="${category}" ${value === category ? "selected" : ""}>${category}</option>`
+  ).join("");
+}
+
+function productStockOptions(value = "in-stock") {
+  return ["in-stock", "low-stock", "out-of-stock", "preorder"].map(
+    (status) => `<option value="${status}" ${value === status ? "selected" : ""}>${status}</option>`
+  ).join("");
+}
+
+function renderProductsAdmin() {
+  if (!productList) return;
+  const visibleProducts = state.products.filter(productMatchesSearch);
+
+  productList.innerHTML = `
+    <article class="admin-product-card admin-new-product">
+      <header>
+        <div>
+          <h3>Add new product</h3>
+          <p>Create a product without editing website code.</p>
+        </div>
+      </header>
+      <form class="admin-product-form" data-new-product-form>
+        <input name="name" type="text" placeholder="Product name" required />
+        <select name="category" aria-label="Product category">${productCategoryOptions()}</select>
+        <input name="price" type="number" min="0" step="1" placeholder="Price" required />
+        <input name="size" type="text" placeholder="Pack size" required />
+        <input name="badge" type="text" placeholder="Badge" value="Pure" />
+        <input name="stock" type="number" min="0" step="1" placeholder="Stock" value="100" />
+        <select name="stockStatus" aria-label="Stock status">${productStockOptions()}</select>
+        <input name="image" type="text" placeholder="/assets/product-image.jpg" />
+        <textarea name="description" rows="2" placeholder="Short product description"></textarea>
+        <button type="submit">Add product</button>
+      </form>
+    </article>
+    ${
+      visibleProducts.length
+        ? visibleProducts.map(renderProductAdminCard).join("")
+        : `<div class="admin-empty">No products matched the current search.</div>`
+    }
+  `;
+
+  productList.querySelector("[data-new-product-form]")?.addEventListener("submit", createAdminProduct);
+  productList.querySelectorAll("[data-product-form]").forEach((form) => {
+    form.addEventListener("submit", updateAdminProduct);
+  });
+}
+
+function renderProductAdminCard(product) {
+  const tags = Array.isArray(product.tags) ? product.tags.join(", ") : "";
+  return `
+    <article class="admin-product-card" data-status="${escapeHtml(product.stockStatus || "in-stock")}">
+      <header>
+        <div>
+          <h3>${escapeHtml(product.name || product.id)}</h3>
+          <p>${escapeHtml(product.id)} | ${escapeHtml(product.category || "product")} | ${money(product.price)}</p>
+        </div>
+        <span class="status-pill">${product.active === false ? "inactive" : escapeHtml(product.stockStatus || "in-stock")}</span>
+      </header>
+      <div class="admin-product-preview">
+        ${product.image ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" />` : `<span>No image</span>`}
+        <div>
+          <strong>${escapeHtml(product.badge || "Pure")}</strong>
+          <span>${escapeHtml(product.size || "")} / Stock ${Number(product.stock || 0)}</span>
+          <small>${escapeHtml(product.description || "No description")}</small>
+        </div>
+      </div>
+      <form class="admin-product-form" data-product-form="${escapeHtml(product.id)}">
+        <input name="name" type="text" placeholder="Product name" value="${escapeHtml(product.name || "")}" required />
+        <select name="category" aria-label="Product category">${productCategoryOptions(product.category)}</select>
+        <input name="price" type="number" min="0" step="1" placeholder="Price" value="${Number(product.price || 0)}" />
+        <input name="size" type="text" placeholder="Pack size" value="${escapeHtml(product.size || "")}" />
+        <input name="badge" type="text" placeholder="Badge" value="${escapeHtml(product.badge || "")}" />
+        <input name="stock" type="number" min="0" step="1" placeholder="Stock" value="${Number(product.stock || 0)}" />
+        <input name="lowStockThreshold" type="number" min="0" step="1" placeholder="Low stock limit" value="${Number(product.lowStockThreshold || 10)}" />
+        <select name="stockStatus" aria-label="Stock status">${productStockOptions(product.stockStatus)}</select>
+        <input name="image" type="text" placeholder="Image path" value="${escapeHtml(product.image || "")}" />
+        <input name="tags" type="text" placeholder="Tags" value="${escapeHtml(tags)}" />
+        <input name="adminNote" type="text" placeholder="Admin note" value="${escapeHtml(product.adminNote || "")}" />
+        <textarea name="description" rows="2" placeholder="Short product description">${escapeHtml(product.description || "")}</textarea>
+        <label class="admin-checkbox">
+          <input name="active" type="checkbox" ${product.active === false ? "" : "checked"} />
+          <span>Active on storefront</span>
+        </label>
+        <button type="submit">Update product</button>
+      </form>
+    </article>
+  `;
+}
+
 function renderCustomers() {
   if (!customerList) return;
   const visibleCustomers = state.customers.filter(customerMatchesSearch);
@@ -648,6 +761,7 @@ function renderAll() {
   renderStorage();
   renderNotifications();
   renderOrders();
+  renderProductsAdmin();
   renderWholesale();
   renderSupportRequests();
   renderCustomers();
@@ -662,14 +776,15 @@ async function loadDashboard() {
 
   try {
     setStatus("Loading admin data...");
-    const [ordersPayload, wholesalePayload, summaryPayload, customersPayload, storagePayload, notificationsPayload, supportPayload] = await Promise.all([
+    const [ordersPayload, wholesalePayload, summaryPayload, customersPayload, storagePayload, notificationsPayload, supportPayload, productsPayload] = await Promise.all([
       api("/api/admin/orders"),
       api("/api/admin/wholesale"),
       api("/api/admin/summary").catch(() => ({ summary: null })),
       api("/api/admin/customers").catch(() => ({ customers: [] })),
       api("/api/admin/storage").catch(() => ({ storage: null })),
       api("/api/admin/notifications").catch(() => ({ notifications: [], config: null })),
-      api("/api/admin/support").catch(() => ({ supportRequests: [] }))
+      api("/api/admin/support").catch(() => ({ supportRequests: [] })),
+      api("/api/admin/products").catch(() => ({ products: [] }))
     ]);
     state.orders = ordersPayload.orders || [];
     state.enquiries = wholesalePayload.enquiries || [];
@@ -678,6 +793,7 @@ async function loadDashboard() {
     state.storage = storagePayload.storage || null;
     state.notifications = notificationsPayload.notifications || [];
     state.supportRequests = supportPayload.supportRequests || [];
+    state.products = productsPayload.products || [];
     state.notificationConfig = notificationsPayload.config || null;
     dashboard.hidden = false;
     setStatus("Admin backend connected.", "success");
@@ -984,6 +1100,61 @@ async function updateSupportRequest(event) {
   }
 }
 
+function productPayloadFromForm(form) {
+  const data = new FormData(form);
+  return {
+    name: data.get("name"),
+    category: data.get("category"),
+    price: Number(data.get("price") || 0),
+    size: data.get("size"),
+    badge: data.get("badge"),
+    stock: Number(data.get("stock") || 0),
+    lowStockThreshold: Number(data.get("lowStockThreshold") || 10),
+    stockStatus: data.get("stockStatus"),
+    image: data.get("image"),
+    tags: data.get("tags"),
+    adminNote: data.get("adminNote"),
+    description: data.get("description"),
+    active: data.get("active") === "on" || form.hasAttribute("data-new-product-form")
+  };
+}
+
+async function createAdminProduct(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  try {
+    const payload = await api("/api/admin/products", {
+      method: "POST",
+      body: JSON.stringify(productPayloadFromForm(form))
+    });
+    state.products = [payload.product, ...state.products];
+    form.reset();
+    renderAll();
+    showToast("Product added");
+    loadDashboard();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function updateAdminProduct(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const productId = form.dataset.productForm;
+  try {
+    const payload = await api(`/api/admin/products/${encodeURIComponent(productId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(productPayloadFromForm(form))
+    });
+    state.products = state.products.map((product) => (product.id === payload.product.id ? payload.product : product));
+    renderAll();
+    showToast(`${payload.product.name} updated`);
+    loadDashboard();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
 async function downloadAdminExport(type) {
   try {
     const response = await fetch(`${API_ORIGIN}/api/admin/export?type=${encodeURIComponent(type)}`, {
@@ -1059,6 +1230,7 @@ document.querySelector("#logoutAdmin").addEventListener("click", () => {
   state.customers = [];
   state.notifications = [];
   state.supportRequests = [];
+  state.products = [];
   state.notificationConfig = null;
   window.sessionStorage.removeItem(TOKEN_KEY);
   dashboard.hidden = true;

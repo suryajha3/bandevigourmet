@@ -1448,6 +1448,35 @@ a {
   height: 15px;
 }
 
+.stock-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 28px;
+  margin-top: 10px;
+  padding: 0 9px;
+  border: 1px solid rgba(30, 89, 75, 0.16);
+  border-radius: 8px;
+  background: #edf7f1;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.stock-pill.is-low-stock,
+.stock-pill.is-preorder {
+  border-color: rgba(230, 165, 30, 0.36);
+  background: #fff8df;
+  color: #8b610f;
+}
+
+.stock-pill.is-out-of-stock,
+.stock-pill.is-inactive {
+  border-color: rgba(200, 77, 54, 0.22);
+  background: #fff0ed;
+  color: var(--chili);
+}
+
 .price-row {
   display: flex;
   align-items: baseline;
@@ -1471,6 +1500,15 @@ a {
 .product-card button,
 .product-card .detail-button {
   width: 100%;
+}
+
+.product-card button:disabled,
+.category-card button:disabled,
+.single-product-actions button:disabled,
+.detail-hero button:disabled,
+.quantity button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
 }
 
 .card-actions {
@@ -4709,6 +4747,7 @@ a {
 .admin-order-card,
 .admin-notification-card,
 .admin-support-card,
+.admin-product-card,
 .admin-customer-card {
   display: grid;
   gap: 12px;
@@ -4725,10 +4764,19 @@ a {
   border-left: 4px solid var(--saffron);
 }
 
+.admin-product-card[data-status="low-stock"],
+.admin-product-card[data-status="preorder"] {
+  border-left: 4px solid var(--saffron);
+}
+
 .admin-order-card[data-status="confirmed"],
 .admin-order-card[data-status="packed"],
 .admin-notification-card[data-status="sent"],
 .admin-support-card[data-status="reviewing"] {
+  border-left: 4px solid var(--green);
+}
+
+.admin-product-card[data-status="in-stock"] {
   border-left: 4px solid var(--green);
 }
 
@@ -4748,6 +4796,10 @@ a {
   border-left: 4px solid var(--chili);
 }
 
+.admin-product-card[data-status="out-of-stock"] {
+  border-left: 4px solid var(--chili);
+}
+
 .admin-notification-card[data-status="archived"] {
   border-left: 4px solid #8d8677;
   opacity: 0.88;
@@ -4756,6 +4808,7 @@ a {
 .admin-order-card header,
 .admin-notification-card header,
 .admin-support-card header,
+.admin-product-card header,
 .admin-customer-card header {
   display: flex;
   justify-content: space-between;
@@ -4768,6 +4821,8 @@ a {
 .admin-notification-card p,
 .admin-support-card h3,
 .admin-support-card p,
+.admin-product-card h3,
+.admin-product-card p,
 .admin-customer-card h3,
 .admin-customer-card p {
   margin: 0;
@@ -4776,6 +4831,7 @@ a {
 .admin-order-card h3,
 .admin-notification-card h3,
 .admin-support-card h3,
+.admin-product-card h3,
 .admin-customer-card h3 {
   font-size: 22px;
 }
@@ -4783,6 +4839,7 @@ a {
 .admin-order-card p,
 .admin-notification-card p,
 .admin-support-card p,
+.admin-product-card p,
 .admin-customer-card p {
   color: var(--muted);
   line-height: 1.55;
@@ -4915,6 +4972,89 @@ a {
 .admin-order-item b {
   color: var(--green);
   white-space: nowrap;
+}
+
+.admin-product-preview {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid rgba(30, 89, 75, 0.12);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.admin-product-preview img,
+.admin-product-preview > span {
+  width: 96px;
+  height: 96px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f4f1e8;
+  object-fit: contain;
+}
+
+.admin-product-preview > span {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.admin-product-preview div {
+  display: grid;
+  gap: 5px;
+}
+
+.admin-product-preview strong {
+  color: var(--green);
+}
+
+.admin-product-preview small,
+.admin-product-preview span {
+  color: var(--muted);
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.admin-product-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.admin-product-form textarea,
+.admin-product-form .admin-checkbox,
+.admin-product-form button {
+  grid-column: 1 / -1;
+}
+
+.admin-product-form input,
+.admin-product-form select,
+.admin-product-form textarea {
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.admin-product-form textarea {
+  resize: vertical;
+}
+
+.admin-product-form button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--green);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 900;
 }
 
 .admin-action-strip {
@@ -5692,6 +5832,10 @@ a {
   .admin-order-progress,
   .checkout-flow-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-product-preview {
+    grid-template-columns: 1fr;
   }
 
   .admin-pipeline {

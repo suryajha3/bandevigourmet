@@ -36,10 +36,7 @@ import { STORE_CONFIG } from "./store-config.js";
 const API_TIMEOUT_MS = 6000;
 const API_ORIGIN = window.location.origin;
 
-const catalog = products.map((product) => ({
-  ...product,
-  details: productDetails[product.id] || {}
-}));
+let catalog = buildCatalog(products);
 
 const NON_VEG_MASALA_IDS = new Set([
   "chicken-masala",
@@ -84,6 +81,20 @@ const ORDER_LABELS = {
   delivered: "Delivered",
   cancelled: "Cancelled"
 };
+
+function buildCatalog(productList) {
+  return (Array.isArray(productList) ? productList : [])
+    .filter((product) => product.active !== false)
+    .map((product) => ({
+      ...product,
+      price: Number(product.price || 0),
+      rating: Number(product.rating || 4.8),
+      stock: Number(product.stock ?? 100),
+      stockStatus: product.stockStatus || "in-stock",
+      lowStockThreshold: Number(product.lowStockThreshold || 10),
+      details: product.details || productDetails[product.id] || {}
+    }));
+}
 
 const state = {
   filter: "all",
@@ -712,6 +723,33 @@ async function syncCustomerProfile(customer) {
   }
 }
 
+function sanitizeCartForCatalog() {
+  let changed = false;
+  [...state.cart.entries()].forEach(([id, quantity]) => {
+    const product = catalog.find((item) => item.id === id);
+    if (!product || !isProductAvailable(product, quantity)) {
+      state.cart.delete(id);
+      changed = true;
+    }
+  });
+  if (changed) saveCart();
+}
+
+async function syncCatalogFromBackend() {
+  try {
+    const payload = await apiRequest("/api/products");
+    if (!payload.products?.length) return;
+    catalog = buildCatalog(payload.products);
+    sanitizeCartForCatalog();
+    renderProducts();
+    renderCategoryProducts();
+    renderSingleProductPage();
+    renderCart();
+  } catch {
+    // Static product JSON remains the storefront fallback when the backend is unavailable.
+  }
+}
+
 function getStatusIndex(status) {
   const index = ORDER_STEPS.findIndex((step) => step.key === status);
   return index >= 0 ? index : 0;
@@ -727,6 +765,43 @@ function isClosedOrder(order) {
 
 function productImage(product) {
   return product.image || "/assets/makhana-masala-hero.png";
+}
+
+function getStockStatus(product) {
+  const stock = Number(product?.stock ?? 0);
+  if (!product || product.active === false) return "inactive";
+  if (product.stockStatus === "preorder") return "preorder";
+  if (product.stockStatus === "out-of-stock" || stock <= 0) return "out-of-stock";
+  if (product.stockStatus === "low-stock" || stock <= Number(product.lowStockThreshold || 10)) return "low-stock";
+  return "in-stock";
+}
+
+function isProductAvailable(product, quantity = 1) {
+  const status = getStockStatus(product);
+  if (status === "inactive" || status === "out-of-stock") return false;
+  if (status === "preorder") return true;
+  return Number(product.stock ?? 0) >= quantity;
+}
+
+function getStockLabel(product) {
+  const status = getStockStatus(product);
+  const stock = Number(product?.stock ?? 0);
+  if (status === "preorder") return "Pre-order";
+  if (status === "low-stock") return `${stock} left`;
+  if (status === "out-of-stock") return "Out of stock";
+  if (status === "inactive") return "Hidden";
+  return "In stock";
+}
+
+function getCartStockIssue() {
+  const issue = [...state.cart.entries()].find(([id, quantity]) => {
+    const product = catalog.find((item) => item.id === id);
+    return !isProductAvailable(product, quantity);
+  });
+  if (!issue) return "";
+  const [id] = issue;
+  const product = catalog.find((item) => item.id === id);
+  return `${product?.name || "A product"} is not available in the requested quantity.`;
 }
 
 function hasProductImage(product) {
@@ -790,6 +865,7 @@ function getFilteredProducts() {
 }
 
 function renderProductCard(product) {
+  const available = isProductAvailable(product);
   return `
     <article class="product-card">
       <div class="product-media">
@@ -807,15 +883,16 @@ function renderProductCard(product) {
           <i data-lucide="leaf"></i>
           No artificial colors or synthetic flavor shortcuts
         </div>
+        <span class="stock-pill is-${getStockStatus(product)}">${escapeHtml(getStockLabel(product))}</span>
         <div class="price-row">
           <span class="price">${money(product.price)}</span>
           <span class="pack-size">${product.size}</span>
         </div>
         <div class="card-actions">
           <a class="detail-button" href="${productUrl(product)}">View details</a>
-          <button type="button" data-add="${product.id}">
+          <button type="button" data-add="${product.id}" ${available ? "" : "disabled"}>
             <i data-lucide="plus"></i>
-            Add to cart
+            ${available ? "Add to cart" : "Unavailable"}
           </button>
         </div>
       </div>
@@ -824,6 +901,7 @@ function renderProductCard(product) {
 }
 
 function renderCategoryCard(product) {
+  const available = isProductAvailable(product);
   return `
     <article class="category-card">
       <div class="category-thumb">
@@ -837,11 +915,12 @@ function renderCategoryCard(product) {
           <i data-lucide="leaf"></i>
           Pure pantry direction
         </small>
+        <span class="stock-pill is-${getStockStatus(product)}">${escapeHtml(getStockLabel(product))}</span>
         <div class="category-actions">
           <a class="detail-button" href="${productUrl(product)}">Details</a>
-          <button type="button" data-add="${product.id}">
+          <button type="button" data-add="${product.id}" ${available ? "" : "disabled"}>
             <i data-lucide="plus"></i>
-            Add
+            ${available ? "Add" : "Unavailable"}
           </button>
         </div>
       </div>
@@ -996,6 +1075,7 @@ function renderSingleProductPage() {
 
   const details = product.details || {};
   const sameCategory = catalog.filter((item) => item.category === product.category && item.id !== product.id).slice(0, 3);
+  const available = isProductAvailable(product);
   document.title = `${product.name} | BandEvi Gourmet`;
 
   singleProductPage.innerHTML = `
@@ -1014,12 +1094,12 @@ function renderSingleProductPage() {
         </div>
         <div class="single-product-price">
           <strong>${money(product.price)}</strong>
-          <span>Cart booking and WhatsApp support available</span>
+          <span>${escapeHtml(getStockLabel(product))} / cart booking and WhatsApp support available</span>
         </div>
         <div class="single-product-actions">
-          <button type="button" data-add="${product.id}">
+          <button type="button" data-add="${product.id}" ${available ? "" : "disabled"}>
             <i data-lucide="plus"></i>
-            Add to cart
+            ${available ? "Add to cart" : "Unavailable"}
           </button>
           <button class="secondary-product-action cart-trigger" type="button">
             <i data-lucide="shopping-bag"></i>
@@ -1067,6 +1147,7 @@ function openProductDetail(id) {
   if (!product) return;
 
   const details = product.details || {};
+  const available = isProductAvailable(product);
   closeCart();
   productDetailContent.innerHTML = `
     <div class="detail-hero">
@@ -1079,10 +1160,11 @@ function openProductDetail(id) {
           <strong>${money(product.price)}</strong>
           <span>${product.size}</span>
           <span>${product.rating}/5 rating</span>
+          <span>${escapeHtml(getStockLabel(product))}</span>
         </div>
-        <button type="button" data-add="${product.id}">
+        <button type="button" data-add="${product.id}" ${available ? "" : "disabled"}>
           <i data-lucide="plus"></i>
-          Add to cart
+          ${available ? "Add to cart" : "Unavailable"}
         </button>
       </div>
     </div>
@@ -1108,7 +1190,14 @@ function closeProductDetail() {
 }
 
 function addToCart(id) {
-  state.cart.set(id, (state.cart.get(id) || 0) + 1);
+  const product = catalog.find((item) => item.id === id);
+  const nextQuantity = (state.cart.get(id) || 0) + 1;
+  if (!isProductAvailable(product, nextQuantity)) {
+    showToast(`${product?.name || "This product"} is not available in that quantity`);
+    return;
+  }
+
+  state.cart.set(id, nextQuantity);
   state.checkoutStep = "cart";
   saveCart();
   renderCart();
@@ -1120,6 +1209,11 @@ function setQuantity(id, quantity) {
   if (quantity <= 0) {
     state.cart.delete(id);
   } else {
+    const product = catalog.find((item) => item.id === id);
+    if (!isProductAvailable(product, quantity)) {
+      showToast(`${product?.name || "This product"} is not available in that quantity`);
+      return;
+    }
     state.cart.set(id, quantity);
   }
   saveCart();
@@ -1511,6 +1605,11 @@ function setCheckoutStep(step, options = {}) {
   if (nextStep === "review" && !options.skipValidation) {
     if (!state.cart.size) {
       showToast("Add at least one product first");
+      return;
+    }
+    const stockIssue = getCartStockIssue();
+    if (stockIssue) {
+      showToast(stockIssue);
       return;
     }
     if (!checkoutForm?.reportValidity()) return;
@@ -2532,6 +2631,7 @@ function renderCart() {
                   <span>${escapeHtml(item.category)} / ${escapeHtml(item.size)}</span>
                   <h3>${escapeHtml(item.name)}</h3>
                   <p>${escapeHtml(item.description)}</p>
+                  <span class="stock-pill is-${getStockStatus(item)}">${escapeHtml(getStockLabel(item))}</span>
                   <strong>${money(item.price)} each</strong>
                 </div>
                 <div class="cart-line-actions">
@@ -2539,7 +2639,7 @@ function renderCart() {
                   <div class="quantity" aria-label="${escapeHtml(item.name)} quantity">
                     <button type="button" data-minus="${item.id}" aria-label="Decrease ${escapeHtml(item.name)}">-</button>
                     <span>${item.quantity}</span>
-                    <button type="button" data-plus="${item.id}" aria-label="Increase ${escapeHtml(item.name)}">+</button>
+                    <button type="button" data-plus="${item.id}" aria-label="Increase ${escapeHtml(item.name)}" ${isProductAvailable(item, item.quantity + 1) ? "" : "disabled"}>+</button>
                   </div>
                   <button class="remove-line" type="button" data-remove="${item.id}">Remove</button>
                 </div>
@@ -2871,6 +2971,11 @@ checkoutForm?.addEventListener("submit", async (event) => {
     showToast("Review booking before placing order");
     return;
   }
+  const stockIssue = getCartStockIssue();
+  if (stockIssue) {
+    showToast(stockIssue);
+    return;
+  }
 
   const orderId = createOrderId();
   const order = createOrderRecord(form, orderId, "Website cart booking");
@@ -3054,6 +3159,7 @@ renderProducts();
 renderCategoryProducts();
 renderSingleProductPage();
 renderCart();
+syncCatalogFromBackend();
 prefillCustomerLoginForm();
 renderCustomerPortal();
 initPromoSlider();

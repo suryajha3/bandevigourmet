@@ -11,6 +11,8 @@ const PORT = Number(process.env.PORT || 4175);
 const DATA_DIR = resolve(process.env.DATA_DIR || join(__dirname, "server-data"));
 const DB_FILE = join(DATA_DIR, "store.json");
 const PUBLIC_DIR = resolve(__dirname, "dist");
+const PRODUCTS_FILE = join(__dirname, "products.json");
+const PRODUCT_DETAILS_FILE = join(__dirname, "product-details.json");
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 const TOKEN_SECRET = process.env.ADMIN_TOKEN_SECRET || ADMIN_PASSWORD || randomUUID();
 const CUSTOMER_PIN_SECRET =
@@ -33,6 +35,7 @@ const CLOSED_ORDER_STATUSES = new Set(["delivered", "cancelled"]);
 const ORDER_STATUSES = new Set(["booked", "confirmed", "packed", "dispatched", "delivered", "cancelled"]);
 const WHOLESALE_STATUSES = new Set(["new", "contacted", "quoted", "sample-sent", "converted", "closed"]);
 const SUPPORT_STATUSES = new Set(["new", "reviewing", "waiting-customer", "resolved", "closed"]);
+const PRODUCT_STOCK_STATUSES = new Set(["in-stock", "low-stock", "out-of-stock", "preorder"]);
 const API_CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
@@ -84,6 +87,13 @@ function cleanPhone(value) {
 
 function cleanOrderId(value) {
   return text(value, 32).toUpperCase().replace(/[^A-Z0-9-]/g, "");
+}
+
+function cleanProductId(value) {
+  return text(value, 80)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 function cleanAccessPin(value) {
@@ -245,6 +255,37 @@ function adminSupportRequest(request) {
   };
 }
 
+function publicProduct(product) {
+  return {
+    id: product.id,
+    name: product.name,
+    category: product.category,
+    price: Number(product.price || 0),
+    size: product.size,
+    badge: product.badge,
+    rating: Number(product.rating || 0),
+    description: product.description,
+    image: product.image || "",
+    position: product.position || "center",
+    fit: product.fit || "contain",
+    scale: product.scale || "1",
+    active: product.active !== false,
+    stock: Number(product.stock ?? 100),
+    stockStatus: product.stockStatus || "in-stock",
+    lowStockThreshold: Number(product.lowStockThreshold || 10),
+    tags: Array.isArray(product.tags) ? product.tags : [],
+    details: product.details || {},
+    updatedAt: product.updatedAt || ""
+  };
+}
+
+function adminProduct(product) {
+  return {
+    ...publicProduct(product),
+    adminNote: product.adminNote || ""
+  };
+}
+
 function publicEnquiry(enquiry) {
   return {
     id: enquiry.id,
@@ -287,7 +328,7 @@ function isClosedOrder(order) {
 }
 
 function emptyDb() {
-  return { orders: [], wholesale: [], customers: [], notifications: [], supportRequests: [], events: [] };
+  return { orders: [], wholesale: [], customers: [], notifications: [], supportRequests: [], products: [], events: [] };
 }
 
 function normalizeDb(db) {
@@ -300,6 +341,7 @@ function normalizeDb(db) {
     customers: Array.isArray(safeDb.customers) ? safeDb.customers : [],
     notifications: Array.isArray(safeDb.notifications) ? safeDb.notifications : [],
     supportRequests: Array.isArray(safeDb.supportRequests) ? safeDb.supportRequests : [],
+    products: Array.isArray(safeDb.products) ? safeDb.products : [],
     events: Array.isArray(safeDb.events) ? safeDb.events : []
   };
 }
@@ -324,6 +366,127 @@ function normalizeCustomer(input = {}, existing = {}) {
     accessPinHash: text(input.accessPinHash || existing.accessPinHash, 160),
     tags
   };
+}
+
+let staticProductsPromise = null;
+
+async function readJsonFile(filePath, fallback) {
+  try {
+    const raw = await readFile(filePath, "utf8");
+    return JSON.parse(raw.replace(/^\uFEFF/, ""));
+  } catch {
+    return fallback;
+  }
+}
+
+async function loadStaticProducts() {
+  if (!staticProductsPromise) {
+    staticProductsPromise = (async () => {
+      const [staticProducts, staticDetails] = await Promise.all([
+        readJsonFile(PRODUCTS_FILE, []),
+        readJsonFile(PRODUCT_DETAILS_FILE, {})
+      ]);
+      return Array.isArray(staticProducts)
+        ? staticProducts.map((product) =>
+            normalizeProduct({
+              ...product,
+              details: staticDetails[product.id] || product.details || {},
+              active: true,
+              stock: 100,
+              stockStatus: "in-stock",
+              lowStockThreshold: 10
+            })
+          )
+        : [];
+    })();
+  }
+  return staticProductsPromise;
+}
+
+function normalizeProduct(input = {}, existing = {}) {
+  const now = new Date().toISOString();
+  const id = cleanProductId(input.id || existing.id || input.name) || `product-${Math.floor(10000 + Math.random() * 90000)}`;
+  const stock = Number(input.stock ?? existing.stock ?? 100);
+  const lowStockThreshold = Number(input.lowStockThreshold ?? existing.lowStockThreshold ?? 10);
+  const requestedStockStatus = input.stockStatus ?? existing.stockStatus;
+  const stockStatus = PRODUCT_STOCK_STATUSES.has(requestedStockStatus)
+    ? requestedStockStatus
+    : stock <= 0
+      ? "out-of-stock"
+      : stock <= lowStockThreshold
+        ? "low-stock"
+        : "in-stock";
+  const tagsSource = input.tags ?? existing.tags ?? [];
+  const tags = Array.isArray(tagsSource)
+    ? tagsSource.slice(0, 12).map((tag) => text(tag, 50)).filter(Boolean)
+    : text(tagsSource, 300)
+        .split(",")
+        .map((tag) => text(tag, 50))
+        .filter(Boolean)
+        .slice(0, 12);
+
+  return {
+    id,
+    name: text(input.name ?? existing.name ?? "New product", 160),
+    category: text(input.category ?? existing.category ?? "masala", 40).toLowerCase(),
+    price: Math.max(0, Number(input.price ?? existing.price ?? 0)),
+    size: text(input.size ?? existing.size ?? "100 g", 80),
+    badge: text(input.badge ?? existing.badge ?? "Pure", 80),
+    rating: Math.max(0, Math.min(5, Number(input.rating ?? existing.rating ?? 4.8))),
+    description: text(input.description ?? existing.description ?? "", 420),
+    image: text(input.image ?? existing.image ?? "", 500),
+    position: text(input.position ?? existing.position ?? "center", 80),
+    fit: text(input.fit ?? existing.fit ?? "contain", 40),
+    scale: text(input.scale ?? existing.scale ?? "1", 20),
+    active: input.active === undefined ? existing.active !== false : input.active !== false && input.active !== "false",
+    stock: Number.isFinite(stock) ? Math.max(0, stock) : 0,
+    stockStatus,
+    lowStockThreshold: Number.isFinite(lowStockThreshold) ? Math.max(0, lowStockThreshold) : 10,
+    tags,
+    details: input.details || existing.details || {},
+    adminNote: text(input.adminNote ?? existing.adminNote ?? "", 500),
+    createdAt: existing.createdAt || input.createdAt || now,
+    updatedAt: now
+  };
+}
+
+async function ensureManagedProducts(db) {
+  if (!Array.isArray(db.products) || !db.products.length) {
+    db.products = await loadStaticProducts();
+  } else {
+    db.products = db.products.map((product) => normalizeProduct(product, product));
+  }
+  return db.products;
+}
+
+function productIsOrderable(product, quantity = 1) {
+  if (!product || product.active === false) return false;
+  if (product.stockStatus === "out-of-stock") return false;
+  if (product.stockStatus === "preorder") return true;
+  return Number(product.stock ?? 0) >= quantity;
+}
+
+function validateOrderStock(order, products) {
+  for (const item of order.items || []) {
+    const product = products.find((candidate) => candidate.id === item.id);
+    if (!product || !productIsOrderable(product, Number(item.quantity || 0))) {
+      return `${item.name || item.id} is not available for the requested quantity.`;
+    }
+  }
+  return "";
+}
+
+function reserveOrderStock(order, products) {
+  (order.items || []).forEach((item) => {
+    const product = products.find((candidate) => candidate.id === item.id);
+    if (!product || product.stockStatus === "preorder") return;
+    const nextStock = Math.max(0, Number(product.stock || 0) - Number(item.quantity || 0));
+    product.stock = nextStock;
+    if (nextStock <= 0) product.stockStatus = "out-of-stock";
+    else if (nextStock <= Number(product.lowStockThreshold || 10)) product.stockStatus = "low-stock";
+    else product.stockStatus = "in-stock";
+    product.updatedAt = new Date().toISOString();
+  });
 }
 
 function upsertCustomer(db, input = {}) {
@@ -411,6 +574,7 @@ function buildAdminSummary(db) {
   const enquiries = db.wholesale || [];
   const notifications = db.notifications || [];
   const supportRequests = db.supportRequests || [];
+  const products = db.products || [];
   const activeOrders = orders.filter((order) => !isClosedOrder(order));
   const openWholesale = enquiries.filter((item) => !["converted", "closed"].includes(item.status || "new"));
   const pendingNotifications = notifications.filter((item) => ["queued", "ready", "failed"].includes(item.status || "")).length;
@@ -426,6 +590,9 @@ function buildAdminSummary(db) {
     wholesaleEnquiries: enquiries.length,
     supportRequests: supportRequests.length,
     openSupportRequests,
+    products: products.length,
+    activeProducts: products.filter((product) => product.active !== false).length,
+    lowStockProducts: products.filter((product) => ["low-stock", "out-of-stock"].includes(product.stockStatus || "")).length,
     notifications: notifications.length,
     pendingNotifications,
     openWholesale: openWholesale.length,
@@ -862,11 +1029,30 @@ function supportExportRows(db) {
   }));
 }
 
+function productExportRows(db) {
+  return (db.products || []).map((product) => ({
+    id: product.id,
+    name: product.name || "",
+    category: product.category || "",
+    price: product.price || 0,
+    size: product.size || "",
+    badge: product.badge || "",
+    active: product.active !== false,
+    stock: product.stock ?? 0,
+    stockStatus: product.stockStatus || "",
+    lowStockThreshold: product.lowStockThreshold || 0,
+    image: product.image || "",
+    tags: (product.tags || []).join("; "),
+    updatedAt: product.updatedAt || ""
+  }));
+}
+
 function exportRows(type, db) {
   if (type === "customers") return customerExportRows(db);
   if (type === "wholesale") return wholesaleExportRows(db);
   if (type === "notifications") return notificationExportRows(db);
   if (type === "support") return supportExportRows(db);
+  if (type === "products") return productExportRows(db);
   return orderExportRows(db);
 }
 
@@ -1106,6 +1292,15 @@ async function handleApi(req, res, url) {
     return true;
   }
 
+  if (url.pathname === "/api/products" && req.method === "GET") {
+    const db = await readDb();
+    const shouldPersist = !Array.isArray(db.products) || !db.products.length;
+    const products = await ensureManagedProducts(db);
+    if (shouldPersist) await writeDb(db);
+    jsonResponse(res, 200, { products: products.filter((product) => product.active !== false).map(publicProduct) });
+    return true;
+  }
+
   if (url.pathname === "/api/orders" && req.method === "POST") {
     const payload = await readBody(req);
     const order = normalizeOrder(payload);
@@ -1115,6 +1310,13 @@ async function handleApi(req, res, url) {
     }
 
     const db = await readDb();
+    const products = await ensureManagedProducts(db);
+    const stockError = validateOrderStock(order, products);
+    if (stockError) {
+      jsonResponse(res, 409, { error: stockError });
+      return true;
+    }
+    reserveOrderStock(order, products);
     db.orders = [order, ...(db.orders || []).filter((item) => item.id !== order.id)].slice(0, 1000);
     upsertCustomer(db, order.customer);
     const notifications = createOrderNotifications(order, "order_created");
@@ -1325,6 +1527,9 @@ async function handleApi(req, res, url) {
   if (url.pathname === "/api/admin/summary" && req.method === "GET") {
     if (!requireAdmin(req, res)) return true;
     const db = await readDb();
+    const shouldPersist = !Array.isArray(db.products) || !db.products.length;
+    await ensureManagedProducts(db);
+    if (shouldPersist) await writeDb(db);
     jsonResponse(res, 200, { summary: buildAdminSummary(db) });
     return true;
   }
@@ -1348,6 +1553,7 @@ async function handleApi(req, res, url) {
     const type = text(url.searchParams.get("type") || "orders", 40);
     const format = text(url.searchParams.get("format") || "csv", 20);
     const db = await readDb();
+    if (type === "products") await ensureManagedProducts(db);
     const rows = exportRows(type, db);
     if (format === "json") {
       jsonResponse(res, 200, { type, exportedAt: new Date().toISOString(), rows });
@@ -1371,6 +1577,54 @@ async function handleApi(req, res, url) {
         });
       })
     });
+    return true;
+  }
+
+  if (url.pathname === "/api/admin/products" && req.method === "GET") {
+    if (!requireAdmin(req, res)) return true;
+    const db = await readDb();
+    const shouldPersist = !Array.isArray(db.products) || !db.products.length;
+    const products = await ensureManagedProducts(db);
+    if (shouldPersist) await writeDb(db);
+    jsonResponse(res, 200, { products: products.map(adminProduct) });
+    return true;
+  }
+
+  if (url.pathname === "/api/admin/products" && req.method === "POST") {
+    if (!requireAdmin(req, res)) return true;
+    const payload = await readBody(req);
+    const db = await readDb();
+    const products = await ensureManagedProducts(db);
+    const productId = cleanProductId(payload.id || payload.name);
+    if (!productId || products.some((product) => product.id === productId)) {
+      jsonResponse(res, 409, { error: "Use a unique product name or product ID." });
+      return true;
+    }
+
+    const product = normalizeProduct({ ...payload, id: productId });
+    db.products = [product, ...products].slice(0, 1000);
+    await writeDb(db);
+    jsonResponse(res, 201, { product: adminProduct(product) });
+    return true;
+  }
+
+  const productMatch = url.pathname.match(/^\/api\/admin\/products\/([^/]+)$/);
+  if (productMatch && req.method === "PATCH") {
+    if (!requireAdmin(req, res)) return true;
+    const productId = cleanProductId(decodeURIComponent(productMatch[1]));
+    const payload = await readBody(req);
+    const db = await readDb();
+    const products = await ensureManagedProducts(db);
+    const index = products.findIndex((product) => product.id === productId);
+    if (index < 0) {
+      jsonResponse(res, 404, { error: "Product not found." });
+      return true;
+    }
+
+    const product = normalizeProduct({ ...products[index], ...payload, id: productId }, products[index]);
+    db.products = products.map((item, itemIndex) => (itemIndex === index ? product : item));
+    await writeDb(db);
+    jsonResponse(res, 200, { product: adminProduct(product) });
     return true;
   }
 
