@@ -1385,6 +1385,21 @@ async function handleApi(req, res, url) {
     }
 
     const db = await readDb();
+    const existingOrder = (db.orders || []).find((item) => cleanOrderId(item.id) === cleanOrderId(order.id));
+    if (existingOrder) {
+      if (cleanPhone(existingOrder.customer?.phone) !== cleanPhone(order.customer?.phone)) {
+        jsonResponse(res, 409, { error: "This booking ID is already connected with another customer." });
+        return true;
+      }
+
+      jsonResponse(res, 200, {
+        order: publicOrder(existingOrder),
+        duplicate: true,
+        notifications: []
+      });
+      return true;
+    }
+
     const products = await ensureManagedProducts(db);
     const stockError = validateOrderStock(order, products);
     if (stockError) {

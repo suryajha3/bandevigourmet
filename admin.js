@@ -174,6 +174,47 @@ function formatDate(value) {
   }).format(date);
 }
 
+function cleanPhone(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function getOrderTrackingPath(order) {
+  return `./track.html?id=${encodeURIComponent(order.id)}&phone=${encodeURIComponent(cleanPhone(order.customer?.phone || ""))}`;
+}
+
+function getOrderTrackingUrl(order) {
+  return new URL(getOrderTrackingPath(order), window.location.href).href;
+}
+
+function buildCustomerStatusMessage(order) {
+  const status = STATUS_LABELS[order.status] || order.status || "Booked";
+  const trackingUrl = getOrderTrackingUrl(order);
+  const courierLine = order.courier ? `Courier: ${order.courier}` : "Courier: will be shared after packing";
+  const codeLine = order.trackingCode ? `Tracking code: ${order.trackingCode}` : "Tracking code: pending";
+  const etaLine = order.eta ? `ETA: ${order.eta}` : "ETA: will be shared after dispatch";
+
+  return [
+    `BandEvi Gourmet order update`,
+    `Booking ID: ${order.id}`,
+    `Status: ${status}`,
+    `Payment: ${order.paymentState || order.payment || "Payment pending"}`,
+    courierLine,
+    codeLine,
+    etaLine,
+    `Track here: ${trackingUrl}`,
+    order.adminNote ? `Seller note: ${order.adminNote}` : "",
+    "Thank you for choosing BandEvi Gourmet."
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function getWhatsAppUpdateUrl(order) {
+  const phone = cleanPhone(order.customer?.phone || "");
+  if (!phone) return "";
+  return `https://wa.me/${phone}?text=${encodeURIComponent(buildCustomerStatusMessage(order))}`;
+}
+
 function matchesSearch(values) {
   const q = state.search.trim().toLowerCase();
   if (!q) return true;
@@ -519,13 +560,20 @@ function renderOrders() {
   orderList.querySelectorAll("[data-print-pack]").forEach((button) => {
     button.addEventListener("click", () => printPackingSlip(button.dataset.printPack));
   });
+  orderList.querySelectorAll("[data-copy-track]").forEach((button) => {
+    button.addEventListener("click", () => copyTrackingLink(button.dataset.copyTrack));
+  });
+  orderList.querySelectorAll("[data-copy-update]").forEach((button) => {
+    button.addEventListener("click", () => copyCustomerStatusUpdate(button.dataset.copyUpdate));
+  });
 }
 
 function renderOrder(order) {
   const history = order.statusHistory || [];
   const latestHistory = history[history.length - 1];
-  const customerPhone = order.customer?.phone || "";
-  const trackingUrl = `./track.html?id=${encodeURIComponent(order.id)}&phone=${encodeURIComponent(customerPhone)}`;
+  const trackingUrl = getOrderTrackingPath(order);
+  const absoluteTrackingUrl = getOrderTrackingUrl(order);
+  const whatsappUpdateUrl = getWhatsAppUpdateUrl(order);
   const [nextAction, nextActionNote] = getAdminOrderAction(order);
   const statusOptions = Object.entries(STATUS_LABELS)
     .map(([value, label]) => `<option value="${value}" ${order.status === value ? "selected" : ""}>${label}</option>`)
@@ -557,7 +605,7 @@ function renderOrder(order) {
       <div class="admin-action-strip">
         <span><strong>${escapeHtml(nextAction)}</strong><small>${escapeHtml(nextActionNote)}</small></span>
         <span><strong>Latest timeline</strong><small>${latestHistory ? `${escapeHtml(STATUS_LABELS[latestHistory.status] || latestHistory.status)}: ${escapeHtml(latestHistory.note || "")}` : "No status history"}</small></span>
-        <span><strong>Customer tracking</strong><small>${escapeHtml(trackingUrl)}</small></span>
+        <span><strong>Customer tracking</strong><small>${escapeHtml(absoluteTrackingUrl)}</small></span>
       </div>
       <div class="admin-quick-status" aria-label="Quick order status actions">
         ${ORDER_FLOW.map(
@@ -569,6 +617,9 @@ function renderOrder(order) {
         ).join("")}
         <a href="${trackingUrl}" target="_blank" rel="noopener noreferrer">Customer view</a>
         ${order.trackingUrl ? `<a href="${escapeHtml(order.trackingUrl)}" target="_blank" rel="noopener noreferrer">Courier link</a>` : ""}
+        <button type="button" data-copy-track="${escapeHtml(order.id)}">Copy track link</button>
+        <button type="button" data-copy-update="${escapeHtml(order.id)}">Copy update</button>
+        ${whatsappUpdateUrl ? `<a href="${escapeHtml(whatsappUpdateUrl)}" target="_blank" rel="noopener noreferrer">WhatsApp update</a>` : ""}
         <button type="button" data-print-pack="${escapeHtml(order.id)}">Packing slip</button>
       </div>
       <form class="admin-status-form" data-status-form="${escapeHtml(order.id)}">
@@ -989,6 +1040,26 @@ async function copyNotificationMessage(id) {
   if (!notification) return;
   await copyText(notification.message || "");
   showToast("Notification message copied");
+}
+
+async function copyTrackingLink(orderId) {
+  const order = state.orders.find((item) => item.id === orderId);
+  if (!order) {
+    showToast("Order not found");
+    return;
+  }
+  await copyText(getOrderTrackingUrl(order));
+  showToast("Customer tracking link copied");
+}
+
+async function copyCustomerStatusUpdate(orderId) {
+  const order = state.orders.find((item) => item.id === orderId);
+  if (!order) {
+    showToast("Order not found");
+    return;
+  }
+  await copyText(buildCustomerStatusMessage(order));
+  showToast("Customer update copied");
 }
 
 async function updateNotificationStatus(id, status) {

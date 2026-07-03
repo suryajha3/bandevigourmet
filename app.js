@@ -1929,6 +1929,7 @@ async function loadCustomerOrdersFromBackend(phone) {
     state.customerSummary = payload.summary || null;
     state.customerEnquiries = payload.enquiries || [];
     state.customerSupportRequests = payload.supportRequests || [];
+    state.customerSyncStatus = "synced";
     if (payload.orders?.length) upsertOrderRecords(payload.orders);
     else renderCustomerPortal();
     return payload.orders || [];
@@ -1942,6 +1943,7 @@ async function loadCustomerOrdersFromBackend(phone) {
     try {
       const params = getCustomerAuthParams(cleanPhone);
       const payload = await apiRequest(`/api/orders/customer?${params.toString()}`);
+      state.customerSyncStatus = "synced";
       if (payload.orders?.length) upsertOrderRecords(payload.orders);
       return payload.orders || [];
     } catch {
@@ -2152,6 +2154,70 @@ function renderConfirmationTotals(order) {
   `;
 }
 
+function renderConfirmationNextSteps(order, source, trackUrl, supportUrl) {
+  const isLive = source === "live";
+  const steps = [
+    {
+      title: "Booking saved",
+      text: isLive
+        ? "The live order desk has received this booking and can update its status."
+        : "The booking is saved on this device and will stay available for tracking."
+    },
+    {
+      title: "Order desk review",
+      text: "Products, delivery area, payment note, and customer phone are checked before confirmation."
+    },
+    {
+      title: "Packing update",
+      text: "Once products are packed, courier, tracking code, dispatch date, and ETA can be added by admin."
+    },
+    {
+      title: "Customer support",
+      text: "Use the booking ID for support, cancellation, refund, or delivery conversations."
+    }
+  ];
+
+  return `
+    <section class="confirmation-next-panel" aria-labelledby="confirmation-next-title">
+      <div class="section-head compact">
+        <div>
+          <p class="eyebrow">What happens next</p>
+          <h2 id="confirmation-next-title">Your order is ready for tracking.</h2>
+        </div>
+        <a href="${trackUrl}">Open tracking</a>
+      </div>
+      <div class="confirmation-next-grid">
+        ${steps
+          .map(
+            (step, index) => `
+              <article>
+                <span>${index + 1}</span>
+                <strong>${escapeHtml(step.title)}</strong>
+                <p>${escapeHtml(step.text)}</p>
+              </article>
+            `
+          )
+          .join("")}
+      </div>
+      <div class="confirmation-support-panel">
+        <span>
+          <strong>Booking ID</strong>
+          ${escapeHtml(order.id)}
+        </span>
+        <span>
+          <strong>Payment</strong>
+          ${escapeHtml(order.paymentState || order.payment || "Payment pending")}
+        </span>
+        <span>
+          <strong>Delivery ETA</strong>
+          ${escapeHtml(order.eta || "Shared after dispatch")}
+        </span>
+        <a href="${supportUrl}" target="_blank" rel="noopener noreferrer">Contact support</a>
+      </div>
+    </section>
+  `;
+}
+
 function renderConfirmationPage(order, source = "saved") {
   if (!confirmationPage) return;
 
@@ -2241,6 +2307,8 @@ function renderConfirmationPage(order, source = "saved") {
         <div class="status-steps" aria-label="Order status timeline">${renderStatusSteps(order)}</div>
         <p><strong>Next step:</strong> ${escapeHtml(getOrderNextAction(order))}</p>
       </div>
+
+      ${renderConfirmationNextSteps(order, source, trackUrl, supportUrl)}
 
       <p class="invoice-disclaimer">
         This page is a booking confirmation and invoice summary. Final tax invoice, GST/FSSAI details, and export documentation should be issued after verified business registration and packaging details are finalized.
@@ -2443,7 +2511,11 @@ async function loadGoogleAuthConfig() {
   }
 
   document.querySelectorAll("[data-google-login]").forEach((button) => {
-    button.dataset.configured = googleAuth.clientId ? "true" : "false";
+    const configured = Boolean(googleAuth.clientId);
+    button.dataset.configured = configured ? "true" : "false";
+    button.disabled = !configured;
+    button.title = configured ? "Continue with Google" : "Google sign-in needs GOOGLE_CLIENT_ID setup in Render.";
+    button.innerHTML = configured ? "<span>G</span>Continue with Google" : "<span>G</span>Google sign-in setup pending";
   });
   return googleAuth.clientId;
 }
@@ -2549,6 +2621,54 @@ function renderPortalInsightCards(summary, latestOrder, openSupportRequests) {
   `;
 }
 
+function renderPortalCommandCenter(customer, summary, latestOrder, openSupportRequests, portalMode) {
+  const phone = normalizePhone(customer?.phone || latestOrder?.customer?.phone || "");
+  const trackUrl = latestOrder
+    ? `./track.html?id=${encodeURIComponent(latestOrder.id)}&phone=${encodeURIComponent(phone)}`
+    : "./track.html";
+  const supportUrl = getWhatsAppUrl(
+    latestOrder
+      ? `Support request for ${STORE_CONFIG.shopName} booking ${latestOrder.id}`
+      : `Support request for ${STORE_CONFIG.shopName} customer account`
+  );
+  const syncLabel =
+    state.customerSyncStatus === "synced"
+      ? "Live order desk synced"
+      : state.customerSyncStatus === "locked"
+        ? "PIN needed for full history"
+        : "Saved on this device";
+
+  return `
+    <section class="portal-command-center" aria-label="Customer command center">
+      <article>
+        <span>Latest booking</span>
+        <strong>${escapeHtml(latestOrder?.id || summary.latestOrderId || "No booking yet")}</strong>
+        <small>${escapeHtml(latestOrder ? getStatusLabel(latestOrder.status) : "Place an order to create tracking")}</small>
+      </article>
+      <article>
+        <span>Customer access</span>
+        <strong>${escapeHtml(phone || "Phone needed")}</strong>
+        <small>${escapeHtml(syncLabel)}</small>
+      </article>
+      <article>
+        <span>Support desk</span>
+        <strong>${Number(openSupportRequests || 0)} open</strong>
+        <small>${escapeHtml(summary.supportRequests ? `${summary.supportRequests} total requests` : "Support by booking ID")}</small>
+      </article>
+      <div class="portal-command-actions">
+        <a href="${trackUrl}">
+          <i data-lucide="search"></i>
+          ${portalMode === "track" ? "Refresh tracking" : "Track latest"}
+        </a>
+        <a href="${supportUrl}" target="_blank" rel="noopener noreferrer">
+          <i data-lucide="message-circle"></i>
+          WhatsApp support
+        </a>
+      </div>
+    </section>
+  `;
+}
+
 function renderCustomerPortal() {
   if (!customerDashboard) return;
 
@@ -2610,6 +2730,11 @@ function renderCustomerPortal() {
         : ""
     }
     ${customer || latestOrder ? renderPortalInsightCards(summary, latestOrder, summary.openSupportRequests ?? openSupportRequests) : ""}
+    ${
+      customer || latestOrder
+        ? renderPortalCommandCenter(customer, summary, latestOrder, summary.openSupportRequests ?? openSupportRequests, portalMode)
+        : ""
+    }
     ${
       customer
         ? `<div class="portal-account-actions">
@@ -3246,6 +3371,7 @@ document.querySelector("#whatsappOrder")?.addEventListener("click", submitWhatsA
 checkoutForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const form = event.currentTarget;
+  const submitButton = form.querySelector(".checkout-button");
   if (!state.cart.size) {
     showToast("Add at least one product first");
     return;
@@ -3261,26 +3387,42 @@ checkoutForm?.addEventListener("submit", async (event) => {
     return;
   }
 
-  const orderId = createOrderId();
-  const order = createOrderRecord(form, orderId, "Website cart booking");
-  const shouldSaveDetails = saveDetailsInput?.checked ?? true;
-  const customerSync = shouldSaveDetails ? syncCustomerProfile(order.customer) : Promise.resolve();
-  if (shouldSaveDetails) saveCustomer(order.customer);
-  saveOrderRecord(order, { sync: false });
-  const syncedOrder = await syncOrderRecord(order);
-  await customerSync;
-  state.cart.clear();
-  saveCart();
-  state.couponApplied = false;
-  couponInput.value = "";
-  couponMessage.textContent = "";
-  form.reset();
-  if (saveDetailsInput) saveDetailsInput.checked = true;
-  state.checkoutStep = "cart";
-  renderCart();
-  closeCart();
-  showToast(`Order ${orderId} placed successfully`);
-  redirectToConfirmation(syncedOrder || order);
+  const originalButtonHtml = submitButton?.innerHTML || "";
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.innerHTML = `<i data-lucide="package-check"></i> Creating booking ID...`;
+    refreshIcons();
+  }
+
+  try {
+    const orderId = createOrderId();
+    const order = createOrderRecord(form, orderId, "Website cart booking");
+    const shouldSaveDetails = saveDetailsInput?.checked ?? true;
+    const customerSync = shouldSaveDetails ? syncCustomerProfile(order.customer) : Promise.resolve();
+    if (shouldSaveDetails) saveCustomer(order.customer);
+    saveOrderRecord(order, { sync: false });
+    const syncedOrder = await syncOrderRecord(order);
+    await customerSync;
+    state.cart.clear();
+    saveCart();
+    state.couponApplied = false;
+    couponInput.value = "";
+    couponMessage.textContent = "";
+    form.reset();
+    if (saveDetailsInput) saveDetailsInput.checked = true;
+    state.checkoutStep = "cart";
+    renderCart();
+    closeCart();
+    showToast(`Order ${orderId} placed successfully`);
+    redirectToConfirmation(syncedOrder || order);
+  } catch (error) {
+    showToast(error.message || "Order could not be placed");
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.innerHTML = originalButtonHtml;
+      refreshIcons();
+    }
+  }
 });
 
 document.querySelectorAll("[data-auth-mode]").forEach((button) => {
@@ -3322,53 +3464,67 @@ document.querySelectorAll("[data-google-login]").forEach((button) => {
 customerLoginForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const form = event.currentTarget;
-  const usesSteppedLogin = Boolean(form.querySelector(".account-login-step"));
-  if (usesSteppedLogin && form.dataset.loginStep !== "secure") {
-    const phone = normalizePhone(form.elements.customerPhone?.value);
-    if (!phone) {
-      setCustomerLoginStatus("Enter your phone number first.");
-      showToast("Enter your phone number first");
-      return;
-    }
-    setLoginStep("secure", { focus: true });
-    return;
-  }
-
   const data = new FormData(form);
+  const accountId = normalizePhone(data.get("customerPhone"));
   const accountPin = normalizeAccessPin(data.get("customerPin"));
-  if (accountPin && accountPin.length < 4) {
-    setCustomerLoginStatus("Use a 4 to 6 digit account PIN.");
-    showToast("Use a 4 to 6 digit account PIN");
+
+  if (!accountId) {
+    setCustomerLoginStatus("Enter your customer ID or mobile number.");
+    showToast("Enter your customer ID or mobile number");
     return;
   }
 
-  const customer = {
-    name: String(data.get("customerName") || "").trim() || "Customer",
-    phone: String(data.get("customerPhone") || "").trim(),
-    email: String(data.get("customerEmail") || "").trim(),
-    location: String(data.get("customerLocation") || "").trim(),
-    hasAccountPin: Boolean(accountPin) || Boolean(state.customer?.hasAccountPin)
-  };
-  if (accountPin) saveCustomerPin(accountPin);
+  if (accountPin.length < 4) {
+    setCustomerLoginStatus("Enter your 4 to 6 digit password/PIN.");
+    showToast("Enter your password/PIN");
+    return;
+  }
 
+  saveCustomerPin(accountPin);
+  state.customer = null;
   state.customerSummary = null;
   state.customerEnquiries = [];
+  state.customerSupportRequests = [];
   state.trackedOrder = null;
-  openCustomerDashboard(customer, "Dashboard opened. Syncing live orders...");
-  showToast("Dashboard opened");
+  setCustomerLoginStatus("Checking account...");
 
   try {
-    await syncCustomerProfile({ ...customer, accountPin: accountPin || loadCustomerPin() });
-    await loadCustomerOrdersFromBackend(customer.phone);
-    setCustomerLoginStatus(
-      state.customerSyncStatus === "synced"
-        ? "Account synced with live orders."
-        : state.customerSyncStatus === "locked"
-          ? "Account PIN is required to view full order history."
-          : "Saved on this device."
-    );
+    const params = getCustomerAuthParams(accountId);
+    const payload = await apiRequest(`/api/customer/dashboard?${params.toString()}`);
+    const orders = payload.orders || [];
+    const backendCustomer = payload.customer || orders[0]?.customer;
+
+    if (!backendCustomer && !orders.length) {
+      throw new Error("No account found for this ID. Please create account first.");
+    }
+
+    const customer = cleanCustomerForStorage({
+      name: backendCustomer?.name || "Customer",
+      phone: backendCustomer?.phone || accountId,
+      email: backendCustomer?.email || "",
+      location: backendCustomer?.location || orders[0]?.countryCity || "",
+      hasAccountPin: true
+    });
+
+    saveCustomer(customer);
+    state.customerSummary = payload.summary || null;
+    state.customerEnquiries = payload.enquiries || [];
+    state.customerSupportRequests = payload.supportRequests || [];
+    state.customerSyncStatus = "synced";
+    if (orders.length) upsertOrderRecords(orders);
+    else renderCustomerPortal();
+    prefillCheckoutFromCustomer();
+    prefillCustomerSupportForm(orders[0]);
+    setCustomerLoginStatus("Account opened.");
+    customerDashboard?.scrollIntoView({ block: "start" });
+    if (window.location.hash !== "#customer-dashboard") {
+      window.history.replaceState(null, "", `${window.location.pathname}#customer-dashboard`);
+    }
+    showToast("Account opened");
   } catch (error) {
-    setCustomerLoginStatus(error.message || "Dashboard opened from saved details.");
+    state.customerSyncStatus = /pin|password/i.test(error.message || "") ? "locked" : "local";
+    setCustomerLoginStatus(error.message || "Login failed. Please check ID and password.");
+    showToast(error.message || "Login failed");
   }
 });
 
@@ -3400,7 +3556,13 @@ customerSignupForm?.addEventListener("submit", async (event) => {
   try {
     await syncCustomerProfile({ ...customer, accountPin });
     await loadCustomerOrdersFromBackend(customer.phone);
-    setCustomerSignupStatus("Account synced with live orders.");
+    setCustomerSignupStatus(
+      state.customerSyncStatus === "synced"
+        ? "Account synced with live orders."
+        : state.customerSyncStatus === "locked"
+          ? "This number is already PIN protected. Use the correct PIN or request reset."
+          : "Account saved on this device. Live sync will retry when backend is available."
+    );
   } catch (error) {
     setCustomerSignupStatus(error.message || "Account saved on this device.");
   }

@@ -2401,9 +2401,14 @@ body.customer-authed .account-auth-card {
   border-style: dashed;
 }
 
+.google-login-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.74;
+}
+
 .account-auth-grid {
   display: grid;
-  grid-template-columns: minmax(360px, 1fr) minmax(360px, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   align-items: start;
 }
@@ -2444,8 +2449,8 @@ body.customer-authed .account-auth-card {
 }
 
 .forgot-inline-card {
-  padding-top: 18px;
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  padding-top: 0;
+  border-top: 0;
 }
 
 .auth-panel,
@@ -2735,6 +2740,78 @@ body.customer-authed .portal-dashboard {
   color: rgba(255, 255, 255, 0.7);
   font-size: 12px;
   font-weight: 900;
+}
+
+.portal-command-center {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(190px, 0.78fr);
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.portal-command-center article {
+  display: grid;
+  gap: 5px;
+  min-height: 86px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+}
+
+.portal-command-center article span {
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.portal-command-center article strong {
+  overflow-wrap: anywhere;
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.portal-command-center article small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.4;
+}
+
+.portal-command-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.portal-command-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: var(--saffron);
+  color: #1d1709;
+  font-size: 13px;
+  font-weight: 950;
+  text-align: center;
+}
+
+.portal-command-actions a:last-child {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.portal-command-actions svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
 }
 
 .portal-account-actions {
@@ -6101,6 +6178,111 @@ body.customer-authed .portal-dashboard {
   line-height: 1.6;
 }
 
+.confirmation-next-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfaf5;
+}
+
+.confirmation-next-panel .section-head {
+  align-items: end;
+  margin: 0;
+}
+
+.confirmation-next-panel .section-head h2 {
+  margin: 0;
+  font-size: clamp(24px, 4vw, 34px);
+}
+
+.confirmation-next-panel .section-head a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 8px;
+  background: var(--green);
+  color: #fff;
+  font-weight: 950;
+}
+
+.confirmation-next-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.confirmation-next-grid article {
+  display: grid;
+  gap: 8px;
+  min-height: 164px;
+  padding: 14px;
+  border: 1px solid rgba(30, 89, 75, 0.14);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.confirmation-next-grid span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--saffron);
+  color: #1d1709;
+  font-weight: 950;
+}
+
+.confirmation-next-grid strong {
+  color: var(--green);
+  font-size: 17px;
+}
+
+.confirmation-next-grid p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.confirmation-support-panel {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(150px, 0.58fr);
+  gap: 8px;
+}
+
+.confirmation-support-panel span,
+.confirmation-support-panel a {
+  display: grid;
+  gap: 4px;
+  min-height: 66px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #eef6f0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.confirmation-support-panel strong {
+  color: var(--green);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.confirmation-support-panel a {
+  place-items: center;
+  background: var(--green);
+  color: #fff;
+  text-align: center;
+}
+
 .invoice-disclaimer {
   margin: 0;
   padding: 14px;
@@ -6409,7 +6591,10 @@ body.customer-authed .portal-dashboard {
   .admin-storage,
   .admin-order-grid,
   .admin-action-strip,
-  .admin-notification-topline {
+  .admin-notification-topline,
+  .portal-command-center,
+  .confirmation-next-grid,
+  .confirmation-support-panel {
     grid-template-columns: 1fr;
   }
 
