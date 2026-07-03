@@ -4,6 +4,7 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { STORE_CONFIG } from "./store-config.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const PORT = Number(process.env.PORT || 4174);
@@ -14,6 +15,17 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 const TOKEN_SECRET = process.env.ADMIN_TOKEN_SECRET || ADMIN_PASSWORD || randomUUID();
 const DATABASE_URL = process.env.DATABASE_URL || "";
 const STORAGE_DRIVER = DATABASE_URL ? "postgres" : "json";
+const PUBLIC_SITE_URL = (process.env.PUBLIC_SITE_URL || "https://bandevigourmet.com").replace(/\/+$/, "");
+const ADMIN_NOTIFICATION_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || process.env.ADMIN_EMAIL || "";
+const ADMIN_WHATSAPP_NUMBER = process.env.ADMIN_WHATSAPP_NUMBER || process.env.STORE_WHATSAPP_NUMBER || STORE_CONFIG.whatsappNumber || "";
+const NOTIFICATION_FROM_EMAIL = process.env.NOTIFICATION_FROM_EMAIL || ADMIN_NOTIFICATION_EMAIL || "";
+const SMTP_HOST = process.env.SMTP_HOST || "";
+const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+const SMTP_USER = process.env.SMTP_USER || "";
+const SMTP_PASS = process.env.SMTP_PASS || "";
+const SMTP_SECURE = process.env.SMTP_SECURE === "true" || SMTP_PORT === 465;
+const ORDER_WEBHOOK_URL = process.env.ORDER_WEBHOOK_URL || "";
+const ORDER_WEBHOOK_SECRET = process.env.ORDER_WEBHOOK_SECRET || "";
 const TOKEN_TTL_MS = 1000 * 60 * 60 * 12;
 const CLOSED_ORDER_STATUSES = new Set(["delivered", "cancelled"]);
 const ORDER_STATUSES = new Set(["booked", "confirmed", "packed", "dispatched", "delivered", "cancelled"]);
@@ -71,6 +83,49 @@ function cleanOrderId(value) {
   return text(value, 32).toUpperCase().replace(/[^A-Z0-9-]/g, "");
 }
 
+function notificationId() {
+  return `NT${Math.floor(100000 + Math.random() * 900000)}`;
+}
+
+function money(value) {
+  return `Rs. ${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Number(value || 0))}`;
+}
+
+function html(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function siteLink(path) {
+  return `${PUBLIC_SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+function orderTrackingUrl(order) {
+  const params = new URLSearchParams({ id: order.id, phone: cleanPhone(order.customer?.phone) });
+  return siteLink(`/track.html?${params.toString()}`);
+}
+
+function orderConfirmationUrl(order) {
+  const params = new URLSearchParams({ id: order.id, phone: cleanPhone(order.customer?.phone) });
+  return siteLink(`/confirmation.html?${params.toString()}`);
+}
+
+function orderItemsText(order) {
+  return (order.items || [])
+    .map((item, index) => `${index + 1}. ${item.name} (${item.size || "Pack"}) x ${item.quantity} = ${money(item.lineTotal)}`)
+    .join("\n");
+}
+
+function whatsappUrl(number, message) {
+  const clean = cleanPhone(number);
+  if (!clean) return "";
+  return `https://wa.me/${clean}?text=${encodeURIComponent(message)}`;
+}
+
 function csvCell(value) {
   const raw = String(value ?? "");
   if (/[",\n\r]/.test(raw)) return `"${raw.replaceAll('"', '""')}"`;
@@ -100,6 +155,8 @@ function publicOrder(order) {
     paymentNote: order.paymentNote,
     courier: order.courier,
     trackingCode: order.trackingCode,
+    trackingUrl: order.trackingUrl,
+    dispatchDate: order.dispatchDate,
     eta: order.eta,
     adminNote: order.adminNote,
     totals: order.totals,
@@ -150,12 +207,31 @@ function publicEnquiry(enquiry) {
   };
 }
 
+function publicNotification(notification) {
+  return {
+    id: notification.id,
+    orderId: notification.orderId,
+    eventType: notification.eventType,
+    audience: notification.audience,
+    channel: notification.channel,
+    status: notification.status,
+    recipient: notification.recipient,
+    subject: notification.subject,
+    message: notification.message,
+    url: notification.url,
+    createdAt: notification.createdAt,
+    updatedAt: notification.updatedAt,
+    sentAt: notification.sentAt || "",
+    error: notification.error || ""
+  };
+}
+
 function isClosedOrder(order) {
   return CLOSED_ORDER_STATUSES.has(order.status || "");
 }
 
 function emptyDb() {
-  return { orders: [], wholesale: [], customers: [], events: [] };
+  return { orders: [], wholesale: [], customers: [], notifications: [], events: [] };
 }
 
 function normalizeDb(db) {
@@ -166,6 +242,7 @@ function normalizeDb(db) {
     orders: Array.isArray(safeDb.orders) ? safeDb.orders : [],
     wholesale: Array.isArray(safeDb.wholesale) ? safeDb.wholesale : [],
     customers: Array.isArray(safeDb.customers) ? safeDb.customers : [],
+    notifications: Array.isArray(safeDb.notifications) ? safeDb.notifications : [],
     events: Array.isArray(safeDb.events) ? safeDb.events : []
   };
 }
@@ -249,8 +326,10 @@ function buildCustomerDashboard(db, phone) {
 function buildAdminSummary(db) {
   const orders = db.orders || [];
   const enquiries = db.wholesale || [];
+  const notifications = db.notifications || [];
   const activeOrders = orders.filter((order) => !isClosedOrder(order));
   const openWholesale = enquiries.filter((item) => !["converted", "closed"].includes(item.status || "new"));
+  const pendingNotifications = notifications.filter((item) => ["queued", "ready", "failed"].includes(item.status || "")).length;
 
   return {
     totalOrders: orders.length,
@@ -260,10 +339,289 @@ function buildAdminSummary(db) {
     bookingValue: orders.reduce((sum, order) => sum + Number(order.totals?.total || 0), 0),
     customers: (db.customers || []).length,
     wholesaleEnquiries: enquiries.length,
+    notifications: notifications.length,
+    pendingNotifications,
     openWholesale: openWholesale.length,
     lastOrderAt: orders[0]?.updatedAt || orders[0]?.placedAt || "",
     countries: [...new Set(orders.map((order) => text(order.countryCity, 80)).filter(Boolean))].slice(0, 12)
   };
+}
+
+function notificationConfig() {
+  return {
+    smtpConfigured: Boolean(SMTP_HOST && NOTIFICATION_FROM_EMAIL),
+    adminEmailConfigured: Boolean(ADMIN_NOTIFICATION_EMAIL),
+    adminWhatsAppConfigured: Boolean(cleanPhone(ADMIN_WHATSAPP_NUMBER)),
+    webhookConfigured: Boolean(ORDER_WEBHOOK_URL)
+  };
+}
+
+function buildCustomerNotificationMessage(order, eventType) {
+  const name = order.customer?.name || "Customer";
+  const title =
+    eventType === "status_updated"
+      ? `Your ${STORE_CONFIG.shopName} booking ${order.id} is now ${order.status}.`
+      : `Your ${STORE_CONFIG.shopName} booking ${order.id} has been received.`;
+
+  return [
+    `Hi ${name},`,
+    title,
+    "",
+    `Total: ${money(order.totals?.total)}`,
+    `Payment: ${order.paymentState || order.payment || "To be confirmed"}`,
+    `Delivery location: ${order.countryCity || order.customer?.location || "To be confirmed"}`,
+    order.dispatchDate ? `Dispatch date: ${order.dispatchDate}` : "",
+    order.courier ? `Courier: ${order.courier}` : "",
+    order.trackingCode ? `Tracking code: ${order.trackingCode}` : "",
+    order.trackingUrl ? `Courier tracking: ${order.trackingUrl}` : "",
+    "",
+    "Items:",
+    orderItemsText(order) || "Product details will be confirmed by our order desk.",
+    "",
+    `Track order: ${orderTrackingUrl(order)}`,
+    `Confirmation page: ${orderConfirmationUrl(order)}`,
+    "",
+    "Thank you for choosing BandEvi Gourmet."
+  ].join("\n");
+}
+
+function buildAdminNotificationMessage(order, eventType) {
+  const heading = eventType === "status_updated" ? "Order status updated" : "New website order";
+
+  return [
+    `${heading}: ${order.id}`,
+    "",
+    `Customer: ${order.customer?.name || "No name"}`,
+    `Phone: ${order.customer?.phone || "No phone"}`,
+    `Email: ${order.customer?.email || "No email"}`,
+    `Location: ${order.countryCity || "Not added"}`,
+    `Address: ${order.address || "Not added"}`,
+    "",
+    `Status: ${order.status}`,
+    `Payment: ${order.paymentState || order.payment || "To be confirmed"}`,
+    `Total: ${money(order.totals?.total)}`,
+    order.dispatchDate ? `Dispatch date: ${order.dispatchDate}` : "",
+    order.courier ? `Courier: ${order.courier}` : "",
+    order.trackingCode ? `Tracking code: ${order.trackingCode}` : "",
+    order.trackingUrl ? `Courier tracking: ${order.trackingUrl}` : "",
+    "",
+    "Items:",
+    orderItemsText(order) || "No item details",
+    "",
+    `Admin order desk: ${siteLink("/admin.html")}`,
+    `Customer tracking: ${orderTrackingUrl(order)}`
+  ].join("\n");
+}
+
+function emailHtml(message) {
+  return `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1c2521;white-space:pre-line">${html(message)}</div>`;
+}
+
+function mailtoUrl(recipient, subject, message) {
+  if (!recipient) return "";
+  return `mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+}
+
+function createNotification({ order, eventType, audience, channel, recipient, subject, message, url, status = "ready" }) {
+  const now = new Date().toISOString();
+  return {
+    id: notificationId(),
+    orderId: order.id,
+    eventType,
+    audience,
+    channel,
+    status,
+    recipient: text(recipient, 240),
+    subject: text(subject, 240),
+    message: text(message, 3000),
+    url: text(url, 3000),
+    createdAt: now,
+    updatedAt: now,
+    sentAt: "",
+    error: ""
+  };
+}
+
+function createOrderNotifications(order, eventType = "order_created") {
+  const customerSubject =
+    eventType === "status_updated"
+      ? `${STORE_CONFIG.shopName} booking ${order.id} status update`
+      : `${STORE_CONFIG.shopName} booking ${order.id} confirmation`;
+  const adminSubject =
+    eventType === "status_updated"
+      ? `${STORE_CONFIG.shopName} order ${order.id} updated`
+      : `New ${STORE_CONFIG.shopName} order ${order.id}`;
+  const customerMessage = buildCustomerNotificationMessage(order, eventType);
+  const adminMessage = buildAdminNotificationMessage(order, eventType);
+  const notifications = [];
+
+  if (cleanPhone(order.customer?.phone)) {
+    notifications.push(
+      createNotification({
+        order,
+        eventType,
+        audience: "customer",
+        channel: "whatsapp",
+        recipient: order.customer.phone,
+        subject: customerSubject,
+        message: customerMessage,
+        url: whatsappUrl(order.customer.phone, customerMessage)
+      })
+    );
+  }
+
+  if (order.customer?.email) {
+    notifications.push(
+      createNotification({
+        order,
+        eventType,
+        audience: "customer",
+        channel: "email",
+        recipient: order.customer.email,
+        subject: customerSubject,
+        message: customerMessage,
+        url: mailtoUrl(order.customer.email, customerSubject, customerMessage),
+        status: SMTP_HOST && NOTIFICATION_FROM_EMAIL ? "queued" : "ready"
+      })
+    );
+  }
+
+  if (cleanPhone(ADMIN_WHATSAPP_NUMBER)) {
+    notifications.push(
+      createNotification({
+        order,
+        eventType,
+        audience: "admin",
+        channel: "whatsapp",
+        recipient: ADMIN_WHATSAPP_NUMBER,
+        subject: adminSubject,
+        message: adminMessage,
+        url: whatsappUrl(ADMIN_WHATSAPP_NUMBER, adminMessage)
+      })
+    );
+  }
+
+  if (ADMIN_NOTIFICATION_EMAIL) {
+    notifications.push(
+      createNotification({
+        order,
+        eventType,
+        audience: "admin",
+        channel: "email",
+        recipient: ADMIN_NOTIFICATION_EMAIL,
+        subject: adminSubject,
+        message: adminMessage,
+        url: mailtoUrl(ADMIN_NOTIFICATION_EMAIL, adminSubject, adminMessage),
+        status: SMTP_HOST && NOTIFICATION_FROM_EMAIL ? "queued" : "ready"
+      })
+    );
+  }
+
+  if (ORDER_WEBHOOK_URL) {
+    notifications.push(
+      createNotification({
+        order,
+        eventType,
+        audience: "automation",
+        channel: "webhook",
+        recipient: "ORDER_WEBHOOK_URL",
+        subject: adminSubject,
+        message: adminMessage,
+        url: ORDER_WEBHOOK_URL,
+        status: "queued"
+      })
+    );
+  }
+
+  return notifications;
+}
+
+let mailerPromise = null;
+
+async function getMailer() {
+  if (!mailerPromise) {
+    mailerPromise = (async () => {
+      const nodemailerModule = await import("nodemailer");
+      const nodemailer = nodemailerModule.default || nodemailerModule;
+      return nodemailer.createTransport({
+        host: SMTP_HOST,
+        port: SMTP_PORT,
+        secure: SMTP_SECURE,
+        auth: SMTP_USER || SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
+        connectionTimeout: 6000,
+        greetingTimeout: 6000,
+        socketTimeout: 8000
+      });
+    })();
+  }
+  return mailerPromise;
+}
+
+async function sendNotificationEmail(notification) {
+  if (!SMTP_HOST || !NOTIFICATION_FROM_EMAIL) {
+    notification.status = "ready";
+    notification.error = "SMTP not configured. Use the email link or add SMTP settings.";
+    return;
+  }
+
+  const mailer = await getMailer();
+  await mailer.sendMail({
+    from: NOTIFICATION_FROM_EMAIL,
+    to: notification.recipient,
+    subject: notification.subject,
+    text: notification.message,
+    html: emailHtml(notification.message)
+  });
+  notification.status = "sent";
+  notification.sentAt = new Date().toISOString();
+  notification.error = "";
+}
+
+async function postNotificationWebhook(notification, order) {
+  if (!ORDER_WEBHOOK_URL) {
+    notification.status = "ready";
+    notification.error = "Webhook not configured.";
+    return;
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 6000);
+  try {
+    const headers = {
+      "Content-Type": "application/json",
+      ...(ORDER_WEBHOOK_SECRET ? { Authorization: `Bearer ${ORDER_WEBHOOK_SECRET}` } : {})
+    };
+    const response = await fetch(ORDER_WEBHOOK_URL, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        eventType: notification.eventType,
+        notification: publicNotification(notification),
+        order: publicOrder(order)
+      }),
+      signal: controller.signal
+    });
+    if (!response.ok) throw new Error(`Webhook returned ${response.status}`);
+    notification.status = "sent";
+    notification.sentAt = new Date().toISOString();
+    notification.error = "";
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function dispatchNotifications(notifications, order) {
+  for (const notification of notifications) {
+    if (!["queued", "failed"].includes(notification.status)) continue;
+    try {
+      if (notification.channel === "email") await sendNotificationEmail(notification);
+      if (notification.channel === "webhook") await postNotificationWebhook(notification, order);
+    } catch (error) {
+      notification.status = "failed";
+      notification.error = text(error.message || "Notification failed", 300);
+    }
+    notification.updatedAt = new Date().toISOString();
+  }
 }
 
 function orderExportRows(db) {
@@ -281,6 +639,8 @@ function orderExportRows(db) {
     paymentState: order.paymentState || "",
     courier: order.courier || "",
     trackingCode: order.trackingCode || "",
+    trackingUrl: order.trackingUrl || "",
+    dispatchDate: order.dispatchDate || "",
     eta: order.eta || "",
     items: (order.items || []).map((item) => `${item.name} x ${item.quantity}`).join("; ")
   }));
@@ -319,9 +679,27 @@ function wholesaleExportRows(db) {
   }));
 }
 
+function notificationExportRows(db) {
+  return (db.notifications || []).map((notification) => ({
+    id: notification.id,
+    orderId: notification.orderId || "",
+    eventType: notification.eventType || "",
+    audience: notification.audience || "",
+    channel: notification.channel || "",
+    status: notification.status || "",
+    recipient: notification.recipient || "",
+    subject: notification.subject || "",
+    createdAt: notification.createdAt || "",
+    updatedAt: notification.updatedAt || "",
+    sentAt: notification.sentAt || "",
+    error: notification.error || ""
+  }));
+}
+
 function exportRows(type, db) {
   if (type === "customers") return customerExportRows(db);
   if (type === "wholesale") return wholesaleExportRows(db);
+  if (type === "notifications") return notificationExportRows(db);
   return orderExportRows(db);
 }
 
@@ -509,6 +887,8 @@ function normalizeOrder(input) {
     paymentNote: text(input.paymentNote, 240),
     courier: text(input.courier, 120),
     trackingCode: text(input.trackingCode, 120),
+    trackingUrl: text(input.trackingUrl, 500),
+    dispatchDate: text(input.dispatchDate, 80),
     eta: text(input.eta, 80),
     adminNote: text(input.adminNote, 400),
     totals: {
@@ -570,12 +950,18 @@ async function handleApi(req, res, url) {
     const db = await readDb();
     db.orders = [order, ...(db.orders || []).filter((item) => item.id !== order.id)].slice(0, 1000);
     upsertCustomer(db, order.customer);
+    const notifications = createOrderNotifications(order, "order_created");
+    await dispatchNotifications(notifications, order);
+    db.notifications = [...notifications, ...(db.notifications || [])].slice(0, 2000);
     db.events = [
       { id: randomUUID(), type: "order_created", ref: order.id, at: order.updatedAt },
       ...(db.events || [])
     ].slice(0, 1000);
     await writeDb(db);
-    jsonResponse(res, 201, { order: publicOrder(order) });
+    jsonResponse(res, 201, {
+      order: publicOrder(order),
+      notifications: notifications.map(publicNotification)
+    });
     return true;
   }
 
@@ -700,7 +1086,15 @@ async function handleApi(req, res, url) {
 
   if (url.pathname === "/api/admin/storage" && req.method === "GET") {
     if (!requireAdmin(req, res)) return true;
-    jsonResponse(res, 200, { storage: storageInfo() });
+    jsonResponse(res, 200, { storage: { ...storageInfo(), notifications: notificationConfig() } });
+    return true;
+  }
+
+  if (url.pathname === "/api/admin/notifications" && req.method === "GET") {
+    if (!requireAdmin(req, res)) return true;
+    const db = await readDb();
+    const notifications = (db.notifications || []).slice(0, 100).map(publicNotification);
+    jsonResponse(res, 200, { notifications, config: notificationConfig() });
     return true;
   }
 
@@ -757,6 +1151,52 @@ async function handleApi(req, res, url) {
     if (!requireAdmin(req, res)) return true;
     const db = await readDb();
     jsonResponse(res, 200, { enquiries: (db.wholesale || []).map(publicEnquiry) });
+    return true;
+  }
+
+  const notificationMatch = url.pathname.match(/^\/api\/admin\/notifications\/([^/]+)$/);
+  if (notificationMatch && req.method === "PATCH") {
+    if (!requireAdmin(req, res)) return true;
+    const notificationKey = decodeURIComponent(notificationMatch[1]);
+    const payload = await readBody(req);
+    const nextStatus = text(payload.status, 40);
+    if (!["ready", "sent", "archived"].includes(nextStatus)) {
+      jsonResponse(res, 400, { error: "Invalid notification status." });
+      return true;
+    }
+
+    const db = await readDb();
+    const notification = (db.notifications || []).find((item) => item.id === notificationKey);
+    if (!notification) {
+      jsonResponse(res, 404, { error: "Notification not found." });
+      return true;
+    }
+
+    notification.status = nextStatus;
+    notification.updatedAt = new Date().toISOString();
+    if (nextStatus === "sent" && !notification.sentAt) notification.sentAt = notification.updatedAt;
+    await writeDb(db);
+    jsonResponse(res, 200, { notification: publicNotification(notification) });
+    return true;
+  }
+
+  const retryNotificationMatch = url.pathname.match(/^\/api\/admin\/notifications\/([^/]+)\/retry$/);
+  if (retryNotificationMatch && req.method === "POST") {
+    if (!requireAdmin(req, res)) return true;
+    const notificationKey = decodeURIComponent(retryNotificationMatch[1]);
+    const db = await readDb();
+    const notification = (db.notifications || []).find((item) => item.id === notificationKey);
+    const order = (db.orders || []).find((item) => item.id === notification?.orderId);
+    if (!notification || !order) {
+      jsonResponse(res, 404, { error: "Notification or order not found." });
+      return true;
+    }
+
+    notification.status = "queued";
+    notification.error = "";
+    await dispatchNotifications([notification], order);
+    await writeDb(db);
+    jsonResponse(res, 200, { notification: publicNotification(notification) });
     return true;
   }
 
@@ -817,6 +1257,8 @@ async function handleApi(req, res, url) {
     order.paymentState = text(payload.paymentState || order.paymentState || "Payment pending", 80);
     order.courier = text(payload.courier || order.courier, 120);
     order.trackingCode = text(payload.trackingCode || order.trackingCode, 120);
+    order.trackingUrl = text(payload.trackingUrl || order.trackingUrl, 500);
+    order.dispatchDate = text(payload.dispatchDate || order.dispatchDate, 80);
     order.eta = text(payload.eta || order.eta, 80);
     order.adminNote = text(payload.adminNote || order.adminNote, 400);
     order.statusHistory = [
@@ -828,6 +1270,12 @@ async function handleApi(req, res, url) {
       }
     ];
     upsertCustomer(db, order.customer);
+    const shouldNotifyCustomer = payload.notifyCustomer !== false && payload.notifyCustomer !== "false";
+    if (shouldNotifyCustomer) {
+      const notifications = createOrderNotifications(order, "status_updated").filter((item) => item.audience === "customer");
+      await dispatchNotifications(notifications, order);
+      db.notifications = [...notifications, ...(db.notifications || [])].slice(0, 2000);
+    }
     await writeDb(db);
     jsonResponse(res, 200, { order: publicOrder(order) });
     return true;

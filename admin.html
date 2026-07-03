@@ -20,6 +20,7 @@
       <nav class="main-nav" aria-label="Admin navigation">
         <a href="./index.html">Storefront</a>
         <a href="./policies.html">Policies</a>
+        <a href="#notifications">Notifications</a>
         <a href="#orders">Orders</a>
         <a href="#wholesale">Wholesale</a>
         <a href="#customers">Customers</a>
@@ -60,6 +61,17 @@
         <div class="admin-stats" id="adminStats" aria-label="Order summary"></div>
         <div class="admin-pipeline" id="adminPipeline" aria-label="Order pipeline"></div>
         <div class="admin-storage" id="adminStorage" aria-live="polite"></div>
+
+        <section class="admin-panel" id="notifications" aria-labelledby="notifications-title">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Notification center</p>
+              <h2 id="notifications-title">Customer and admin alerts</h2>
+            </div>
+            <button class="admin-export-button" type="button" data-export="notifications">Export alerts</button>
+          </div>
+          <div class="admin-order-list" id="adminNotificationList"></div>
+        </section>
 
         <section class="admin-panel" id="orders" aria-labelledby="orders-title">
           <div class="section-head">

@@ -1702,6 +1702,7 @@ a {
 }
 
 .tracking-panel span,
+.delivery-trust-panel span,
 .customer-enquiry-card {
   display: grid;
   gap: 4px;
@@ -1715,11 +1716,22 @@ a {
 }
 
 .tracking-panel strong,
+.delivery-trust-panel strong,
 .customer-enquiry-card strong {
   color: var(--ink);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0;
+}
+
+.delivery-trust-panel {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.delivery-trust-panel span {
+  background: #edf7f1;
 }
 
 .order-note {
@@ -2754,7 +2766,7 @@ a {
 
 .admin-storage {
   display: grid;
-  grid-template-columns: 1.4fr 0.7fr 0.7fr;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 14px;
 }
 
@@ -2842,6 +2854,7 @@ a {
 }
 
 .admin-order-card,
+.admin-notification-card,
 .admin-customer-card {
   display: grid;
   gap: 12px;
@@ -2852,6 +2865,7 @@ a {
 }
 
 .admin-order-card header,
+.admin-notification-card header,
 .admin-customer-card header {
   display: flex;
   justify-content: space-between;
@@ -2860,17 +2874,21 @@ a {
 
 .admin-order-card h3,
 .admin-order-card p,
+.admin-notification-card h3,
+.admin-notification-card p,
 .admin-customer-card h3,
 .admin-customer-card p {
   margin: 0;
 }
 
 .admin-order-card h3,
+.admin-notification-card h3,
 .admin-customer-card h3 {
   font-size: 22px;
 }
 
 .admin-order-card p,
+.admin-notification-card p,
 .admin-customer-card p {
   color: var(--muted);
   line-height: 1.55;
@@ -2909,15 +2927,76 @@ a {
 
 .admin-items,
 .admin-address,
-.admin-history {
+.admin-history,
+.admin-notification-message {
   padding: 10px 12px;
   border-radius: 8px;
   background: var(--surface);
 }
 
+.admin-notification-message {
+  max-height: 210px;
+  overflow: auto;
+  white-space: pre-line;
+}
+
+.admin-notification-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.admin-notification-meta span {
+  display: grid;
+  gap: 5px;
+  min-height: 74px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-notification-meta strong {
+  color: var(--ink);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.admin-notification-meta small {
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}
+
+.admin-notification-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.admin-notification-actions button,
+.admin-notification-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--green);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+}
+
 .admin-quick-status {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
   gap: 8px;
 }
 
@@ -2962,6 +3041,27 @@ a {
   border-radius: 8px;
   background: var(--surface);
   color: var(--ink);
+}
+
+.admin-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.admin-checkbox input {
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  padding: 0;
 }
 
 .admin-status-form button {
@@ -3682,6 +3782,7 @@ a {
   .cert-list,
   .policy-grid,
   .about-proof-grid,
+  .delivery-trust-panel,
   .tracking-panel,
   .order-meta-grid,
   .portal-stats,

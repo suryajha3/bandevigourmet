@@ -28,6 +28,8 @@ const state = {
   orders: [],
   enquiries: [],
   customers: [],
+  notifications: [],
+  notificationConfig: null,
   search: "",
   orderFilter: "all",
   leadFilter: "all"
@@ -43,6 +45,7 @@ const storageBox = document.querySelector("#adminStorage");
 const orderList = document.querySelector("#adminOrderList");
 const wholesaleList = document.querySelector("#adminWholesaleList");
 const customerList = document.querySelector("#adminCustomerList");
+const notificationList = document.querySelector("#adminNotificationList");
 const searchInput = document.querySelector("#adminSearchInput");
 const orderFilterInput = document.querySelector("#adminOrderFilter");
 const leadFilterInput = document.querySelector("#adminLeadFilter");
@@ -144,6 +147,21 @@ function customerMatchesSearch(customer) {
   return matchesSearch([customer.name, customer.phone, customer.email, customer.location, customer.orderCount, customer.totalSpend]);
 }
 
+function notificationMatchesSearch(notification) {
+  return matchesSearch([
+    notification.id,
+    notification.orderId,
+    notification.eventType,
+    notification.audience,
+    notification.channel,
+    notification.status,
+    notification.recipient,
+    notification.subject,
+    notification.message,
+    notification.error
+  ]);
+}
+
 function isClosedOrder(order) {
   return ["delivered", "cancelled"].includes(order?.status || "");
 }
@@ -154,7 +172,8 @@ function renderStats() {
     activeOrders: state.orders.filter((order) => !isClosedOrder(order)).length,
     bookingValue: state.orders.reduce((sum, order) => sum + Number(order.totals?.total || 0), 0),
     customers: state.customers.length,
-    wholesaleEnquiries: state.enquiries.length
+    wholesaleEnquiries: state.enquiries.length,
+    pendingNotifications: state.notifications.filter((item) => ["queued", "ready", "failed"].includes(item.status)).length
   };
 
   statsBox.innerHTML = `
@@ -163,6 +182,7 @@ function renderStats() {
     <article><strong>${money(summary.bookingValue)}</strong><span>Booking value</span></article>
     <article><strong>${summary.customers}</strong><span>Customers</span></article>
     <article><strong>${summary.wholesaleEnquiries}</strong><span>Wholesale leads</span></article>
+    <article><strong>${summary.pendingNotifications || 0}</strong><span>Open alerts</span></article>
   `;
 }
 
@@ -196,10 +216,16 @@ function renderPipeline() {
 function renderStorage() {
   if (!storageBox) return;
   const storage = state.storage || {};
+  const notifications = storage.notifications || state.notificationConfig || {};
   const durable = storage.durable ? "Database storage active" : "JSON fallback active";
   const helper = storage.durable
     ? "Orders, customers, and leads are connected to PostgreSQL."
     : "Add DATABASE_URL on Render to switch this project to permanent PostgreSQL storage.";
+  const notificationStatus = [
+    notifications.smtpConfigured ? "SMTP email ready" : "SMTP email not connected",
+    notifications.adminWhatsAppConfigured ? "Admin WhatsApp ready" : "Admin WhatsApp not added",
+    notifications.webhookConfigured ? "Webhook ready" : "Webhook not connected"
+  ].join(" | ");
 
   storageBox.innerHTML = `
     <article>
@@ -213,6 +239,72 @@ function renderStorage() {
     <article>
       <strong>${storage.databaseConfigured ? "Ready" : "Not connected"}</strong>
       <span>Database URL</span>
+    </article>
+    <article>
+      <strong>Notifications</strong>
+      <span>${escapeHtml(notificationStatus)}</span>
+    </article>
+  `;
+}
+
+function notificationChannelLabel(notification) {
+  const channel = notification.channel === "email" ? "Email" : notification.channel === "webhook" ? "Webhook" : "WhatsApp";
+  return `${channel} to ${notification.audience}`;
+}
+
+function notificationActionLabel(notification) {
+  if (!notification.url) return "";
+  if (notification.channel === "email") return "Open email";
+  if (notification.channel === "whatsapp") return "Open WhatsApp";
+  return "Open link";
+}
+
+function renderNotifications() {
+  if (!notificationList) return;
+  const visibleNotifications = state.notifications.filter(notificationMatchesSearch).slice(0, 40);
+
+  notificationList.innerHTML = visibleNotifications.length
+    ? visibleNotifications.map(renderNotification).join("")
+    : `<div class="admin-empty">No notification alerts yet.</div>`;
+
+  notificationList.querySelectorAll("[data-copy-notification]").forEach((button) => {
+    button.addEventListener("click", () => copyNotificationMessage(button.dataset.copyNotification));
+  });
+  notificationList.querySelectorAll("[data-mark-notification]").forEach((button) => {
+    button.addEventListener("click", () => updateNotificationStatus(button.dataset.markNotification, button.dataset.status));
+  });
+  notificationList.querySelectorAll("[data-retry-notification]").forEach((button) => {
+    button.addEventListener("click", () => retryNotification(button.dataset.retryNotification));
+  });
+}
+
+function renderNotification(notification) {
+  const order = state.orders.find((item) => item.id === notification.orderId);
+  const actionLabel = notificationActionLabel(notification);
+  const orderLabel = order ? `${order.customer?.name || "Customer"} | ${money(order.totals?.total)}` : "Order details saved in alert";
+
+  return `
+    <article class="admin-notification-card">
+      <header>
+        <div>
+          <h3>${escapeHtml(notification.subject || notification.id)}</h3>
+          <p>${escapeHtml(notificationChannelLabel(notification))} | ${formatDate(notification.createdAt)}</p>
+        </div>
+        <span class="status-pill">${escapeHtml(notification.status || "ready")}</span>
+      </header>
+      <div class="admin-notification-meta">
+        <span><strong>Order</strong>${escapeHtml(notification.orderId || "No order")}<small>${escapeHtml(orderLabel)}</small></span>
+        <span><strong>Recipient</strong>${escapeHtml(notification.recipient || "Not configured")}<small>${escapeHtml(notification.eventType || "order alert")}</small></span>
+        <span><strong>Updated</strong>${formatDate(notification.updatedAt)}<small>${escapeHtml(notification.error || notification.sentAt || "Ready for action")}</small></span>
+      </div>
+      <p class="admin-notification-message">${escapeHtml(notification.message || "No message body")}</p>
+      <div class="admin-notification-actions">
+        <button type="button" data-copy-notification="${escapeHtml(notification.id)}">Copy message</button>
+        ${notification.url ? `<a href="${escapeHtml(notification.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(actionLabel)}</a>` : ""}
+        ${["email", "webhook"].includes(notification.channel) ? `<button type="button" data-retry-notification="${escapeHtml(notification.id)}">Retry send</button>` : ""}
+        <button type="button" data-mark-notification="${escapeHtml(notification.id)}" data-status="sent">Mark sent</button>
+        <button type="button" data-mark-notification="${escapeHtml(notification.id)}" data-status="archived">Archive</button>
+      </div>
     </article>
   `;
 }
@@ -231,6 +323,9 @@ function renderOrders() {
   });
   orderList.querySelectorAll("[data-quick-status]").forEach((button) => {
     button.addEventListener("click", updateOrderQuickStatus);
+  });
+  orderList.querySelectorAll("[data-print-pack]").forEach((button) => {
+    button.addEventListener("click", () => printPackingSlip(button.dataset.printPack));
   });
 }
 
@@ -262,6 +357,7 @@ function renderOrder(order) {
         <span><strong>Total</strong>${money(order.totals?.total)}<small>${escapeHtml(order.payment || "Payment pending")}</small></span>
         <span><strong>Type</strong>${escapeHtml(order.orderType || "Retail order")}<small>${escapeHtml(order.customer?.email || "")}</small></span>
         <span><strong>Delivery</strong>${escapeHtml(order.courier || "Courier pending")}<small>${escapeHtml(order.trackingCode || order.eta || "Tracking pending")}</small></span>
+        <span><strong>Dispatch</strong>${escapeHtml(order.dispatchDate || "Not dispatched")}<small>${escapeHtml(order.trackingUrl || "Courier link pending")}</small></span>
       </div>
       <p class="admin-items">${items || "No item details"}</p>
       <p class="admin-address">${escapeHtml(order.address || "No address")}</p>
@@ -275,15 +371,23 @@ function renderOrder(order) {
           `
         ).join("")}
         <a href="${trackingUrl}" target="_blank" rel="noopener noreferrer">Customer view</a>
+        ${order.trackingUrl ? `<a href="${escapeHtml(order.trackingUrl)}" target="_blank" rel="noopener noreferrer">Courier link</a>` : ""}
+        <button type="button" data-print-pack="${escapeHtml(order.id)}">Packing slip</button>
       </div>
       <form class="admin-status-form" data-status-form="${escapeHtml(order.id)}">
         <select name="status" aria-label="Order status">${statusOptions}</select>
         <select name="paymentState" aria-label="Payment status">${paymentOptions}</select>
         <input name="courier" type="text" placeholder="Courier name" value="${escapeHtml(order.courier || "")}" />
         <input name="trackingCode" type="text" placeholder="Tracking code" value="${escapeHtml(order.trackingCode || "")}" />
+        <input name="trackingUrl" type="url" placeholder="Courier tracking URL" value="${escapeHtml(order.trackingUrl || "")}" />
+        <input name="dispatchDate" type="text" placeholder="Dispatch date" value="${escapeHtml(order.dispatchDate || "")}" />
         <input name="eta" type="text" placeholder="Expected delivery" value="${escapeHtml(order.eta || "")}" />
         <input name="adminNote" type="text" placeholder="Seller note visible to customer" value="${escapeHtml(order.adminNote || "")}" />
         <input name="note" type="text" placeholder="Timeline note" />
+        <label class="admin-checkbox">
+          <input name="notifyCustomer" type="checkbox" checked />
+          <span>Notify customer</span>
+        </label>
         <button type="submit">Update order</button>
       </form>
     </article>
@@ -383,6 +487,7 @@ function renderAll() {
   renderStats();
   renderPipeline();
   renderStorage();
+  renderNotifications();
   renderOrders();
   renderWholesale();
   renderCustomers();
@@ -397,18 +502,21 @@ async function loadDashboard() {
 
   try {
     setStatus("Loading admin data...");
-    const [ordersPayload, wholesalePayload, summaryPayload, customersPayload, storagePayload] = await Promise.all([
+    const [ordersPayload, wholesalePayload, summaryPayload, customersPayload, storagePayload, notificationsPayload] = await Promise.all([
       api("/api/admin/orders"),
       api("/api/admin/wholesale"),
       api("/api/admin/summary").catch(() => ({ summary: null })),
       api("/api/admin/customers").catch(() => ({ customers: [] })),
-      api("/api/admin/storage").catch(() => ({ storage: null }))
+      api("/api/admin/storage").catch(() => ({ storage: null })),
+      api("/api/admin/notifications").catch(() => ({ notifications: [], config: null }))
     ]);
     state.orders = ordersPayload.orders || [];
     state.enquiries = wholesalePayload.enquiries || [];
     state.summary = summaryPayload.summary || null;
     state.customers = customersPayload.customers || [];
     state.storage = storagePayload.storage || null;
+    state.notifications = notificationsPayload.notifications || [];
+    state.notificationConfig = notificationsPayload.config || null;
     dashboard.hidden = false;
     setStatus("Admin backend connected.", "success");
     renderAll();
@@ -416,6 +524,171 @@ async function loadDashboard() {
     dashboard.hidden = true;
     setStatus(error.message, "error");
   }
+}
+
+function findNotification(id) {
+  return state.notifications.find((item) => item.id === id);
+}
+
+async function copyText(value) {
+  if (navigator.clipboard) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
+}
+
+async function copyNotificationMessage(id) {
+  const notification = findNotification(id);
+  if (!notification) return;
+  await copyText(notification.message || "");
+  showToast("Notification message copied");
+}
+
+async function updateNotificationStatus(id, status) {
+  try {
+    const payload = await api(`/api/admin/notifications/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status })
+    });
+    state.notifications = state.notifications.map((item) => (item.id === payload.notification.id ? payload.notification : item));
+    renderAll();
+    showToast(`Alert marked ${status}`);
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function retryNotification(id) {
+  try {
+    const payload = await api(`/api/admin/notifications/${encodeURIComponent(id)}/retry`, {
+      method: "POST",
+      body: JSON.stringify({})
+    });
+    state.notifications = state.notifications.map((item) => (item.id === payload.notification.id ? payload.notification : item));
+    renderAll();
+    showToast(`Alert ${payload.notification.status}`);
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function printPackingSlip(orderId) {
+  const order = state.orders.find((item) => item.id === orderId);
+  if (!order) {
+    showToast("Order not found for packing slip");
+    return;
+  }
+
+  const itemRows = (order.items || [])
+    .map(
+      (item) => `
+        <tr>
+          <td>${escapeHtml(item.name || "Product")}</td>
+          <td>${escapeHtml(item.size || "")}</td>
+          <td>${Number(item.quantity || 0)}</td>
+          <td>${money(item.lineTotal)}</td>
+        </tr>
+      `
+    )
+    .join("");
+  const slip = `
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Packing Slip ${escapeHtml(order.id)}</title>
+        <style>
+          * { box-sizing: border-box; }
+          body { margin: 0; padding: 28px; color: #1c2521; font-family: Arial, sans-serif; }
+          h1, h2, p { margin: 0; }
+          .slip { display: grid; gap: 18px; }
+          .top { display: flex; justify-content: space-between; gap: 24px; padding-bottom: 16px; border-bottom: 2px solid #1e594b; }
+          .brand { font-size: 28px; font-weight: 800; color: #1e594b; }
+          .muted { color: #66736c; line-height: 1.5; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+          .box { padding: 14px; border: 1px solid #d8d2c1; border-radius: 8px; }
+          .box strong { display: block; margin-bottom: 8px; text-transform: uppercase; font-size: 12px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { padding: 10px; border: 1px solid #d8d2c1; text-align: left; }
+          th { background: #f4f1e8; font-size: 12px; text-transform: uppercase; }
+          .checks { display: grid; gap: 8px; }
+          .checks span { min-height: 28px; padding-left: 28px; position: relative; }
+          .checks span::before { content: ""; position: absolute; left: 0; top: 1px; width: 18px; height: 18px; border: 1px solid #1e594b; }
+          @media print { body { padding: 0; } button { display: none; } }
+        </style>
+      </head>
+      <body>
+        <button onclick="window.print()" style="margin-bottom:16px;padding:10px 14px">Print / Save PDF</button>
+        <main class="slip">
+          <section class="top">
+            <div>
+              <p class="brand">BandEvi Gourmet</p>
+              <p class="muted">Packing slip and dispatch checklist</p>
+            </div>
+            <div>
+              <h1>${escapeHtml(order.id)}</h1>
+              <p class="muted">${formatDate(order.placedAt)}</p>
+            </div>
+          </section>
+          <section class="grid">
+            <div class="box">
+              <strong>Customer</strong>
+              <p>${escapeHtml(order.customer?.name || "Customer")}</p>
+              <p class="muted">${escapeHtml(order.customer?.phone || "")}</p>
+              <p class="muted">${escapeHtml(order.customer?.email || "")}</p>
+            </div>
+            <div class="box">
+              <strong>Delivery</strong>
+              <p>${escapeHtml(order.countryCity || order.customer?.location || "Location pending")}</p>
+              <p class="muted">${escapeHtml(order.postalCode || "")}</p>
+              <p class="muted">${escapeHtml(order.address || "Address pending")}</p>
+            </div>
+            <div class="box">
+              <strong>Courier</strong>
+              <p>${escapeHtml(order.courier || "Courier pending")}</p>
+              <p class="muted">${escapeHtml(order.trackingCode || "Tracking pending")}</p>
+              <p class="muted">${escapeHtml(order.dispatchDate || "Dispatch date pending")}</p>
+            </div>
+            <div class="box">
+              <strong>Payment</strong>
+              <p>${escapeHtml(order.paymentState || order.payment || "Payment pending")}</p>
+              <p class="muted">Total: ${money(order.totals?.total)}</p>
+            </div>
+          </section>
+          <section>
+            <table>
+              <thead><tr><th>Product</th><th>Pack</th><th>Qty</th><th>Value</th></tr></thead>
+              <tbody>${itemRows || `<tr><td colspan="4">No item details</td></tr>`}</tbody>
+            </table>
+          </section>
+          <section class="box checks">
+            <strong>Dispatch checklist</strong>
+            <span>Products checked against order quantity</span>
+            <span>Pack condition and seal checked</span>
+            <span>Customer address and phone verified</span>
+            <span>Courier label attached and tracking saved</span>
+          </section>
+        </main>
+      </body>
+    </html>
+  `;
+  const slipWindow = window.open("", "_blank");
+  if (!slipWindow) {
+    showToast("Allow popups to print packing slip");
+    return;
+  }
+  slipWindow.document.write(slip);
+  slipWindow.document.close();
 }
 
 async function updateOrderStatus(event) {
@@ -432,9 +705,12 @@ async function updateOrderStatus(event) {
         paymentState: data.get("paymentState"),
         courier: data.get("courier"),
         trackingCode: data.get("trackingCode"),
+        trackingUrl: data.get("trackingUrl"),
+        dispatchDate: data.get("dispatchDate"),
         eta: data.get("eta"),
         adminNote: data.get("adminNote"),
-        note: data.get("note")
+        note: data.get("note"),
+        notifyCustomer: data.get("notifyCustomer") === "on"
       })
     });
     state.orders = state.orders.map((order) => (order.id === payload.order.id ? payload.order : order));
@@ -592,6 +868,8 @@ document.querySelector("#logoutAdmin").addEventListener("click", () => {
   state.orders = [];
   state.enquiries = [];
   state.customers = [];
+  state.notifications = [];
+  state.notificationConfig = null;
   window.sessionStorage.removeItem(TOKEN_KEY);
   dashboard.hidden = true;
   setStatus("Logged out.");

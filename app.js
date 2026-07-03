@@ -778,6 +778,8 @@ function createOrderRecord(form, orderId, source) {
     paymentNote: getPaymentNote(payment, totals.total),
     courier: "",
     trackingCode: "",
+    trackingUrl: "",
+    dispatchDate: "",
     eta: "",
     adminNote: "",
     totals,
@@ -915,6 +917,26 @@ function getOrderNextAction(order) {
   return messages[status] || messages.booked;
 }
 
+function renderDeliveryTrustPanel(order) {
+  const dispatched = order.status === "dispatched" || order.status === "delivered";
+  return `
+    <div class="delivery-trust-panel" aria-label="Delivery support policy">
+      <span>
+        <strong>${dispatched ? "Parcel support" : "Dispatch support"}</strong>
+        ${dispatched ? "Keep packaging photos if the parcel arrives damaged." : "Courier details are added by the order desk before dispatch."}
+      </span>
+      <span>
+        <strong>Proof ready</strong>
+        Booking ID, address, item list, and timeline are saved for support review.
+      </span>
+      <span>
+        <strong>Delivery window</strong>
+        ${escapeHtml(order.eta || "ETA is shared after packing and courier handover.")}
+      </span>
+    </div>
+  `;
+}
+
 function renderOrderHistory(order) {
   const history = Array.isArray(order.statusHistory) ? order.statusHistory.slice(-5).reverse() : [];
   if (!history.length) return "";
@@ -951,6 +973,7 @@ function renderOrderCard(order) {
     order.paymentState ? `<span><strong>Payment status</strong>${escapeHtml(order.paymentState)}</span>` : "",
     order.courier ? `<span><strong>Courier</strong>${escapeHtml(order.courier)}</span>` : "",
     order.trackingCode ? `<span><strong>Tracking code</strong>${escapeHtml(order.trackingCode)}</span>` : "",
+    order.dispatchDate ? `<span><strong>Dispatch date</strong>${escapeHtml(order.dispatchDate)}</span>` : "",
     order.eta ? `<span><strong>Expected delivery</strong>${escapeHtml(order.eta)}</span>` : ""
   ].filter(Boolean);
 
@@ -976,12 +999,14 @@ function renderOrderCard(order) {
           ? `<div class="tracking-panel" aria-label="Delivery tracking details">${trackingItems.join("")}</div>`
           : ""
       }
+      ${renderDeliveryTrustPanel(order)}
       ${order.adminNote ? `<p class="order-note"><strong>Seller note:</strong> ${escapeHtml(order.adminNote)}</p>` : ""}
       <div class="status-steps" aria-label="Order status timeline">${renderStatusSteps(order)}</div>
       ${renderOrderHistory(order)}
       <div class="order-actions">
         <button type="button" data-copy-order="${escapeHtml(order.id)}">Copy booking ID</button>
         <button type="button" data-reorder="${escapeHtml(order.id)}">Reorder items</button>
+        ${order.trackingUrl ? `<a href="${escapeHtml(order.trackingUrl)}" target="_blank" rel="noopener noreferrer">Courier tracking</a>` : ""}
         <a href="${supportUrl}" target="_blank" rel="noopener noreferrer">Support on WhatsApp</a>
       </div>
     </article>
@@ -1115,6 +1140,10 @@ function renderConfirmationPage(order, source = "saved") {
           <span>${escapeHtml(order.countryCity || order.customer?.location || "Location pending")}</span>
           ${order.postalCode ? `<span>${escapeHtml(order.postalCode)}</span>` : ""}
           <span>${escapeHtml(order.address || "Address to be confirmed")}</span>
+          ${order.dispatchDate ? `<span>Dispatch: ${escapeHtml(order.dispatchDate)}</span>` : ""}
+          ${order.courier ? `<span>Courier: ${escapeHtml(order.courier)}</span>` : ""}
+          ${order.trackingCode ? `<span>Tracking: ${escapeHtml(order.trackingCode)}</span>` : ""}
+          ${order.trackingUrl ? `<span><a href="${escapeHtml(order.trackingUrl)}" target="_blank" rel="noopener noreferrer">Open courier tracking</a></span>` : ""}
         </article>
         <article>
           <strong>Payment</strong>
