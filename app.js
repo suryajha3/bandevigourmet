@@ -3236,7 +3236,8 @@ document.querySelectorAll("[data-google-login]").forEach((button) => {
 customerLoginForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const form = event.currentTarget;
-  if (form.dataset.loginStep !== "secure") {
+  const usesSteppedLogin = Boolean(form.querySelector(".account-login-step"));
+  if (usesSteppedLogin && form.dataset.loginStep !== "secure") {
     const phone = normalizePhone(form.elements.customerPhone?.value);
     if (!phone) {
       setCustomerLoginStatus("Enter your phone number first.");

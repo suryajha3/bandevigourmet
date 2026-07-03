@@ -86,16 +86,16 @@
           <p class="eyebrow">Customer booking desk</p>
           <h2 id="customer-portal-title">Sign in, create account, or recover access.</h2>
           <p>
-            A two-step account flow keeps login simple: first identify the phone number, then enter the secure PIN.
+            Open the customer desk with the mobile number first. Name, email, and number stay visible on one clear page.
           </p>
           <div class="portal-highlights" aria-label="Booking desk features">
-            <span>Two-step login</span>
+            <span>Mobile number login</span>
+            <span>Name and email visible</span>
             <span>Google-ready sign in</span>
             <span>Order history</span>
-            <span>Forgot PIN support</span>
           </div>
           <div class="portal-note">
-            New customers can create an account here. Existing customers can sign in with phone and PIN.
+            Existing customers can open the dashboard with their customer number. New customer details sit next to the login area.
           </div>
         </div>
         <div class="portal-panel account-only">
@@ -104,14 +104,8 @@
               <span class="portal-lock-mark">BG</span>
               <div>
                 <h3>Customer access</h3>
-                <p>Choose the correct account action below.</p>
+                <p>Use customer number first, with name and email on the same page.</p>
               </div>
-            </div>
-
-            <div class="auth-switcher" aria-label="Account actions">
-              <button type="button" data-auth-mode="signin" class="is-active">Sign in</button>
-              <button type="button" data-auth-mode="signup">Sign up</button>
-              <button type="button" data-auth-mode="forgot">Forgot PIN</button>
             </div>
 
             <button class="google-login-button" type="button" data-google-login>
@@ -119,38 +113,64 @@
               Continue with Google
             </button>
 
-            <form class="portal-form auth-panel is-active" id="customerLoginForm" data-auth-panel="signin" data-login-step="identity">
-              <div class="auth-step-line" aria-label="Sign in steps">
-                <span class="is-active">1. Phone</span>
-                <span>2. PIN</span>
-              </div>
-              <div class="account-login-step is-active" data-step="identity">
-                <label>
-                  <span>Phone number</span>
-                  <input name="customerPhone" type="tel" placeholder="Phone used for order" autocomplete="tel" required />
-                </label>
-                <button class="portal-button" type="button" data-login-next>Continue</button>
-              </div>
-              <div class="account-login-step" data-step="secure">
-                <label>
-                  <span>Account PIN</span>
-                  <input
-                    name="customerPin"
-                    type="password"
-                    inputmode="numeric"
-                    minlength="4"
-                    maxlength="6"
-                    placeholder="4-6 digit PIN"
-                    autocomplete="one-time-code"
-                  />
-                  <small>PIN is required when this phone already has a protected account.</small>
-                </label>
-                <details class="portal-optional-profile">
-                  <summary>Update profile details</summary>
-                  <div>
-                    <label>
+            <div class="account-auth-grid">
+              <form class="portal-form account-login-card" id="customerLoginForm" data-auth-panel="signin" data-login-step="secure">
+                <div class="auth-card-title">
+                  <span>Existing customer</span>
+                  <strong>Open dashboard</strong>
+                </div>
+                <div class="portal-login-grid">
+                  <label class="portal-primary-field">
+                    <span>Customer mobile number</span>
+                    <input name="customerPhone" type="tel" placeholder="Phone used for order" autocomplete="tel" required />
+                  </label>
+                  <label>
+                    <span>Name</span>
+                    <input name="customerName" type="text" placeholder="Your name" autocomplete="name" />
+                  </label>
+                  <label>
+                    <span>Email</span>
+                    <input name="customerEmail" type="email" placeholder="Email for order updates" autocomplete="email" />
+                  </label>
+                  <label>
+                    <span>Country / city</span>
+                    <input name="customerLocation" type="text" placeholder="Example: India, Patna" autocomplete="address-level2" />
+                  </label>
+                  <label>
+                    <span>Account PIN</span>
+                    <input
+                      name="customerPin"
+                      type="password"
+                      inputmode="numeric"
+                      minlength="4"
+                      maxlength="6"
+                      placeholder="Optional 4-6 digit PIN"
+                      autocomplete="one-time-code"
+                    />
+                    <small>Optional unless this number is PIN protected.</small>
+                  </label>
+                </div>
+                <button class="portal-button" type="submit">
+                  <i data-lucide="badge-check"></i>
+                  Open dashboard
+                </button>
+                <p class="portal-form-status" id="customerLoginStatus" aria-live="polite"></p>
+              </form>
+
+              <div class="account-side-stack">
+                <form class="portal-form account-login-card" id="customerSignupForm" data-auth-panel="signup">
+                  <div class="auth-card-title">
+                    <span>New customer</span>
+                    <strong>Create profile</strong>
+                  </div>
+                  <div class="portal-login-grid compact">
+                    <label class="portal-primary-field">
                       <span>Name</span>
-                      <input name="customerName" type="text" placeholder="Your name" autocomplete="name" />
+                      <input name="customerName" type="text" placeholder="Your name" autocomplete="name" required />
+                    </label>
+                    <label>
+                      <span>Mobile number</span>
+                      <input name="customerPhone" type="tel" placeholder="Phone number" autocomplete="tel" required />
                     </label>
                     <label>
                       <span>Email</span>
@@ -160,73 +180,40 @@
                       <span>Country / city</span>
                       <input name="customerLocation" type="text" placeholder="Example: India, Patna" autocomplete="address-level2" />
                     </label>
+                    <label>
+                      <span>Create PIN</span>
+                      <input name="customerPin" type="password" inputmode="numeric" minlength="4" maxlength="6" placeholder="4-6 digit PIN" required />
+                      <small>This PIN protects order history for this number.</small>
+                    </label>
                   </div>
-                </details>
-                <div class="portal-form-actions">
-                  <button class="portal-button quiet" type="button" data-login-back>Back</button>
                   <button class="portal-button" type="submit">
-                    <i data-lucide="badge-check"></i>
-                    Open dashboard
+                    <i data-lucide="user-round"></i>
+                    Create account
                   </button>
-                </div>
-              </div>
-              <p class="portal-form-status" id="customerLoginStatus" aria-live="polite"></p>
-            </form>
+                  <p class="portal-form-status" id="customerSignupStatus" aria-live="polite"></p>
+                </form>
 
-            <form class="portal-form auth-panel" id="customerSignupForm" data-auth-panel="signup">
-              <div class="auth-step-line" aria-label="Sign up steps">
-                <span class="is-active">1. Profile</span>
-                <span class="is-active">2. Secure PIN</span>
+                <form class="portal-form account-login-card forgot-inline-card" id="customerForgotForm" data-auth-panel="forgot">
+                  <div class="auth-card-title">
+                    <span>Need help?</span>
+                    <strong>Forgot PIN</strong>
+                  </div>
+                  <label>
+                    <span>Mobile number</span>
+                    <input name="forgotPhone" type="tel" placeholder="Phone used for order" autocomplete="tel" required />
+                  </label>
+                  <label>
+                    <span>Message</span>
+                    <textarea name="forgotMessage" rows="3" placeholder="I need help resetting my account PIN."></textarea>
+                  </label>
+                  <button class="portal-button" type="submit">
+                    <i data-lucide="send"></i>
+                    Request PIN reset
+                  </button>
+                  <p class="portal-form-status" id="customerForgotStatus" aria-live="polite"></p>
+                </form>
               </div>
-              <div class="portal-login-grid">
-                <label class="portal-primary-field">
-                  <span>Name</span>
-                  <input name="customerName" type="text" placeholder="Your name" autocomplete="name" required />
-                </label>
-                <label>
-                  <span>Phone number</span>
-                  <input name="customerPhone" type="tel" placeholder="Phone number" autocomplete="tel" required />
-                </label>
-                <label>
-                  <span>Email</span>
-                  <input name="customerEmail" type="email" placeholder="Email for order updates" autocomplete="email" />
-                </label>
-                <label>
-                  <span>Country / city</span>
-                  <input name="customerLocation" type="text" placeholder="Example: India, Patna" autocomplete="address-level2" />
-                </label>
-                <label>
-                  <span>Create PIN</span>
-                  <input name="customerPin" type="password" inputmode="numeric" minlength="4" maxlength="6" placeholder="4-6 digit PIN" required />
-                  <small>This PIN protects order history for this phone.</small>
-                </label>
-              </div>
-              <button class="portal-button" type="submit">
-                <i data-lucide="user-round"></i>
-                Create account
-              </button>
-              <p class="portal-form-status" id="customerSignupStatus" aria-live="polite"></p>
-            </form>
-
-            <form class="portal-form auth-panel" id="customerForgotForm" data-auth-panel="forgot">
-              <div class="auth-step-line" aria-label="Forgot PIN steps">
-                <span class="is-active">1. Phone</span>
-                <span class="is-active">2. Support request</span>
-              </div>
-              <label>
-                <span>Phone number</span>
-                <input name="forgotPhone" type="tel" placeholder="Phone used for order" autocomplete="tel" required />
-              </label>
-              <label>
-                <span>Message</span>
-                <textarea name="forgotMessage" rows="3" placeholder="I need help resetting my account PIN."></textarea>
-              </label>
-              <button class="portal-button" type="submit">
-                <i data-lucide="send"></i>
-                Request PIN reset
-              </button>
-              <p class="portal-form-status" id="customerForgotStatus" aria-live="polite"></p>
-            </form>
+            </div>
           </div>
 
           <form class="portal-form support-form" id="customerSupportForm">

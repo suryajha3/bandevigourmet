@@ -2396,6 +2396,53 @@ body.customer-authed .account-auth-card {
   border-style: dashed;
 }
 
+.account-auth-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.account-side-stack {
+  display: grid;
+  gap: 18px;
+  padding-left: 18px;
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.account-login-card {
+  align-content: start;
+}
+
+.auth-card-title {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.auth-card-title span {
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.auth-card-title strong {
+  color: #fff;
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.portal-login-grid.compact {
+  grid-template-columns: 1fr;
+}
+
+.forgot-inline-card {
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+
 .auth-panel,
 .account-login-step {
   display: none;
@@ -6180,6 +6227,17 @@ body.customer-authed .portal-dashboard {
 
   .bundle-band {
     grid-template-columns: 1fr;
+  }
+
+  .account-auth-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-side-stack {
+    padding-left: 0;
+    padding-top: 18px;
+    border-left: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
   }
 
   .site-footer,
