@@ -86,6 +86,7 @@ const productGrid = document.querySelector("#productGrid");
 const makhanaProductGrid = document.querySelector("#makhanaProductGrid");
 const masalaProductGrid = document.querySelector("#masalaProductGrid");
 const pohaProductGrid = document.querySelector("#pohaProductGrid");
+const comboProductGrid = document.querySelector("#comboProductGrid");
 const singleProductPage = document.querySelector("#singleProductPage");
 const cartItems = document.querySelector("#cartItems");
 const cartTotals = document.querySelector("#cartTotals");
@@ -450,13 +451,16 @@ function renderCategoryProducts() {
   const categorySections = [
     { category: "makhana", grid: makhanaProductGrid },
     { category: "masala", grid: masalaProductGrid },
-    { category: "poha", grid: pohaProductGrid }
+    { category: "poha", grid: pohaProductGrid },
+    { category: "combo", grid: comboProductGrid }
   ];
 
   categorySections.forEach(({ category, grid }) => {
     if (!grid) return;
     const categoryProducts = catalog.filter((product) => product.category === category);
-    grid.innerHTML = categoryProducts.map(renderCategoryCard).join("");
+    grid.innerHTML = categoryProducts.length
+      ? categoryProducts.map(renderCategoryCard).join("")
+      : `<article class="admin-empty">Products coming soon.</article>`;
     bindAddButtons(grid);
   });
 
