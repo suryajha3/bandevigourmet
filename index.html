@@ -126,6 +126,108 @@
         </div>
       </section>
 
+      <section class="promo-showcase" aria-labelledby="promo-title" data-promo-slider>
+        <div class="section-head promo-head">
+          <div>
+            <p class="eyebrow">Promotions</p>
+            <h2 id="promo-title">Featured offers for pantry buyers.</h2>
+          </div>
+          <div class="promo-controls" aria-label="Promotion controls">
+            <button class="promo-arrow" type="button" data-promo-prev aria-label="Previous promotion">
+              <i data-lucide="chevron-left"></i>
+            </button>
+            <button class="promo-arrow" type="button" data-promo-next aria-label="Next promotion">
+              <i data-lucide="chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="promo-stage">
+          <article class="promo-slide is-active" data-promo-slide>
+            <div class="promo-copy">
+              <span>Snack combo</span>
+              <h3>Makhana tasting box for family and gifting orders.</h3>
+              <p>Build a premium snack cart with roasted makhana flavors, combo packs, and clean Indian pantry presentation.</p>
+              <a class="primary-link" href="./bundles.html">
+                <i data-lucide="package-check"></i>
+                Shop bundles
+              </a>
+            </div>
+            <img src="./assets/product-snack-combo.png" alt="BandEvi Gourmet makhana snack combo promotion" />
+          </article>
+
+          <article class="promo-slide" data-promo-slide aria-hidden="true">
+            <div class="promo-copy">
+              <span>Masala range</span>
+              <h3>Daily spice refills for modern Indian kitchens.</h3>
+              <p>Garam masala, turmeric, chilli, kitchen king, and chaat masala arranged for home, retail, and bulk buyers.</p>
+              <a class="primary-link" href="./masala.html">
+                <i data-lucide="store"></i>
+                Shop masala
+              </a>
+            </div>
+            <img src="./assets/packaging-masala-range.png" alt="BandEvi Gourmet masala range promotional slide" />
+          </article>
+
+          <article class="promo-slide" data-promo-slide aria-hidden="true">
+            <div class="promo-copy">
+              <span>Breakfast staple</span>
+              <h3>Premium poha for repeat pantry and food service orders.</h3>
+              <p>Add poha to monthly carts with makhana, masala, and combo packs for a complete Indian pantry order.</p>
+              <a class="primary-link" href="./poha.html">
+                <i data-lucide="wheat"></i>
+                Shop poha
+              </a>
+            </div>
+            <img src="./assets/product-poha.png" alt="BandEvi Gourmet premium poha promotional slide" />
+          </article>
+        </div>
+
+        <div class="promo-dots" aria-label="Promotion slides">
+          <button class="is-active" type="button" data-promo-dot aria-label="Show snack combo promotion"></button>
+          <button type="button" data-promo-dot aria-label="Show masala range promotion"></button>
+          <button type="button" data-promo-dot aria-label="Show poha promotion"></button>
+        </div>
+      </section>
+
+      <section class="home-trust-wall" aria-labelledby="home-trust-title">
+        <div class="home-trust-copy">
+          <p class="eyebrow">Trust built in</p>
+          <h2 id="home-trust-title">A premium food website must make buyers feel secure before checkout.</h2>
+          <p>
+            The home page now gives customers and business buyers a clear reason to trust the brand: product clarity, booking status, policies, wholesale support, and documentation areas ready for verification.
+          </p>
+          <div class="home-trust-stats" aria-label="Store trust snapshot">
+            <span><strong>13</strong> live products</span>
+            <span><strong>4</strong> category pages</span>
+            <span><strong>5</strong> tracking steps</span>
+            <span><strong>24/7</strong> online enquiry</span>
+          </div>
+        </div>
+        <div class="home-trust-grid">
+          <article>
+            <i data-lucide="shield-check"></i>
+            <strong>Policy-backed buying</strong>
+            <span>Terms, privacy, cancellation, refund, shipping, and FAQ are connected from checkout and footer.</span>
+          </article>
+          <article>
+            <i data-lucide="badge-check"></i>
+            <strong>Trackable booking ID</strong>
+            <span>Every cart booking can be followed through account and tracking pages.</span>
+          </article>
+          <article>
+            <i data-lucide="package-check"></i>
+            <strong>Real product imagery</strong>
+            <span>Home promotions and category pages use product-specific visuals instead of one repeated image.</span>
+          </article>
+          <article>
+            <i data-lucide="globe-2"></i>
+            <strong>Buyer-ready roadmap</strong>
+            <span>Compliance, export, wholesale, and documentation areas are prepared for verified business details.</span>
+          </article>
+        </div>
+      </section>
+
       <section class="global-brand" id="global" aria-labelledby="global-title">
         <div class="global-copy">
           <p class="eyebrow">International brand direction</p>
@@ -653,7 +755,7 @@
       </section>
     </main>
 
-    <footer class="site-footer" aria-label="Brand footer">
+    <footer class="site-footer upgraded-footer" aria-label="Brand footer">
       <div class="footer-intro">
         <a class="brand footer-brand" href="./index.html" aria-label="BandEvi Gourmet home">
           <span class="brand-mark">B</span>
@@ -663,12 +765,13 @@
           </span>
         </a>
         <p>
-          A premium Indian food brand direction for retail shelves, gifting, online orders, distributor supply, and export buyer conversations.
+          Premium Indian makhana, masala, poha, whole spices, and pantry bundles for online orders, gifting, retail shelves, wholesale, and export buyer conversations.
         </p>
         <div class="footer-trust-points" aria-label="Footer trust points">
           <span>Booking ID tracking</span>
           <span>Policy center</span>
           <span>Wholesale desk</span>
+          <span>Category pages</span>
         </div>
       </div>
       <nav class="footer-links" aria-label="Shop links">
@@ -680,27 +783,33 @@
         <a href="./bundles.html">Bundles</a>
       </nav>
       <nav class="footer-links" aria-label="Support links">
-        <strong>Support</strong>
-        <a href="./wholesale.html#export">Export buyer desk</a>
-        <a href="./about.html#trust">Trust center</a>
+        <strong>Customer care</strong>
+        <a href="./account.html">Customer account</a>
+        <a href="./track.html">Track order</a>
         <a href="./policies.html#terms">Terms</a>
         <a href="./policies.html#privacy">Privacy</a>
         <a href="./policies.html#cancellation">Cancellation</a>
         <a href="./policies.html#refund">Refunds</a>
-        <a href="./policies.html#faq">FAQ</a>
-        <a href="./account.html">Customer account</a>
-        <a href="./track.html">Track order</a>
-        <a href="./wholesale.html">Wholesale enquiry</a>
       </nav>
-      <div class="footer-note">
+      <nav class="footer-links" aria-label="Business links">
+        <strong>Business</strong>
+        <a href="./about.html">About BandEvi</a>
+        <a href="./about.html#trust">Trust center</a>
+        <a href="./wholesale.html">Wholesale enquiry</a>
+        <a href="./wholesale.html#export">Export buyer desk</a>
+        <a href="./policies.html#faq">FAQ</a>
+      </nav>
+      <div class="footer-note footer-assurance">
+        <strong>Buyer assurance</strong>
+        <span>Cart orders create a booking ID and can be tracked online from booked to delivery.</span>
         <strong>Business details</strong>
-        <span>FSSAI, GST, address, phone, email, and IEC can be added after final verification.</span>
-        <strong>Customer desk</strong>
-        <span>Orders can be booked from the cart and tracked by booking ID on the same website.</span>
+        <span>FSSAI, GST, address, phone, email, and IEC should be added after final verification.</span>
+        <a class="footer-cta" href="./products.html">Start shopping</a>
       </div>
       <div class="footer-bottom">
         <span>BandEvi Gourmet, India</span>
         <span>Premium Indian pantry brand for retail, gifting, wholesale, and export conversations.</span>
+        <span>Policies and product claims must be verified before commercial shipment.</span>
       </div>
     </footer>
 

@@ -1,6 +1,8 @@
 import {
   BadgeCheck,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   CheckCircle2,
   Clipboard,
   FileText,
@@ -106,6 +108,11 @@ const overlay = document.querySelector("[data-overlay]");
 const toast = document.querySelector("#toast");
 const couponInput = document.querySelector("#couponInput");
 const couponMessage = document.querySelector("#couponMessage");
+const promoSlider = document.querySelector("[data-promo-slider]");
+const promoSlides = promoSlider ? [...promoSlider.querySelectorAll("[data-promo-slide]")] : [];
+const promoDots = promoSlider ? [...promoSlider.querySelectorAll("[data-promo-dot]")] : [];
+let promoIndex = 0;
+let promoTimer = null;
 
 function ensureStoreShell() {
   if (!document.querySelector(".product-detail-drawer")) {
@@ -1603,6 +1610,8 @@ function refreshIcons() {
     icons: {
       BadgeCheck,
       ChevronDown,
+      ChevronLeft,
+      ChevronRight,
       CheckCircle2,
       Clipboard,
       FileText,
@@ -1629,6 +1638,55 @@ function refreshIcons() {
       X
     }
   });
+}
+
+function setPromoSlide(nextIndex) {
+  if (!promoSlides.length) return;
+  promoIndex = (nextIndex + promoSlides.length) % promoSlides.length;
+  promoSlides.forEach((slide, index) => {
+    const active = index === promoIndex;
+    slide.classList.toggle("is-active", active);
+    slide.setAttribute("aria-hidden", String(!active));
+  });
+  promoDots.forEach((dot, index) => {
+    dot.classList.toggle("is-active", index === promoIndex);
+  });
+}
+
+function rotatePromo(direction = 1) {
+  setPromoSlide(promoIndex + direction);
+}
+
+function startPromoTimer() {
+  if (!promoSlides.length || promoSlides.length < 2) return;
+  window.clearInterval(promoTimer);
+  promoTimer = window.setInterval(() => rotatePromo(1), 5200);
+}
+
+function stopPromoTimer() {
+  window.clearInterval(promoTimer);
+}
+
+function initPromoSlider() {
+  if (!promoSlider || !promoSlides.length) return;
+  promoSlider.querySelector("[data-promo-prev]")?.addEventListener("click", () => {
+    rotatePromo(-1);
+    startPromoTimer();
+  });
+  promoSlider.querySelector("[data-promo-next]")?.addEventListener("click", () => {
+    rotatePromo(1);
+    startPromoTimer();
+  });
+  promoDots.forEach((dot, index) => {
+    dot.addEventListener("click", () => {
+      setPromoSlide(index);
+      startPromoTimer();
+    });
+  });
+  promoSlider.addEventListener("mouseenter", stopPromoTimer);
+  promoSlider.addEventListener("mouseleave", startPromoTimer);
+  setPromoSlide(0);
+  startPromoTimer();
 }
 
 document.querySelectorAll(".tab").forEach((button) => {
@@ -1818,6 +1876,7 @@ renderSingleProductPage();
 renderCart();
 prefillCustomerLoginForm();
 renderCustomerPortal();
+initPromoSlider();
 if (state.customer?.phone) {
   loadCustomerOrdersFromBackend(state.customer.phone);
 }
