@@ -391,6 +391,10 @@ function renderProductCard(product) {
         </div>
         <h3>${product.name}</h3>
         <p>${product.description}</p>
+        <div class="clean-label-line">
+          <i data-lucide="leaf"></i>
+          No artificial colors or synthetic flavor shortcuts
+        </div>
         <div class="price-row">
           <span class="price">${money(product.price)}</span>
           <span class="pack-size">${product.size}</span>
@@ -417,6 +421,10 @@ function renderCategoryCard(product) {
         <span>${product.badge}</span>
         <h3>${product.name}</h3>
         <p>${product.size} - ${money(product.price)}</p>
+        <small class="clean-label-line">
+          <i data-lucide="leaf"></i>
+          Pure pantry direction
+        </small>
         <div class="category-actions">
           <a class="detail-button" href="${productUrl(product)}">Details</a>
           <button type="button" data-add="${product.id}">

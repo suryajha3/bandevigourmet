@@ -552,8 +552,77 @@ a {
   line-height: 1.58;
 }
 
+.purity-promise {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: clamp(24px, 5vw, 56px);
+  align-items: start;
+  padding: clamp(24px, 5vw, 44px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(18, 61, 52, 0.96), rgba(30, 89, 75, 0.92)),
+    url("./assets/product-turmeric-powder.png") center/cover;
+  color: #fff;
+}
+
+.purity-copy h2 {
+  margin: 0;
+  font-size: clamp(32px, 6vw, 56px);
+  line-height: 1.04;
+}
+
+.purity-copy p {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 17px;
+  line-height: 1.75;
+}
+
+.purity-promise .category-link {
+  margin-top: 8px;
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.purity-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.purity-grid article {
+  min-height: 214px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.purity-grid svg {
+  width: 28px;
+  height: 28px;
+  color: var(--saffron);
+}
+
+.purity-grid strong,
+.purity-grid span {
+  display: block;
+}
+
+.purity-grid strong {
+  margin: 18px 0 8px;
+  font-size: 20px;
+}
+
+.purity-grid span {
+  color: rgba(255, 255, 255, 0.74);
+  line-height: 1.58;
+}
+
 .shop-shell,
 .category-lanes,
+.purity-promise,
 .promo-showcase,
 .home-trust-wall,
 .global-brand,
@@ -982,6 +1051,28 @@ a {
   margin: 0;
   color: var(--muted);
   line-height: 1.5;
+}
+
+.clean-label-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  min-height: 30px;
+  margin-top: 12px;
+  padding: 0 9px;
+  border: 1px solid rgba(30, 89, 75, 0.18);
+  border-radius: 8px;
+  background: #f5f1e4;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.clean-label-line svg {
+  width: 15px;
+  height: 15px;
 }
 
 .price-row {
@@ -1523,6 +1614,10 @@ a {
   margin: 0;
   color: var(--muted);
   font-weight: 800;
+}
+
+.category-info .clean-label-line {
+  margin-top: 0;
 }
 
 .category-card button {
@@ -3818,6 +3913,7 @@ a {
   .cert-section,
   .export-desk,
   .promo-slide,
+  .purity-promise,
   .home-trust-wall,
   .customer-portal-section,
   .wholesale-section,
@@ -3830,6 +3926,7 @@ a {
   }
 
   .quality-grid,
+  .purity-grid,
   .home-trust-grid,
   .trust-grid,
   .policy-grid,
@@ -3943,6 +4040,7 @@ a {
 
   .global-brand,
   .quality-grid,
+  .purity-promise,
   .promo-showcase,
   .home-trust-wall,
   .about-brand,
@@ -4081,6 +4179,7 @@ a {
   }
 
   .global-copy h2,
+  .purity-copy h2,
   .about-copy h2,
   .export-copy h2,
   .cert-copy h2,
@@ -4091,6 +4190,7 @@ a {
 
   .cert-list,
   .policy-grid,
+  .purity-grid,
   .about-proof-grid,
   .home-trust-grid,
   .delivery-trust-panel,
@@ -4106,6 +4206,7 @@ a {
   .legal-hero,
   .legal-layout,
   .legal-jump-nav,
+  .purity-promise,
   .promo-showcase,
   .home-trust-wall,
   .customer-portal-section,
@@ -4122,6 +4223,10 @@ a {
   }
 
   .page-hero {
+    padding: 20px;
+  }
+
+  .purity-promise {
     padding: 20px;
   }
 
