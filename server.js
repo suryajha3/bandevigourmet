@@ -32,6 +32,7 @@ const TOKEN_TTL_MS = 1000 * 60 * 60 * 12;
 const CLOSED_ORDER_STATUSES = new Set(["delivered", "cancelled"]);
 const ORDER_STATUSES = new Set(["booked", "confirmed", "packed", "dispatched", "delivered", "cancelled"]);
 const WHOLESALE_STATUSES = new Set(["new", "contacted", "quoted", "sample-sent", "converted", "closed"]);
+const SUPPORT_STATUSES = new Set(["new", "reviewing", "waiting-customer", "resolved", "closed"]);
 const API_CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
@@ -206,6 +207,8 @@ function publicCustomer(customer) {
     lastOrderAt: customer.lastOrderAt,
     orderCount: Number(customer.orderCount || 0),
     totalSpend: Number(customer.totalSpend || 0),
+    supportCount: Number(customer.supportCount || 0),
+    openSupportCount: Number(customer.openSupportCount || 0),
     hasAccountPin: Boolean(customer.accessPinHash),
     tags: Array.isArray(customer.tags) ? customer.tags : []
   };
@@ -215,6 +218,30 @@ function adminCustomer(customer) {
   return {
     ...publicCustomer(customer),
     adminNote: customer.adminNote || ""
+  };
+}
+
+function publicSupportRequest(request) {
+  return {
+    id: request.id,
+    orderId: request.orderId,
+    phone: request.phone,
+    name: request.name,
+    email: request.email,
+    topic: request.topic,
+    message: request.message,
+    status: request.status || "new",
+    resolutionNote: request.resolutionNote || "",
+    createdAt: request.createdAt,
+    updatedAt: request.updatedAt,
+    history: request.history || []
+  };
+}
+
+function adminSupportRequest(request) {
+  return {
+    ...publicSupportRequest(request),
+    internalNote: request.internalNote || ""
   };
 }
 
@@ -260,7 +287,7 @@ function isClosedOrder(order) {
 }
 
 function emptyDb() {
-  return { orders: [], wholesale: [], customers: [], notifications: [], events: [] };
+  return { orders: [], wholesale: [], customers: [], notifications: [], supportRequests: [], events: [] };
 }
 
 function normalizeDb(db) {
@@ -272,6 +299,7 @@ function normalizeDb(db) {
     wholesale: Array.isArray(safeDb.wholesale) ? safeDb.wholesale : [],
     customers: Array.isArray(safeDb.customers) ? safeDb.customers : [],
     notifications: Array.isArray(safeDb.notifications) ? safeDb.notifications : [],
+    supportRequests: Array.isArray(safeDb.supportRequests) ? safeDb.supportRequests : [],
     events: Array.isArray(safeDb.events) ? safeDb.events : []
   };
 }
@@ -334,15 +362,21 @@ function buildCustomerDashboard(db, phone) {
     .filter((item) => cleanPhone(item.phone) === clean)
     .slice(0, 20)
     .map(publicEnquiry);
+  const supportRequests = (db.supportRequests || [])
+    .filter((item) => cleanPhone(item.phone) === clean)
+    .slice(0, 20)
+    .map(publicSupportRequest);
   const customer =
     (db.customers || []).find((item) => cleanPhone(item.phone) === clean) ||
     (orders[0]?.customer ? normalizeCustomer({ ...orders[0].customer, phone: clean, lastOrderAt: orders[0].placedAt }) : null);
   const activeOrders = orders.filter((order) => !isClosedOrder(order)).length;
+  const openSupportRequests = supportRequests.filter((item) => !["resolved", "closed"].includes(item.status || "")).length;
 
   return {
     customer: customer ? publicCustomer(customer) : null,
     orders,
     enquiries,
+    supportRequests,
     summary: {
       totalOrders: orders.length,
       activeOrders,
@@ -350,19 +384,37 @@ function buildCustomerDashboard(db, phone) {
       closedOrders: orders.filter((order) => isClosedOrder(order)).length,
       totalSpend: orders.reduce((sum, order) => sum + Number(order.totals?.total || 0), 0),
       wholesaleEnquiries: enquiries.length,
+      supportRequests: supportRequests.length,
+      openSupportRequests,
       latestStatus: orders[0]?.status || "",
-      latestOrderId: orders[0]?.id || ""
+      latestOrderId: orders[0]?.id || "",
+      nextAction: orders[0] ? getCustomerNextAction(orders[0]) : "Place a booking to start order tracking."
     }
   };
+}
+
+function getCustomerNextAction(order) {
+  const status = order?.status || "booked";
+  const messages = {
+    booked: "Seller confirmation and stock check are pending.",
+    confirmed: "Order is confirmed and will move to packing.",
+    packed: "Packing is complete. Dispatch details are the next update.",
+    dispatched: "Order is on the way. Watch courier and ETA updates.",
+    delivered: "Order is delivered. Repeat order or raise support if needed.",
+    cancelled: "Order is cancelled. Contact support for refund or replacement review."
+  };
+  return messages[status] || messages.booked;
 }
 
 function buildAdminSummary(db) {
   const orders = db.orders || [];
   const enquiries = db.wholesale || [];
   const notifications = db.notifications || [];
+  const supportRequests = db.supportRequests || [];
   const activeOrders = orders.filter((order) => !isClosedOrder(order));
   const openWholesale = enquiries.filter((item) => !["converted", "closed"].includes(item.status || "new"));
   const pendingNotifications = notifications.filter((item) => ["queued", "ready", "failed"].includes(item.status || "")).length;
+  const openSupportRequests = supportRequests.filter((item) => !["resolved", "closed"].includes(item.status || "")).length;
 
   return {
     totalOrders: orders.length,
@@ -372,6 +424,8 @@ function buildAdminSummary(db) {
     bookingValue: orders.reduce((sum, order) => sum + Number(order.totals?.total || 0), 0),
     customers: (db.customers || []).length,
     wholesaleEnquiries: enquiries.length,
+    supportRequests: supportRequests.length,
+    openSupportRequests,
     notifications: notifications.length,
     pendingNotifications,
     openWholesale: openWholesale.length,
@@ -473,6 +527,68 @@ function createNotification({ order, eventType, audience, channel, recipient, su
     sentAt: "",
     error: ""
   };
+}
+
+function buildSupportNotificationMessage(request, order = null) {
+  return [
+    `Support request: ${request.id}`,
+    "",
+    `Topic: ${request.topic || "Order support"}`,
+    `Status: ${request.status || "new"}`,
+    `Order ID: ${request.orderId || "General account support"}`,
+    `Customer: ${request.name || order?.customer?.name || "Customer"}`,
+    `Phone: ${request.phone || order?.customer?.phone || "No phone"}`,
+    `Email: ${request.email || order?.customer?.email || "No email"}`,
+    order ? `Order total: ${money(order.totals?.total)}` : "",
+    "",
+    "Message:",
+    request.message || "No message added.",
+    "",
+    request.orderId ? `Track order: ${orderTrackingUrl(order || { id: request.orderId, customer: { phone: request.phone } })}` : "",
+    "Review this request in the BandEvi Gourmet admin panel."
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
+}
+
+function createSupportNotifications(request, order = null) {
+  const pseudoOrder = order || { id: request.orderId || request.id, customer: { phone: request.phone } };
+  const subject = `${STORE_CONFIG.shopName} support request ${request.id}`;
+  const message = buildSupportNotificationMessage(request, order);
+  const notifications = [];
+
+  if (cleanPhone(ADMIN_WHATSAPP_NUMBER)) {
+    notifications.push(
+      createNotification({
+        order: pseudoOrder,
+        eventType: "support_request",
+        audience: "admin",
+        channel: "whatsapp",
+        recipient: ADMIN_WHATSAPP_NUMBER,
+        subject,
+        message,
+        url: whatsappUrl(ADMIN_WHATSAPP_NUMBER, message)
+      })
+    );
+  }
+
+  if (ADMIN_NOTIFICATION_EMAIL) {
+    notifications.push(
+      createNotification({
+        order: pseudoOrder,
+        eventType: "support_request",
+        audience: "admin",
+        channel: "email",
+        recipient: ADMIN_NOTIFICATION_EMAIL,
+        subject,
+        message,
+        url: mailtoUrl(ADMIN_NOTIFICATION_EMAIL, subject, message),
+        status: SMTP_HOST && NOTIFICATION_FROM_EMAIL ? "queued" : "ready"
+      })
+    );
+  }
+
+  return notifications;
 }
 
 function createOrderNotifications(order, eventType = "order_created") {
@@ -729,10 +845,28 @@ function notificationExportRows(db) {
   }));
 }
 
+function supportExportRows(db) {
+  return (db.supportRequests || []).map((request) => ({
+    id: request.id,
+    orderId: request.orderId || "",
+    status: request.status || "",
+    topic: request.topic || "",
+    name: request.name || "",
+    phone: request.phone || "",
+    email: request.email || "",
+    message: request.message || "",
+    resolutionNote: request.resolutionNote || "",
+    internalNote: request.internalNote || "",
+    createdAt: request.createdAt || "",
+    updatedAt: request.updatedAt || ""
+  }));
+}
+
 function exportRows(type, db) {
   if (type === "customers") return customerExportRows(db);
   if (type === "wholesale") return wholesaleExportRows(db);
   if (type === "notifications") return notificationExportRows(db);
+  if (type === "support") return supportExportRows(db);
   return orderExportRows(db);
 }
 
@@ -1073,6 +1207,66 @@ async function handleApi(req, res, url) {
     return true;
   }
 
+  if (url.pathname === "/api/customer/support" && req.method === "POST") {
+    const payload = await readBody(req);
+    const phone = cleanPhone(payload.phone);
+    const orderId = cleanOrderId(payload.orderId);
+    const message = text(payload.message, 1200);
+    const topic = text(payload.topic || "Order support", 80);
+    if (!phone || !message) {
+      jsonResponse(res, 400, { error: "Phone and message are required." });
+      return true;
+    }
+
+    const db = await readDb();
+    const order = orderId
+      ? (db.orders || []).find((item) => cleanOrderId(item.id) === orderId && cleanPhone(item.customer?.phone) === phone)
+      : null;
+    if (orderId && !order) {
+      jsonResponse(res, 404, { error: "No matching booking found for this support request." });
+      return true;
+    }
+
+    const customer = findCustomerByPhone(db, phone);
+    const now = new Date().toISOString();
+    const supportRequest = {
+      id: `SR${Math.floor(100000 + Math.random() * 900000)}`,
+      orderId: order?.id || orderId || "",
+      phone,
+      name: text(payload.name || order?.customer?.name || customer?.name || "Customer", 120),
+      email: text(payload.email || order?.customer?.email || customer?.email || "", 160),
+      topic,
+      message,
+      status: "new",
+      resolutionNote: "",
+      internalNote: "",
+      createdAt: now,
+      updatedAt: now,
+      history: [
+        {
+          status: "new",
+          note: "Support request submitted from customer portal.",
+          at: now
+        }
+      ]
+    };
+
+    db.supportRequests = [supportRequest, ...(db.supportRequests || [])].slice(0, 1000);
+    db.events = [
+      { id: randomUUID(), type: "support_request", ref: supportRequest.id, at: now },
+      ...(db.events || [])
+    ].slice(0, 1000);
+    const notifications = createSupportNotifications(supportRequest, order);
+    await dispatchNotifications(notifications, order || { id: supportRequest.orderId || supportRequest.id, customer: { phone } });
+    db.notifications = [...notifications, ...(db.notifications || [])].slice(0, 2000);
+    await writeDb(db);
+    jsonResponse(res, 201, {
+      supportRequest: publicSupportRequest(supportRequest),
+      notifications: notifications.map(publicNotification)
+    });
+    return true;
+  }
+
   if (url.pathname === "/api/wholesale" && req.method === "POST") {
     const payload = await readBody(req);
     const now = new Date().toISOString();
@@ -1166,7 +1360,24 @@ async function handleApi(req, res, url) {
   if (url.pathname === "/api/admin/customers" && req.method === "GET") {
     if (!requireAdmin(req, res)) return true;
     const db = await readDb();
-    jsonResponse(res, 200, { customers: (db.customers || []).map(adminCustomer) });
+    jsonResponse(res, 200, {
+      customers: (db.customers || []).map((customer) => {
+        const phone = cleanPhone(customer.phone);
+        const supportRequests = (db.supportRequests || []).filter((item) => cleanPhone(item.phone) === phone);
+        return adminCustomer({
+          ...customer,
+          supportCount: supportRequests.length,
+          openSupportCount: supportRequests.filter((item) => !["resolved", "closed"].includes(item.status || "")).length
+        });
+      })
+    });
+    return true;
+  }
+
+  if (url.pathname === "/api/admin/support" && req.method === "GET") {
+    if (!requireAdmin(req, res)) return true;
+    const db = await readDb();
+    jsonResponse(res, 200, { supportRequests: (db.supportRequests || []).map(adminSupportRequest) });
     return true;
   }
 
@@ -1195,6 +1406,41 @@ async function handleApi(req, res, url) {
     customer.updatedAt = new Date().toISOString();
     await writeDb(db);
     jsonResponse(res, 200, { customer: adminCustomer(customer) });
+    return true;
+  }
+
+  const supportMatch = url.pathname.match(/^\/api\/admin\/support\/([^/]+)$/);
+  if (supportMatch && req.method === "PATCH") {
+    if (!requireAdmin(req, res)) return true;
+    const supportId = cleanOrderId(supportMatch[1]);
+    const payload = await readBody(req);
+    const nextStatus = text(payload.status, 40) || "reviewing";
+    if (!SUPPORT_STATUSES.has(nextStatus)) {
+      jsonResponse(res, 400, { error: "Invalid support status." });
+      return true;
+    }
+
+    const db = await readDb();
+    const request = (db.supportRequests || []).find((item) => cleanOrderId(item.id) === supportId);
+    if (!request) {
+      jsonResponse(res, 404, { error: "Support request not found." });
+      return true;
+    }
+
+    request.status = nextStatus;
+    request.resolutionNote = text(payload.resolutionNote || request.resolutionNote, 800);
+    request.internalNote = text(payload.internalNote || request.internalNote, 800);
+    request.updatedAt = new Date().toISOString();
+    request.history = [
+      ...(request.history || []),
+      {
+        status: nextStatus,
+        note: text(payload.resolutionNote || payload.internalNote || "Support request updated from admin panel.", 240),
+        at: request.updatedAt
+      }
+    ];
+    await writeDb(db);
+    jsonResponse(res, 200, { supportRequest: adminSupportRequest(request) });
     return true;
   }
 

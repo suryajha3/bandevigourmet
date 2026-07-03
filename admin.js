@@ -9,6 +9,7 @@ const STATUS_LABELS = {
   cancelled: "Cancelled"
 };
 const ORDER_FLOW = ["booked", "confirmed", "packed", "dispatched", "delivered", "cancelled"];
+const ACTIVE_ORDER_FLOW = ORDER_FLOW.filter((status) => status !== "cancelled");
 const WHOLESALE_LABELS = {
   new: "New",
   contacted: "Contacted",
@@ -19,6 +20,7 @@ const WHOLESALE_LABELS = {
 };
 const PAYMENT_STATES = ["Payment pending", "Advance requested", "Paid", "COD", "Refund pending", "Refunded"];
 const CUSTOMER_STATUSES = ["active", "repeat", "wholesale", "watchlist", "inactive"];
+const SUPPORT_STATUSES = ["new", "reviewing", "waiting-customer", "resolved", "closed"];
 
 const state = {
   token: window.sessionStorage.getItem(TOKEN_KEY) || "",
@@ -28,6 +30,7 @@ const state = {
   enquiries: [],
   customers: [],
   notifications: [],
+  supportRequests: [],
   notificationConfig: null,
   search: "",
   orderFilter: "all",
@@ -45,6 +48,7 @@ const orderList = document.querySelector("#adminOrderList");
 const wholesaleList = document.querySelector("#adminWholesaleList");
 const customerList = document.querySelector("#adminCustomerList");
 const notificationList = document.querySelector("#adminNotificationList");
+const supportList = document.querySelector("#adminSupportList");
 const searchInput = document.querySelector("#adminSearchInput");
 const orderFilterInput = document.querySelector("#adminOrderFilter");
 const leadFilterInput = document.querySelector("#adminLeadFilter");
@@ -143,7 +147,32 @@ function enquiryMatchesSearch(enquiry) {
 }
 
 function customerMatchesSearch(customer) {
-  return matchesSearch([customer.name, customer.phone, customer.email, customer.location, customer.orderCount, customer.totalSpend]);
+  return matchesSearch([
+    customer.name,
+    customer.phone,
+    customer.email,
+    customer.location,
+    customer.orderCount,
+    customer.totalSpend,
+    customer.supportCount,
+    customer.openSupportCount,
+    customer.adminNote
+  ]);
+}
+
+function supportMatchesSearch(request) {
+  return matchesSearch([
+    request.id,
+    request.orderId,
+    request.status,
+    request.topic,
+    request.name,
+    request.phone,
+    request.email,
+    request.message,
+    request.resolutionNote,
+    request.internalNote
+  ]);
 }
 
 function notificationMatchesSearch(notification) {
@@ -172,6 +201,7 @@ function renderStats() {
     bookingValue: state.orders.reduce((sum, order) => sum + Number(order.totals?.total || 0), 0),
     customers: state.customers.length,
     wholesaleEnquiries: state.enquiries.length,
+    openSupportRequests: state.supportRequests.filter((item) => !["resolved", "closed"].includes(item.status)).length,
     pendingNotifications: state.notifications.filter((item) => ["queued", "ready", "failed"].includes(item.status)).length
   };
 
@@ -181,6 +211,7 @@ function renderStats() {
     <article><strong>${money(summary.bookingValue)}</strong><span>Booking value</span></article>
     <article><strong>${summary.customers}</strong><span>Customers</span></article>
     <article><strong>${summary.wholesaleEnquiries}</strong><span>Wholesale leads</span></article>
+    <article><strong>${summary.openSupportRequests || 0}</strong><span>Open support</span></article>
     <article><strong>${summary.pendingNotifications || 0}</strong><span>Open alerts</span></article>
   `;
 }
@@ -258,6 +289,10 @@ function notificationActionLabel(notification) {
   return "Open link";
 }
 
+function notificationStatusTone(notification) {
+  return String(notification.status || "ready").toLowerCase().replace(/[^a-z-]/g, "-");
+}
+
 function renderNotifications() {
   if (!notificationList) return;
   const visibleNotifications = state.notifications.filter(notificationMatchesSearch).slice(0, 40);
@@ -281,16 +316,23 @@ function renderNotification(notification) {
   const order = state.orders.find((item) => item.id === notification.orderId);
   const actionLabel = notificationActionLabel(notification);
   const orderLabel = order ? `${order.customer?.name || "Customer"} | ${money(order.totals?.total)}` : "Order details saved in alert";
+  const status = notification.status || "ready";
+  const channel = notification.channel || "whatsapp";
 
   return `
-    <article class="admin-notification-card">
+    <article class="admin-notification-card" data-status="${escapeHtml(notificationStatusTone(notification))}" data-channel="${escapeHtml(channel)}">
       <header>
         <div>
           <h3>${escapeHtml(notification.subject || notification.id)}</h3>
           <p>${escapeHtml(notificationChannelLabel(notification))} | ${formatDate(notification.createdAt)}</p>
         </div>
-        <span class="status-pill">${escapeHtml(notification.status || "ready")}</span>
+        <span class="status-pill">${escapeHtml(status)}</span>
       </header>
+      <div class="admin-notification-topline">
+        <span><strong>${escapeHtml(channel)}</strong><small>Alert channel</small></span>
+        <span><strong>${escapeHtml(notification.audience || "customer")}</strong><small>Audience</small></span>
+        <span><strong>${escapeHtml(notification.eventType || "order alert")}</strong><small>Event type</small></span>
+      </div>
       <div class="admin-notification-meta">
         <span><strong>Order</strong>${escapeHtml(notification.orderId || "No order")}<small>${escapeHtml(orderLabel)}</small></span>
         <span><strong>Recipient</strong>${escapeHtml(notification.recipient || "Not configured")}<small>${escapeHtml(notification.eventType || "order alert")}</small></span>
@@ -305,6 +347,64 @@ function renderNotification(notification) {
         <button type="button" data-mark-notification="${escapeHtml(notification.id)}" data-status="archived">Archive</button>
       </div>
     </article>
+  `;
+}
+
+function getAdminOrderAction(order) {
+  const actions = {
+    booked: ["Confirm stock", "Check product packs, customer phone, and serviceable location."],
+    confirmed: ["Start packing", "Prepare products, verify labels, and move order to packed."],
+    packed: ["Dispatch order", "Add courier name, tracking code, dispatch date, and ETA."],
+    dispatched: ["Monitor delivery", "Keep courier link updated until the customer receives the order."],
+    delivered: ["Retain customer", "Close the order and keep details ready for repeat purchase."],
+    cancelled: ["Order closed", "Review refund or replacement notes before archiving."]
+  };
+  return actions[order.status] || actions.booked;
+}
+
+function renderAdminOrderProgress(order) {
+  if (order.status === "cancelled") {
+    return `
+      <div class="admin-order-progress is-cancelled" aria-label="Order progress">
+        <span class="is-done is-active"><b>!</b><strong>Cancelled</strong><small>Order closed</small></span>
+      </div>
+    `;
+  }
+
+  const currentIndex = Math.max(0, ACTIVE_ORDER_FLOW.indexOf(order.status));
+  return `
+    <div class="admin-order-progress" aria-label="Order progress">
+      ${ACTIVE_ORDER_FLOW.map((status, index) => {
+        const className = [index <= currentIndex ? "is-done" : "", order.status === status ? "is-active" : ""]
+          .filter(Boolean)
+          .join(" ");
+        return `<span class="${className}"><b>${index + 1}</b><strong>${escapeHtml(STATUS_LABELS[status])}</strong><small>${index <= currentIndex ? "Done" : "Pending"}</small></span>`;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderAdminOrderItems(order) {
+  const items = order.items || [];
+  if (!items.length) return `<p class="admin-items">No item details</p>`;
+
+  return `
+    <div class="admin-order-items" aria-label="Order item list">
+      ${items
+        .map((item) => {
+          const itemTotal = item.lineTotal || (item.price || 0) * (item.quantity || 0);
+          return `
+            <div class="admin-order-item">
+              <span>
+                <strong>${escapeHtml(item.name || "Product")}</strong>
+                <small>${escapeHtml(item.size || "Pack size pending")} x ${item.quantity || 0}</small>
+              </span>
+              <b>${money(itemTotal)}</b>
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
   `;
 }
 
@@ -329,11 +429,11 @@ function renderOrders() {
 }
 
 function renderOrder(order) {
-  const items = (order.items || []).map((item) => `${escapeHtml(item.name)} x ${item.quantity}`).join(", ");
   const history = order.statusHistory || [];
   const latestHistory = history[history.length - 1];
   const customerPhone = order.customer?.phone || "";
   const trackingUrl = `./track.html?id=${encodeURIComponent(order.id)}&phone=${encodeURIComponent(customerPhone)}`;
+  const [nextAction, nextActionNote] = getAdminOrderAction(order);
   const statusOptions = Object.entries(STATUS_LABELS)
     .map(([value, label]) => `<option value="${value}" ${order.status === value ? "selected" : ""}>${label}</option>`)
     .join("");
@@ -342,7 +442,7 @@ function renderOrder(order) {
   ).join("");
 
   return `
-    <article class="admin-order-card">
+    <article class="admin-order-card" data-status="${escapeHtml(order.status || "booked")}">
       <header>
         <div>
           <h3>${escapeHtml(order.id)}</h3>
@@ -350,6 +450,7 @@ function renderOrder(order) {
         </div>
         <span class="status-pill">${escapeHtml(STATUS_LABELS[order.status] || order.status)}</span>
       </header>
+      ${renderAdminOrderProgress(order)}
       <div class="admin-order-grid">
         <span><strong>Customer</strong>${escapeHtml(order.customer?.name || "No name")}<small>${escapeHtml(order.customer?.phone || "")}</small></span>
         <span><strong>Location</strong>${escapeHtml(order.countryCity || "Not added")}<small>${escapeHtml(order.postalCode || "")}</small></span>
@@ -358,9 +459,13 @@ function renderOrder(order) {
         <span><strong>Delivery</strong>${escapeHtml(order.courier || "Courier pending")}<small>${escapeHtml(order.trackingCode || order.eta || "Tracking pending")}</small></span>
         <span><strong>Dispatch</strong>${escapeHtml(order.dispatchDate || "Not dispatched")}<small>${escapeHtml(order.trackingUrl || "Courier link pending")}</small></span>
       </div>
-      <p class="admin-items">${items || "No item details"}</p>
+      ${renderAdminOrderItems(order)}
       <p class="admin-address">${escapeHtml(order.address || "No address")}</p>
-      <p class="admin-history">${latestHistory ? `${escapeHtml(STATUS_LABELS[latestHistory.status] || latestHistory.status)}: ${escapeHtml(latestHistory.note || "")}` : "No status history"}</p>
+      <div class="admin-action-strip">
+        <span><strong>${escapeHtml(nextAction)}</strong><small>${escapeHtml(nextActionNote)}</small></span>
+        <span><strong>Latest timeline</strong><small>${latestHistory ? `${escapeHtml(STATUS_LABELS[latestHistory.status] || latestHistory.status)}: ${escapeHtml(latestHistory.note || "")}` : "No status history"}</small></span>
+        <span><strong>Customer tracking</strong><small>${escapeHtml(trackingUrl)}</small></span>
+      </div>
       <div class="admin-quick-status" aria-label="Quick order status actions">
         ${ORDER_FLOW.map(
           (status) => `
@@ -437,6 +542,58 @@ function renderEnquiry(enquiry) {
   `;
 }
 
+function renderSupportRequests() {
+  if (!supportList) return;
+  const visibleRequests = state.supportRequests.filter(supportMatchesSearch);
+
+  supportList.innerHTML = visibleRequests.length
+    ? visibleRequests.map(renderSupportRequest).join("")
+    : `<div class="admin-empty">No customer support requests yet.</div>`;
+
+  supportList.querySelectorAll("[data-support-form]").forEach((form) => {
+    form.addEventListener("submit", updateSupportRequest);
+  });
+}
+
+function renderSupportRequest(request) {
+  const statusOptions = SUPPORT_STATUSES.map(
+    (status) => `<option value="${status}" ${request.status === status ? "selected" : ""}>${status}</option>`
+  ).join("");
+  const trackingUrl = request.orderId
+    ? `./track.html?id=${encodeURIComponent(request.orderId)}&phone=${encodeURIComponent(request.phone || "")}`
+    : "";
+
+  return `
+    <article class="admin-support-card" data-status="${escapeHtml(request.status || "new")}">
+      <header>
+        <div>
+          <h3>${escapeHtml(request.id)}</h3>
+          <p>${escapeHtml(request.topic || "Support request")} | ${formatDate(request.createdAt)}</p>
+        </div>
+        <span class="status-pill">${escapeHtml(request.status || "new")}</span>
+      </header>
+      <div class="admin-order-grid">
+        <span><strong>Customer</strong>${escapeHtml(request.name || "Customer")}<small>${escapeHtml(request.phone || "")}</small></span>
+        <span><strong>Order</strong>${escapeHtml(request.orderId || "General support")}<small>${trackingUrl ? "Tracking page ready" : "No order linked"}</small></span>
+        <span><strong>Email</strong>${escapeHtml(request.email || "Not added")}<small>${escapeHtml(request.topic || "")}</small></span>
+        <span><strong>Updated</strong>${formatDate(request.updatedAt)}<small>${escapeHtml(request.resolutionNote || request.internalNote || "No note yet")}</small></span>
+      </div>
+      <p class="admin-items">${escapeHtml(request.message || "No support message")}</p>
+      ${request.resolutionNote ? `<p class="admin-history">${escapeHtml(request.resolutionNote)}</p>` : ""}
+      <div class="admin-quick-status">
+        ${trackingUrl ? `<a href="${trackingUrl}" target="_blank" rel="noopener noreferrer">Customer view</a>` : ""}
+        <a href="https://wa.me/${encodeURIComponent(request.phone || "")}?text=${encodeURIComponent(`Support request ${request.id}`)}" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+      </div>
+      <form class="admin-status-form" data-support-form="${escapeHtml(request.id)}">
+        <select name="status" aria-label="Support status">${statusOptions}</select>
+        <input name="resolutionNote" type="text" placeholder="Customer-visible resolution note" value="${escapeHtml(request.resolutionNote || "")}" />
+        <input name="internalNote" type="text" placeholder="Internal note" value="${escapeHtml(request.internalNote || "")}" />
+        <button type="submit">Update support</button>
+      </form>
+    </article>
+  `;
+}
+
 function renderCustomers() {
   if (!customerList) return;
   const visibleCustomers = state.customers.filter(customerMatchesSearch);
@@ -473,6 +630,7 @@ function renderCustomer(customer) {
         <span><strong>Last order</strong>${formatDate(customer.lastOrderAt)}<small>${escapeHtml(customer.updatedAt ? `Updated ${formatDate(customer.updatedAt)}` : "")}</small></span>
         <span><strong>Orders</strong>${Number(customer.orderCount || 0)}<small>${escapeHtml(tags || "No tags")}</small></span>
         <span><strong>Access</strong>${escapeHtml(accountAccess)}<small>Customer account</small></span>
+        <span><strong>Support</strong>${Number(customer.openSupportCount || 0)} open<small>${Number(customer.supportCount || 0)} total requests</small></span>
       </div>
       <form class="admin-status-form" data-customer-form="${escapeHtml(customerKey)}">
         <select name="status" aria-label="Customer status">${statusOptions}</select>
@@ -491,6 +649,7 @@ function renderAll() {
   renderNotifications();
   renderOrders();
   renderWholesale();
+  renderSupportRequests();
   renderCustomers();
 }
 
@@ -503,13 +662,14 @@ async function loadDashboard() {
 
   try {
     setStatus("Loading admin data...");
-    const [ordersPayload, wholesalePayload, summaryPayload, customersPayload, storagePayload, notificationsPayload] = await Promise.all([
+    const [ordersPayload, wholesalePayload, summaryPayload, customersPayload, storagePayload, notificationsPayload, supportPayload] = await Promise.all([
       api("/api/admin/orders"),
       api("/api/admin/wholesale"),
       api("/api/admin/summary").catch(() => ({ summary: null })),
       api("/api/admin/customers").catch(() => ({ customers: [] })),
       api("/api/admin/storage").catch(() => ({ storage: null })),
-      api("/api/admin/notifications").catch(() => ({ notifications: [], config: null }))
+      api("/api/admin/notifications").catch(() => ({ notifications: [], config: null })),
+      api("/api/admin/support").catch(() => ({ supportRequests: [] }))
     ]);
     state.orders = ordersPayload.orders || [];
     state.enquiries = wholesalePayload.enquiries || [];
@@ -517,6 +677,7 @@ async function loadDashboard() {
     state.customers = customersPayload.customers || [];
     state.storage = storagePayload.storage || null;
     state.notifications = notificationsPayload.notifications || [];
+    state.supportRequests = supportPayload.supportRequests || [];
     state.notificationConfig = notificationsPayload.config || null;
     dashboard.hidden = false;
     setStatus("Admin backend connected.", "success");
@@ -797,6 +958,32 @@ async function updateCustomerStatus(event) {
   }
 }
 
+async function updateSupportRequest(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const supportId = form.dataset.supportForm;
+  const data = new FormData(form);
+
+  try {
+    const payload = await api(`/api/admin/support/${encodeURIComponent(supportId)}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        status: data.get("status"),
+        resolutionNote: data.get("resolutionNote"),
+        internalNote: data.get("internalNote")
+      })
+    });
+    state.supportRequests = state.supportRequests.map((request) =>
+      request.id === payload.supportRequest.id ? payload.supportRequest : request
+    );
+    renderAll();
+    showToast(`${supportId} updated`);
+    loadDashboard();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
 async function downloadAdminExport(type) {
   try {
     const response = await fetch(`${API_ORIGIN}/api/admin/export?type=${encodeURIComponent(type)}`, {
@@ -871,6 +1058,7 @@ document.querySelector("#logoutAdmin").addEventListener("click", () => {
   state.enquiries = [];
   state.customers = [];
   state.notifications = [];
+  state.supportRequests = [];
   state.notificationConfig = null;
   window.sessionStorage.removeItem(TOKEN_KEY);
   dashboard.hidden = true;

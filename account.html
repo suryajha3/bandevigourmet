@@ -146,6 +146,36 @@
             </div>
             <p class="portal-form-status" id="customerLoginStatus" aria-live="polite"></p>
           </form>
+          <form class="portal-form support-form" id="customerSupportForm">
+            <h3>Order support</h3>
+            <label>
+              <span>Booking ID</span>
+              <input name="supportOrderId" type="text" placeholder="Example: MM12345" />
+            </label>
+            <label>
+              <span>Phone</span>
+              <input name="supportPhone" type="tel" placeholder="Phone used in order" required />
+            </label>
+            <label>
+              <span>Topic</span>
+              <select name="supportTopic">
+                <option value="Order status">Order status</option>
+                <option value="Delivery issue">Delivery issue</option>
+                <option value="Payment or refund">Payment or refund</option>
+                <option value="Product concern">Product concern</option>
+                <option value="Wholesale support">Wholesale support</option>
+              </select>
+            </label>
+            <label>
+              <span>Message</span>
+              <textarea name="supportMessage" rows="4" placeholder="Write your support request" required></textarea>
+            </label>
+            <button class="portal-button secondary" type="submit">
+              <i data-lucide="send"></i>
+              Send support request
+            </button>
+            <p class="portal-form-status" id="customerSupportStatus" aria-live="polite"></p>
+          </form>
         </div>
         <div class="portal-dashboard" id="customerDashboard" aria-live="polite"></div>
       </section>

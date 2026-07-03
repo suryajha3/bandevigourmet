@@ -95,6 +95,7 @@ const state = {
   customer: loadCustomer(),
   customerSummary: null,
   customerEnquiries: [],
+  customerSupportRequests: [],
   customerSyncStatus: "local",
   orders: loadOrders(),
   trackedOrder: null
@@ -128,8 +129,10 @@ const paymentMethod = document.querySelector("#paymentMethod");
 const paymentDetails = document.querySelector("#paymentDetails");
 const customerLoginForm = document.querySelector("#customerLoginForm");
 const orderLookupForm = document.querySelector("#orderLookupForm");
+const customerSupportForm = document.querySelector("#customerSupportForm");
 const customerDashboard = document.querySelector("#customerDashboard");
 const customerLoginStatus = document.querySelector("#customerLoginStatus");
+const customerSupportStatus = document.querySelector("#customerSupportStatus");
 const confirmationPage = document.querySelector("#confirmationPage");
 const overlay = document.querySelector("[data-overlay]");
 const toast = document.querySelector("#toast");
@@ -1284,17 +1287,126 @@ function getCheckoutAdminNote(data) {
   return notes.join(" | ");
 }
 
+function formatCartCategory(category) {
+  const labels = {
+    makhana: "Makhana",
+    masala: "Masala",
+    poha: "Poha",
+    combo: "Combo"
+  };
+  return labels[category] || String(category || "Product");
+}
+
+function getCartPackCount(lines) {
+  return lines.reduce((sum, item) => sum + item.quantity, 0);
+}
+
+function getCartRangeText(lines) {
+  const ranges = [...new Set(lines.map((item) => formatCartCategory(item.category)))];
+  return ranges.length ? ranges.join(" + ") : "Makhana + Masala + Poha";
+}
+
+function getFreeDeliverySummary(totals) {
+  const qualifiedAmount = Math.max(0, totals.subtotal - totals.discount);
+  const remaining = Math.max(0, 999 - qualifiedAmount);
+  return remaining ? `${money(remaining)} more for free delivery` : "Free delivery unlocked";
+}
+
+function renderCheckoutFlowCards(activeStep = state.checkoutStep) {
+  const flow = [
+    { id: "cart", icon: "shopping-bag", title: "Cart", text: "Pack sizes and quantity checked" },
+    { id: "details", icon: "map-pin", title: "Details", text: "Delivery and contact captured" },
+    { id: "review", icon: "badge-check", title: "Review", text: "Booking ID ready to create" },
+    { id: "track", icon: "radar", title: "Track", text: "Customer can follow status" }
+  ];
+  const activeIndex = Math.max(0, flow.findIndex((item) => item.id === activeStep));
+
+  return `
+    <div class="checkout-flow-cards" aria-label="Checkout flow">
+      ${flow
+        .map((item, index) => {
+          const statusClass = [
+            index < activeIndex ? "is-done" : "",
+            index === activeIndex || (item.id === "track" && activeStep === "review") ? "is-active" : ""
+          ]
+            .filter(Boolean)
+            .join(" ");
+          return `
+            <article class="${statusClass}">
+              <i data-lucide="${item.icon}"></i>
+              <strong>${escapeHtml(item.title)}</strong>
+              <span>${escapeHtml(item.text)}</span>
+            </article>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function renderCartAssuranceCards(lines, totals) {
+  const packCount = getCartPackCount(lines);
+  const rangeText = getCartRangeText(lines);
+  const deliveryText = getFreeDeliverySummary(totals);
+
+  return `
+    <div class="cart-assurance-grid" aria-label="Buyer assurance">
+      <span>
+        <i data-lucide="leaf"></i>
+        <strong>Pure pantry focus</strong>
+        <small>No artificial color direction, clean ingredient-led products.</small>
+      </span>
+      <span>
+        <i data-lucide="package-check"></i>
+        <strong>${packCount || "No"} pack${packCount === 1 ? "" : "s"}</strong>
+        <small>${escapeHtml(rangeText)} selected for this booking.</small>
+      </span>
+      <span>
+        <i data-lucide="truck"></i>
+        <strong>${escapeHtml(deliveryText)}</strong>
+        <small>Delivery is calculated before booking confirmation.</small>
+      </span>
+      <span>
+        <i data-lucide="shield-check"></i>
+        <strong>Status tracking</strong>
+        <small>Booking ID, packing status, courier, and delivery note ready.</small>
+      </span>
+    </div>
+  `;
+}
+
+function renderCartDeliveryPlan(lines) {
+  const hasItems = lines.length > 0;
+
+  return `
+    <div class="cart-delivery-plan">
+      <div>
+        <strong>${hasItems ? "Next step: add delivery details" : "Build a booking-ready cart"}</strong>
+        <span>${hasItems ? "Customer phone, address, payment mode, and order type will unlock the review screen." : "Add products first, then the checkout will collect delivery and tracking details."}</span>
+      </div>
+      <div>
+        <span><b>1</b>Review products</span>
+        <span><b>2</b>Confirm details</span>
+        <span><b>3</b>Track order</span>
+      </div>
+    </div>
+  `;
+}
+
 function renderCartStepPanel(lines, totals) {
   return `
     <div class="cart-side-panel">
       <p class="eyebrow">Cart check</p>
       <h3>${lines.length ? "Your products are ready." : "Start with a trusted pantry cart."}</h3>
       <p>${lines.length ? "Review quantity, apply coupon if available, then continue to delivery details." : "Choose from popular BandEvi Gourmet products and build a booking-ready cart."}</p>
+      ${renderCheckoutFlowCards("cart")}
       <div class="cart-side-totals">
         <span><strong>${money(totals.subtotal)}</strong><small>Subtotal</small></span>
         <span><strong>${totals.delivery ? money(totals.delivery) : "Free"}</strong><small>Delivery</small></span>
         <span><strong>${money(totals.total)}</strong><small>Total</small></span>
       </div>
+      ${renderCartAssuranceCards(lines, totals)}
+      ${renderCartDeliveryPlan(lines)}
       <button class="checkout-button" type="button" data-cart-goto="details" ${lines.length ? "" : "disabled"}>
         Continue to details
       </button>
@@ -1309,13 +1421,27 @@ function renderReviewItems(lines) {
   return lines
     .map(
       (item) => `
-        <div class="review-line">
-          <span>${escapeHtml(item.name)} <small>${escapeHtml(item.size)} x ${item.quantity}</small></span>
+        <div class="review-line is-product">
+          <span>
+            <b>${escapeHtml(item.name)}</b>
+            <small>${escapeHtml(formatCartCategory(item.category))} / ${escapeHtml(item.size)} / Qty ${item.quantity}</small>
+          </span>
           <strong>${money(item.lineTotal)}</strong>
         </div>
       `
     )
     .join("");
+}
+
+function renderReviewChecklist(payment, totals) {
+  return `
+    <div class="review-checklist" aria-label="Booking readiness checklist">
+      <span><i data-lucide="badge-check"></i><strong>Booking ID</strong><small>Created immediately after confirmation.</small></span>
+      <span><i data-lucide="user-check"></i><strong>Customer access</strong><small>Phone number and booking ID open the tracking page.</small></span>
+      <span><i data-lucide="credit-card"></i><strong>${escapeHtml(payment)}</strong><small>${escapeHtml(getPaymentNote(payment, totals.total))}</small></span>
+      <span><i data-lucide="message-circle"></i><strong>Seller alerts</strong><small>Admin can update packing, courier, and delivery status.</small></span>
+    </div>
+  `;
 }
 
 function renderOrderReview() {
@@ -1330,6 +1456,12 @@ function renderOrderReview() {
     <div class="cart-review-card">
       <p class="eyebrow">Review booking</p>
       <h3>Confirm everything before creating the booking ID.</h3>
+      ${renderCheckoutFlowCards("review")}
+      <div class="review-support-card">
+        <span><strong>${getCartPackCount(lines)}</strong><small>Total packs</small></span>
+        <span><strong>${escapeHtml(getCartRangeText(lines))}</strong><small>Product range</small></span>
+        <span><strong>${escapeHtml(getFreeDeliverySummary(totals))}</strong><small>Delivery status</small></span>
+      </div>
       <div class="review-block">
         <strong>Items</strong>
         ${renderReviewItems(lines)}
@@ -1348,6 +1480,7 @@ function renderOrderReview() {
         <div class="review-line"><span>Payment</span><strong>${escapeHtml(payment)}</strong></div>
         <p>${escapeHtml(getPaymentNote(payment, totals.total))}</p>
       </div>
+      ${renderReviewChecklist(payment, totals)}
       <div class="review-total-card">
         <div><span>Subtotal</span><span>${money(totals.subtotal)}</span></div>
         <div><span>Coupon discount</span><span>${totals.discount ? `-${money(totals.discount)}` : money(0)}</span></div>
@@ -1418,6 +1551,7 @@ function renderCheckoutStep() {
   if (cartReviewPanel) {
     cartReviewPanel.hidden = state.checkoutStep === "details";
     cartReviewPanel.innerHTML = state.checkoutStep === "review" ? renderOrderReview() : renderCartStepPanel(lines, totals);
+    cartReviewPanel.scrollTop = 0;
     bindCheckoutReviewActions();
   }
 
@@ -1615,6 +1749,7 @@ async function loadCustomerOrdersFromBackend(phone) {
     }
     state.customerSummary = payload.summary || null;
     state.customerEnquiries = payload.enquiries || [];
+    state.customerSupportRequests = payload.supportRequests || [];
     if (payload.orders?.length) upsertOrderRecords(payload.orders);
     else renderCustomerPortal();
     return payload.orders || [];
@@ -2020,6 +2155,38 @@ function prefillCustomerLoginForm() {
   customerLoginForm.elements.customerLocation.value = state.customer.location || "";
 }
 
+function prefillCustomerSupportForm(order = state.trackedOrder) {
+  if (!customerSupportForm) return;
+
+  const orderIdInput = customerSupportForm.elements.supportOrderId;
+  const phoneInput = customerSupportForm.elements.supportPhone;
+  if (orderIdInput && order?.id && !orderIdInput.value) orderIdInput.value = order.id;
+  if (phoneInput && !phoneInput.value) {
+    phoneInput.value = normalizePhone(order?.customer?.phone || state.customer?.phone || "");
+  }
+}
+
+function renderPortalInsightCards(summary, latestOrder, openSupportRequests) {
+  const nextAction = summary.nextAction || (latestOrder ? getOrderNextAction(latestOrder) : "Place a booking to start order tracking.");
+
+  return `
+    <div class="portal-insight-grid" aria-label="Account readiness">
+      <span>
+        <strong>${escapeHtml(latestOrder?.id || summary.latestOrderId || "No booking yet")}</strong>
+        <small>Latest booking</small>
+      </span>
+      <span>
+        <strong>${escapeHtml(nextAction)}</strong>
+        <small>Next customer action</small>
+      </span>
+      <span>
+        <strong>${openSupportRequests}</strong>
+        <small>Open support requests</small>
+      </span>
+    </div>
+  `;
+}
+
 function renderCustomerPortal() {
   if (!customerDashboard) return;
 
@@ -2032,6 +2199,8 @@ function renderCustomerPortal() {
   const activeOrders = ordersForCustomer.filter((order) => !isClosedOrder(order)).length;
   const latestOrder = ordersForCustomer[0];
   const localSpend = ordersForCustomer.reduce((sum, order) => sum + Number(order.totals?.total || 0), 0);
+  const supportRequests = state.customerSupportRequests || [];
+  const openSupportRequests = supportRequests.filter((item) => !["resolved", "closed"].includes(item.status || "")).length;
   const syncLabel =
     state.customerSyncStatus === "synced"
       ? "Backend synced"
@@ -2042,7 +2211,9 @@ function renderCustomerPortal() {
     totalOrders: ordersForCustomer.length,
     activeOrders,
     totalSpend: localSpend,
-    latestStatus: latestOrder?.status || ""
+    latestStatus: latestOrder?.status || "",
+    openSupportRequests,
+    nextAction: latestOrder ? getOrderNextAction(latestOrder) : ""
   };
 
   customerDashboard.innerHTML = `
@@ -2066,9 +2237,11 @@ function renderCustomerPortal() {
             <span><strong>${summary.activeOrders ?? activeOrders}</strong><small>Active orders</small></span>
             <span><strong>${money(summary.totalSpend || localSpend)}</strong><small>Total value</small></span>
             <span><strong>${summary.latestStatus ? getStatusLabel(summary.latestStatus) : latestOrder ? getStatusLabel(latestOrder.status) : "None"}</strong><small>Latest status</small></span>
+            <span><strong>${summary.openSupportRequests ?? openSupportRequests}</strong><small>Open support</small></span>
           </div>`
         : ""
     }
+    ${customer || latestOrder ? renderPortalInsightCards(summary, latestOrder, summary.openSupportRequests ?? openSupportRequests) : ""}
     ${
       customer
         ? `<div class="portal-account-actions">
@@ -2101,9 +2274,18 @@ function renderCustomerPortal() {
           </div>`
         : ""
     }
+    ${
+      supportRequests.length
+        ? `<h4 class="portal-subtitle">Support requests</h4>
+          <div class="customer-support-list">
+            ${supportRequests.map(renderCustomerSupportRequest).join("")}
+          </div>`
+        : ""
+    }
   `;
 
   bindPortalActions();
+  prefillCustomerSupportForm(latestOrder);
   refreshIcons();
 }
 
@@ -2114,6 +2296,23 @@ function renderCustomerEnquiry(enquiry) {
       <span>${escapeHtml(enquiry.status || "new")}</span>
       <p>${escapeHtml(enquiry.businessName || "Wholesale enquiry")} | ${escapeHtml(enquiry.country || "Location pending")}</p>
       ${enquiry.note ? `<p>${escapeHtml(enquiry.note)}</p>` : ""}
+    </article>
+  `;
+}
+
+function renderCustomerSupportRequest(request) {
+  return `
+    <article class="customer-support-card">
+      <header>
+        <div>
+          <strong>${escapeHtml(request.id)}</strong>
+          <p>${escapeHtml(request.topic || "Support request")} ${request.orderId ? `- ${escapeHtml(request.orderId)}` : ""}</p>
+        </div>
+        <span>${escapeHtml(request.status || "new")}</span>
+      </header>
+      <p>${escapeHtml(request.message || "No message added")}</p>
+      ${request.resolutionNote ? `<p><strong>Support note:</strong> ${escapeHtml(request.resolutionNote)}</p>` : ""}
+      <small>Updated ${formatOrderDate(request.updatedAt || request.createdAt)}</small>
     </article>
   `;
 }
@@ -2139,6 +2338,10 @@ function setCustomerLoginStatus(message) {
   if (customerLoginStatus) customerLoginStatus.textContent = message || "";
 }
 
+function setCustomerSupportStatus(message) {
+  if (customerSupportStatus) customerSupportStatus.textContent = message || "";
+}
+
 async function refreshCustomerAccount() {
   if (!state.customer?.phone) {
     showToast("Open your account with phone number first");
@@ -2161,6 +2364,7 @@ function logoutCustomer() {
   state.customer = null;
   state.customerSummary = null;
   state.customerEnquiries = [];
+  state.customerSupportRequests = [];
   state.trackedOrder = null;
   window.localStorage.removeItem(STORAGE_KEYS.customer);
   saveCustomerPin("");
@@ -2728,6 +2932,53 @@ customerLoginForm?.addEventListener("submit", async (event) => {
   showToast("Customer profile saved");
 });
 
+customerSupportForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const phone = normalizePhone(data.get("supportPhone") || state.customer?.phone || state.trackedOrder?.customer?.phone);
+  const message = String(data.get("supportMessage") || "").trim();
+  if (!phone || !message) {
+    setCustomerSupportStatus("Phone and message are required.");
+    showToast("Phone and message are required");
+    return;
+  }
+
+  const payload = {
+    orderId: String(data.get("supportOrderId") || "").trim().toUpperCase(),
+    phone,
+    topic: String(data.get("supportTopic") || "Order support").trim(),
+    message,
+    name: state.customer?.name || state.trackedOrder?.customer?.name || "",
+    email: state.customer?.email || state.trackedOrder?.customer?.email || ""
+  };
+
+  setCustomerSupportStatus("Sending support request...");
+  try {
+    const result = await apiRequest("/api/customer/support", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    state.customerSupportRequests = [result.supportRequest, ...(state.customerSupportRequests || [])].filter(Boolean);
+    if (result.supportRequest?.phone) {
+      saveCustomer({
+        ...(state.customer || {}),
+        phone: result.supportRequest.phone,
+        name: result.supportRequest.name || state.customer?.name || "",
+        email: result.supportRequest.email || state.customer?.email || ""
+      });
+    }
+    form.elements.supportMessage.value = "";
+    setCustomerSupportStatus(`Support request ${result.supportRequest.id} created.`);
+    renderCustomerPortal();
+    prefillCustomerSupportForm();
+    showToast("Support request sent");
+  } catch (error) {
+    setCustomerSupportStatus(error.message || "Support request could not be sent.");
+    showToast(error.message || "Support request failed");
+  }
+});
+
 orderLookupForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = new FormData(event.currentTarget);
@@ -2746,6 +2997,7 @@ orderLookupForm?.addEventListener("submit", async (event) => {
       prefillCustomerLoginForm();
     }
     upsertOrderRecords(payload.order, payload.order);
+    prefillCustomerSupportForm(payload.order);
     showToast(`Tracking ${payload.order.id}`);
     return;
   } catch {
@@ -2763,6 +3015,7 @@ orderLookupForm?.addEventListener("submit", async (event) => {
 
   state.trackedOrder = order;
   renderCustomerPortal();
+  prefillCustomerSupportForm(order);
   showToast(`Tracking ${order.id}`);
 });
 
