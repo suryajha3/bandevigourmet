@@ -110,6 +110,19 @@
               <input name="customerPhone" type="tel" placeholder="Phone number" required />
             </label>
             <label>
+              <span>Account PIN</span>
+              <input
+                name="customerPin"
+                type="password"
+                inputmode="numeric"
+                minlength="4"
+                maxlength="6"
+                placeholder="4-6 digit PIN"
+                autocomplete="one-time-code"
+              />
+              <small>Set or enter this PIN to protect full order history.</small>
+            </label>
+            <label>
               <span>Email</span>
               <input name="customerEmail" type="email" placeholder="Email for order updates" />
             </label>

@@ -1,6 +1,5 @@
 const TOKEN_KEY = "bandevi-admin-token";
-const RENDER_API_ORIGIN = "https://bandevigourmet-web.onrender.com";
-const API_ORIGIN = ["127.0.0.1", "localhost"].includes(window.location.hostname) ? RENDER_API_ORIGIN : window.location.origin;
+const API_ORIGIN = window.location.origin;
 const STATUS_LABELS = {
   booked: "Booked",
   confirmed: "Confirmed",
@@ -457,6 +456,7 @@ function renderCustomer(customer) {
   ).join("");
   const tags = Array.isArray(customer.tags) ? customer.tags.join(", ") : "";
   const customerKey = customer.phone || customer.id;
+  const accountAccess = customer.hasAccountPin ? "PIN protected" : "Phone profile";
 
   return `
     <article class="admin-customer-card">
@@ -472,6 +472,7 @@ function renderCustomer(customer) {
         <span><strong>Total spend</strong>${money(customer.totalSpend)}<small>Website bookings</small></span>
         <span><strong>Last order</strong>${formatDate(customer.lastOrderAt)}<small>${escapeHtml(customer.updatedAt ? `Updated ${formatDate(customer.updatedAt)}` : "")}</small></span>
         <span><strong>Orders</strong>${Number(customer.orderCount || 0)}<small>${escapeHtml(tags || "No tags")}</small></span>
+        <span><strong>Access</strong>${escapeHtml(accountAccess)}<small>Customer account</small></span>
       </div>
       <form class="admin-status-form" data-customer-form="${escapeHtml(customerKey)}">
         <select name="status" aria-label="Customer status">${statusOptions}</select>

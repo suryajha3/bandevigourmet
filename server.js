@@ -7,12 +7,14 @@ import { fileURLToPath } from "node:url";
 import { STORE_CONFIG } from "./store-config.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
-const PORT = Number(process.env.PORT || 4174);
+const PORT = Number(process.env.PORT || 4175);
 const DATA_DIR = resolve(process.env.DATA_DIR || join(__dirname, "server-data"));
 const DB_FILE = join(DATA_DIR, "store.json");
 const PUBLIC_DIR = resolve(__dirname, "dist");
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 const TOKEN_SECRET = process.env.ADMIN_TOKEN_SECRET || ADMIN_PASSWORD || randomUUID();
+const CUSTOMER_PIN_SECRET =
+  process.env.CUSTOMER_PIN_SECRET || process.env.ADMIN_TOKEN_SECRET || ADMIN_PASSWORD || "bandevi-gourmet-local-customer-pin";
 const DATABASE_URL = process.env.DATABASE_URL || "";
 const STORAGE_DRIVER = DATABASE_URL ? "postgres" : "json";
 const PUBLIC_SITE_URL = (process.env.PUBLIC_SITE_URL || "https://bandevigourmet.com").replace(/\/+$/, "");
@@ -81,6 +83,32 @@ function cleanPhone(value) {
 
 function cleanOrderId(value) {
   return text(value, 32).toUpperCase().replace(/[^A-Z0-9-]/g, "");
+}
+
+function cleanAccessPin(value) {
+  return text(value, 20).replace(/\D/g, "").slice(0, 6);
+}
+
+function hashCustomerPin(phone, pin) {
+  const cleanPin = cleanAccessPin(pin);
+  const clean = cleanPhone(phone);
+  if (!clean || cleanPin.length < 4) return "";
+  return createHmac("sha256", CUSTOMER_PIN_SECRET).update(`${clean}:${cleanPin}`).digest("base64url");
+}
+
+function verifyCustomerPin(customer, pin) {
+  if (!customer?.accessPinHash) return true;
+  const actual = hashCustomerPin(customer.phone, pin);
+  if (!actual) return false;
+  const actualBuffer = Buffer.from(actual);
+  const expectedBuffer = Buffer.from(customer.accessPinHash);
+  return actualBuffer.length === expectedBuffer.length && timingSafeEqual(actualBuffer, expectedBuffer);
+}
+
+function findCustomerByPhone(db, phone) {
+  const clean = cleanPhone(phone);
+  if (!clean) return null;
+  return (db.customers || []).find((item) => cleanPhone(item.phone) === clean) || null;
 }
 
 function notificationId() {
@@ -178,6 +206,7 @@ function publicCustomer(customer) {
     lastOrderAt: customer.lastOrderAt,
     orderCount: Number(customer.orderCount || 0),
     totalSpend: Number(customer.totalSpend || 0),
+    hasAccountPin: Boolean(customer.accessPinHash),
     tags: Array.isArray(customer.tags) ? customer.tags : []
   };
 }
@@ -264,6 +293,7 @@ function normalizeCustomer(input = {}, existing = {}) {
     totalSpend: Number(existing.totalSpend || input.totalSpend || 0),
     status: text(input.status || existing.status || "active", 40),
     adminNote: text(input.adminNote || existing.adminNote, 500),
+    accessPinHash: text(input.accessPinHash || existing.accessPinHash, 160),
     tags
   };
 }
@@ -275,7 +305,10 @@ function upsertCustomer(db, input = {}) {
   db.customers = Array.isArray(db.customers) ? db.customers : [];
   const existingIndex = db.customers.findIndex((item) => cleanPhone(item.phone) === phone);
   const existing = existingIndex >= 0 ? db.customers[existingIndex] : {};
-  const customer = normalizeCustomer({ ...existing, ...input, phone }, existing);
+  const nextInput = { ...existing, ...input, phone };
+  const accountPin = cleanAccessPin(input.accountPin || input.pin);
+  if (accountPin.length >= 4) nextInput.accessPinHash = hashCustomerPin(phone, accountPin);
+  const customer = normalizeCustomer(nextInput, existing);
   const customerOrders = (db.orders || []).filter((order) => cleanPhone(order.customer?.phone) === phone);
 
   if (customerOrders.length) {
@@ -968,6 +1001,12 @@ async function handleApi(req, res, url) {
   if (url.pathname === "/api/customers" && req.method === "POST") {
     const payload = await readBody(req);
     const db = await readDb();
+    const existingCustomer = findCustomerByPhone(db, payload.phone);
+    if (existingCustomer?.accessPinHash && !verifyCustomerPin(existingCustomer, payload.accountPin || payload.pin)) {
+      jsonResponse(res, 401, { error: "Account PIN is required for this customer profile." });
+      return true;
+    }
+
     const customer = upsertCustomer(db, payload);
     if (!customer) {
       jsonResponse(res, 400, { error: "Phone is required." });
@@ -1002,6 +1041,12 @@ async function handleApi(req, res, url) {
     }
 
     const db = await readDb();
+    const customer = findCustomerByPhone(db, phone);
+    if (customer?.accessPinHash && !verifyCustomerPin(customer, url.searchParams.get("pin"))) {
+      jsonResponse(res, 401, { error: "Account PIN is required to view order history." });
+      return true;
+    }
+
     const orders = (db.orders || [])
       .filter((item) => cleanPhone(item.customer?.phone) === phone)
       .slice(0, 20)
@@ -1018,6 +1063,12 @@ async function handleApi(req, res, url) {
     }
 
     const db = await readDb();
+    const customer = findCustomerByPhone(db, phone);
+    if (customer?.accessPinHash && !verifyCustomerPin(customer, url.searchParams.get("pin"))) {
+      jsonResponse(res, 401, { error: "Account PIN is required to open this dashboard." });
+      return true;
+    }
+
     jsonResponse(res, 200, buildCustomerDashboard(db, phone));
     return true;
   }

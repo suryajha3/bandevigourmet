@@ -3,3 +3,5 @@ dist/
 .vite/
 server-data/
 *.tmp
+.chrome-check-*/
+.qa-*-profile/

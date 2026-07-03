@@ -12,7 +12,7 @@ npm run dev
 The local site opens at:
 
 ```text
-http://127.0.0.1:4173/
+http://127.0.0.1:4175/
 ```
 
 For a production-style local preview:
@@ -33,7 +33,7 @@ npm start
 Then open:
 
 ```text
-http://127.0.0.1:4174/admin.html
+http://127.0.0.1:4175/admin.html
 ```
 
 ## Store Features

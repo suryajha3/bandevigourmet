@@ -34,8 +34,7 @@ import products from "./products.json";
 import { STORE_CONFIG } from "./store-config.js";
 
 const API_TIMEOUT_MS = 6000;
-const RENDER_API_ORIGIN = "https://bandevigourmet-web.onrender.com";
-const API_ORIGIN = ["127.0.0.1", "localhost"].includes(window.location.hostname) ? RENDER_API_ORIGIN : window.location.origin;
+const API_ORIGIN = window.location.origin;
 
 const catalog = products.map((product) => ({
   ...product,
@@ -65,6 +64,7 @@ const BULK_PACK_IDS = new Set([
 
 const STORAGE_KEYS = {
   customer: "bandevi-gourmet-customer",
+  customerPin: "bandevi-gourmet-customer-pin",
   orders: "bandevi-gourmet-orders",
   cart: "bandevi-gourmet-cart"
 };
@@ -90,6 +90,7 @@ const state = {
   search: "",
   sort: "featured",
   couponApplied: false,
+  checkoutStep: "cart",
   cart: loadCart(),
   customer: loadCustomer(),
   customerSummary: null,
@@ -102,6 +103,7 @@ const state = {
 ensureStoreShell();
 ensureMobileCategoryNav();
 ensureTrustInfrastructure();
+ensureCartCheckoutEnhancements();
 
 const rupee = new Intl.NumberFormat("en-IN", {
   maximumFractionDigits: 0
@@ -133,6 +135,11 @@ const overlay = document.querySelector("[data-overlay]");
 const toast = document.querySelector("#toast");
 const couponInput = document.querySelector("#couponInput");
 const couponMessage = document.querySelector("#couponMessage");
+const cartStepper = document.querySelector(".cart-stepper");
+const cartReviewPanel = document.querySelector("#cartReviewPanel");
+const checkoutExtraFields = document.querySelector("[data-checkout-extra-fields]");
+const orderTypeSelect = checkoutForm?.elements.orderType;
+const saveDetailsInput = checkoutForm?.elements.saveDetails;
 const promoSlider = document.querySelector("[data-promo-slider]");
 const promoSlides = promoSlider ? [...promoSlider.querySelectorAll("[data-promo-slide]")] : [];
 const promoDots = promoSlider ? [...promoSlider.querySelectorAll("[data-promo-dot]")] : [];
@@ -245,6 +252,92 @@ function ensureStoreShell() {
 
   if (!document.querySelector("#toast")) {
     document.body.insertAdjacentHTML("beforeend", `<div class="toast" id="toast" role="status" aria-live="polite"></div>`);
+  }
+}
+
+function ensureCartCheckoutEnhancements() {
+  const cart = document.querySelector(".cart-drawer");
+  if (!cart) return;
+
+  const header = cart.querySelector(".drawer-header");
+  if (header && !cart.querySelector(".cart-stepper")) {
+    header.insertAdjacentHTML(
+      "afterend",
+      `
+        <div class="cart-stepper" role="tablist" aria-label="Checkout steps">
+          <button type="button" data-cart-step="cart" aria-selected="true">
+            <span>1</span>
+            Cart
+          </button>
+          <button type="button" data-cart-step="details" aria-selected="false">
+            <span>2</span>
+            Details
+          </button>
+          <button type="button" data-cart-step="review" aria-selected="false">
+            <span>3</span>
+            Review
+          </button>
+        </div>
+        <div class="cart-trust-row" aria-label="Checkout trust points">
+          <span><i data-lucide="leaf"></i>No artificial colors</span>
+          <span><i data-lucide="package-check"></i>Packed after order</span>
+          <span><i data-lucide="badge-check"></i>Booking ID tracking</span>
+          <span><i data-lucide="shield-check"></i>Policy-backed support</span>
+        </div>
+      `
+    );
+  }
+
+  const form = cart.querySelector("#checkoutForm");
+  if (!form) return;
+
+  const orderTypeLabel = form.elements.orderType?.closest("label");
+  if (orderTypeLabel && !form.querySelector("[data-checkout-extra-fields]")) {
+    orderTypeLabel.insertAdjacentHTML(
+      "afterend",
+      `
+        <div class="checkout-extra-fields" data-checkout-extra-fields>
+          <label class="gift-field">
+            <span>Gift note</span>
+            <textarea name="giftNote" rows="2" placeholder="Message for gifting order"></textarea>
+          </label>
+          <label class="business-field">
+            <span>Business / store name</span>
+            <input name="businessName" type="text" placeholder="For wholesale, sample, or export enquiry" />
+          </label>
+          <label class="business-field">
+            <span>GST / tax ID optional</span>
+            <input name="gstNumber" type="text" placeholder="Optional buyer tax reference" />
+          </label>
+          <label class="business-field">
+            <span>Expected volume</span>
+            <input name="buyerVolume" type="text" placeholder="Example: 50 packs monthly" />
+          </label>
+        </div>
+      `
+    );
+  }
+
+  const paymentDetailsSlot = form.querySelector("#paymentDetails");
+  if (paymentDetailsSlot && !form.querySelector(".save-customer-row")) {
+    paymentDetailsSlot.insertAdjacentHTML(
+      "beforebegin",
+      `
+        <label class="save-customer-row">
+          <input name="saveDetails" type="checkbox" checked />
+          <span>Save my details for next order and account tracking</span>
+        </label>
+      `
+    );
+  }
+
+  if (!cart.querySelector("#cartReviewPanel")) {
+    form.insertAdjacentHTML(
+      "afterend",
+      `
+        <section class="cart-review-panel" id="cartReviewPanel" aria-live="polite" hidden></section>
+      `
+    );
   }
 }
 
@@ -492,6 +585,10 @@ function normalizePhone(value) {
   return String(value || "").replace(/\D/g, "");
 }
 
+function normalizeAccessPin(value) {
+  return String(value || "").replace(/\D/g, "").slice(0, 6);
+}
+
 function readJson(key, fallback) {
   try {
     const value = window.localStorage.getItem(key);
@@ -503,6 +600,28 @@ function readJson(key, fallback) {
 
 function writeJson(key, value) {
   window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+function loadCustomerPin() {
+  return normalizeAccessPin(window.sessionStorage.getItem(STORAGE_KEYS.customerPin));
+}
+
+function saveCustomerPin(pin) {
+  const cleanPin = normalizeAccessPin(pin);
+  if (cleanPin) window.sessionStorage.setItem(STORAGE_KEYS.customerPin, cleanPin);
+  else window.sessionStorage.removeItem(STORAGE_KEYS.customerPin);
+}
+
+function getCustomerAuthParams(phone) {
+  const params = new URLSearchParams({ phone: normalizePhone(phone) });
+  const pin = loadCustomerPin();
+  if (pin) params.set("pin", pin);
+  return params;
+}
+
+function cleanCustomerForStorage(customer) {
+  const { accountPin, pin, ...safeCustomer } = customer || {};
+  return safeCustomer;
 }
 
 async function apiRequest(path, options = {}) {
@@ -562,8 +681,9 @@ function saveCart() {
 }
 
 function saveCustomer(customer) {
-  state.customer = customer;
-  writeJson(STORAGE_KEYS.customer, customer);
+  const safeCustomer = cleanCustomerForStorage(customer);
+  state.customer = safeCustomer;
+  writeJson(STORAGE_KEYS.customer, safeCustomer);
 }
 
 function saveOrders(orders) {
@@ -578,7 +698,7 @@ async function syncCustomerProfile(customer) {
       body: JSON.stringify(customer)
     });
     if (payload.customer) {
-      state.customer = { ...customer, ...payload.customer };
+      state.customer = cleanCustomerForStorage({ ...customer, ...payload.customer });
       writeJson(STORAGE_KEYS.customer, state.customer);
     }
     state.customerSyncStatus = "synced";
@@ -986,9 +1106,11 @@ function closeProductDetail() {
 
 function addToCart(id) {
   state.cart.set(id, (state.cart.get(id) || 0) + 1);
+  state.checkoutStep = "cart";
   saveCart();
   renderCart();
   showToast("Added to cart");
+  openCart();
 }
 
 function setQuantity(id, quantity) {
@@ -1017,6 +1139,295 @@ function getTotals() {
   const delivery = subtotal === 0 || subtotal - discount >= 999 ? 0 : 69;
   const total = subtotal - discount + delivery;
   return { subtotal, discount, delivery, total };
+}
+
+function getCartCategorySummary(lines) {
+  return lines.reduce((summary, item) => {
+    summary[item.category] = (summary[item.category] || 0) + item.quantity;
+    return summary;
+  }, {});
+}
+
+function renderCartProgress(totals) {
+  const freeDeliveryAt = 999;
+  const qualifiedAmount = Math.max(0, totals.subtotal - totals.discount);
+  const remaining = Math.max(0, freeDeliveryAt - qualifiedAmount);
+  const progress = Math.min(100, Math.round((qualifiedAmount / freeDeliveryAt) * 100));
+
+  return `
+    <div class="cart-progress" aria-label="Free delivery progress">
+      <div>
+        <strong>${remaining ? `${money(remaining)} away from free delivery` : "Free delivery unlocked"}</strong>
+        <span>${remaining ? "Add more pantry products to save the delivery charge." : "This cart qualifies for free delivery across serviceable India pin codes."}</span>
+      </div>
+      <div class="cart-progress-track">
+        <span style="width: ${progress}%"></span>
+      </div>
+    </div>
+  `;
+}
+
+function renderCartHighlights(lines, totals) {
+  const count = lines.reduce((sum, item) => sum + item.quantity, 0);
+  const categorySummary = getCartCategorySummary(lines);
+  const categoryText = Object.entries(categorySummary)
+    .map(([category, quantity]) => `${quantity} ${category}`)
+    .join(" / ");
+
+  return `
+    <div class="cart-hero-panel">
+      <div>
+        <p class="eyebrow">Checkout cart</p>
+        <h3>${count} item${count === 1 ? "" : "s"} ready for booking</h3>
+        <span>${categoryText || "Add makhana, masala, poha, or combo packs."}</span>
+      </div>
+      <div class="cart-hero-total">
+        <small>Payable total</small>
+        <strong>${money(totals.total)}</strong>
+      </div>
+    </div>
+    ${renderCartProgress(totals)}
+  `;
+}
+
+function renderCartJourney() {
+  return `
+    <div class="cart-journey" aria-label="Order journey">
+      <article>
+        <i data-lucide="shopping-bag"></i>
+        <strong>Book cart</strong>
+        <span>Create a booking ID from checkout.</span>
+      </article>
+      <article>
+        <i data-lucide="package-check"></i>
+        <strong>Pack order</strong>
+        <span>Seller confirms stock, pack size, and dispatch.</span>
+      </article>
+      <article>
+        <i data-lucide="truck"></i>
+        <strong>Track status</strong>
+        <span>Use phone and booking ID on the tracking page.</span>
+      </article>
+    </div>
+  `;
+}
+
+function getRecommendedProducts() {
+  const preferredIds = ["classic-makhana", "garam-masala", "poha-1kg-pouch"];
+  return preferredIds.map((id) => catalog.find((product) => product.id === id)).filter(Boolean);
+}
+
+function renderEmptyCartRecommendations() {
+  const suggestions = getRecommendedProducts();
+  if (!suggestions.length) return "";
+
+  return `
+    <div class="empty-cart-recommendations" aria-label="Recommended products">
+      ${suggestions
+        .map(
+          (product) => `
+            <article>
+              <a href="${productUrl(product)}" aria-label="Open ${escapeHtml(product.name)} details">
+                ${renderProductVisual(product)}
+              </a>
+              <div>
+                <strong>${escapeHtml(product.name)}</strong>
+                <span>${money(product.price)} / ${escapeHtml(product.size)}</span>
+              </div>
+              <button type="button" data-add="${product.id}">
+                <i data-lucide="plus"></i>
+                Add
+              </button>
+            </article>
+          `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function getCheckoutFormData() {
+  return checkoutForm ? new FormData(checkoutForm) : new FormData();
+}
+
+function isBusinessOrderType(orderType) {
+  const type = String(orderType || "").toLowerCase();
+  return type.includes("wholesale") || type.includes("export");
+}
+
+function updateCheckoutExtraFields() {
+  if (!checkoutExtraFields || !orderTypeSelect) return;
+  const type = String(orderTypeSelect.value || "").toLowerCase();
+  const isGift = type.includes("gift");
+  const isBusiness = isBusinessOrderType(type);
+
+  checkoutExtraFields.querySelectorAll(".gift-field").forEach((field) => {
+    field.classList.toggle("is-hidden", !isGift);
+  });
+  checkoutExtraFields.querySelectorAll(".business-field").forEach((field) => {
+    field.classList.toggle("is-hidden", !isBusiness);
+  });
+}
+
+function getCheckoutAdminNote(data) {
+  const notes = [];
+  const giftNote = String(data.get("giftNote") || "").trim();
+  const businessName = String(data.get("businessName") || "").trim();
+  const gstNumber = String(data.get("gstNumber") || "").trim();
+  const buyerVolume = String(data.get("buyerVolume") || "").trim();
+
+  if (giftNote) notes.push(`Gift note: ${giftNote}`);
+  if (businessName) notes.push(`Business/store: ${businessName}`);
+  if (gstNumber) notes.push(`GST/tax ID: ${gstNumber}`);
+  if (buyerVolume) notes.push(`Expected volume: ${buyerVolume}`);
+
+  return notes.join(" | ");
+}
+
+function renderCartStepPanel(lines, totals) {
+  return `
+    <div class="cart-side-panel">
+      <p class="eyebrow">Cart check</p>
+      <h3>${lines.length ? "Your products are ready." : "Start with a trusted pantry cart."}</h3>
+      <p>${lines.length ? "Review quantity, apply coupon if available, then continue to delivery details." : "Choose from popular BandEvi Gourmet products and build a booking-ready cart."}</p>
+      <div class="cart-side-totals">
+        <span><strong>${money(totals.subtotal)}</strong><small>Subtotal</small></span>
+        <span><strong>${totals.delivery ? money(totals.delivery) : "Free"}</strong><small>Delivery</small></span>
+        <span><strong>${money(totals.total)}</strong><small>Total</small></span>
+      </div>
+      <button class="checkout-button" type="button" data-cart-goto="details" ${lines.length ? "" : "disabled"}>
+        Continue to details
+      </button>
+      <a class="secondary-checkout-link" href="./products.html">Browse more products</a>
+    </div>
+  `;
+}
+
+function renderReviewItems(lines) {
+  if (!lines.length) return `<p class="portal-empty">No cart items to review.</p>`;
+
+  return lines
+    .map(
+      (item) => `
+        <div class="review-line">
+          <span>${escapeHtml(item.name)} <small>${escapeHtml(item.size)} x ${item.quantity}</small></span>
+          <strong>${money(item.lineTotal)}</strong>
+        </div>
+      `
+    )
+    .join("");
+}
+
+function renderOrderReview() {
+  const lines = getCartLines();
+  const totals = getTotals();
+  const data = getCheckoutFormData();
+  const payment = String(data.get("payment") || "Cash on delivery");
+  const orderType = String(data.get("orderType") || "Retail home order");
+  const adminNote = getCheckoutAdminNote(data);
+
+  return `
+    <div class="cart-review-card">
+      <p class="eyebrow">Review booking</p>
+      <h3>Confirm everything before creating the booking ID.</h3>
+      <div class="review-block">
+        <strong>Items</strong>
+        ${renderReviewItems(lines)}
+      </div>
+      <div class="review-block review-customer">
+        <strong>Customer and delivery</strong>
+        <span>${escapeHtml(String(data.get("name") || "Name pending"))}</span>
+        <span>${escapeHtml(String(data.get("phone") || "Phone pending"))}</span>
+        <span>${escapeHtml(String(data.get("countryCity") || "Location pending"))}</span>
+        <span>${escapeHtml(String(data.get("address") || "Address pending"))}</span>
+        ${adminNote ? `<span>${escapeHtml(adminNote)}</span>` : ""}
+      </div>
+      <div class="review-block">
+        <strong>Booking terms</strong>
+        <div class="review-line"><span>Order type</span><strong>${escapeHtml(orderType)}</strong></div>
+        <div class="review-line"><span>Payment</span><strong>${escapeHtml(payment)}</strong></div>
+        <p>${escapeHtml(getPaymentNote(payment, totals.total))}</p>
+      </div>
+      <div class="review-total-card">
+        <div><span>Subtotal</span><span>${money(totals.subtotal)}</span></div>
+        <div><span>Coupon discount</span><span>${totals.discount ? `-${money(totals.discount)}` : money(0)}</span></div>
+        <div><span>Delivery estimate</span><span>${totals.delivery ? money(totals.delivery) : "Free"}</span></div>
+        <div><strong>Total</strong><strong>${money(totals.total)}</strong></div>
+      </div>
+      <div class="review-actions">
+        <button class="secondary-checkout-button" type="button" data-cart-goto="details">Edit details</button>
+        <button class="whatsapp-button" type="button" data-whatsapp-review>
+          <i data-lucide="message-circle"></i>
+          WhatsApp order
+        </button>
+        <button class="checkout-button" type="button" data-place-order>
+          <i data-lucide="badge-check"></i>
+          Place booking
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function setCheckoutStep(step, options = {}) {
+  const nextStep = ["cart", "details", "review"].includes(step) ? step : "cart";
+  if (nextStep === "details" && !state.cart.size) {
+    showToast("Add at least one product first");
+    return;
+  }
+  if (nextStep === "review" && !options.skipValidation) {
+    if (!state.cart.size) {
+      showToast("Add at least one product first");
+      return;
+    }
+    if (!checkoutForm?.reportValidity()) return;
+  }
+
+  state.checkoutStep = nextStep;
+  renderCheckoutStep();
+}
+
+function bindCheckoutReviewActions() {
+  cartReviewPanel?.querySelectorAll("[data-cart-goto]").forEach((button) => {
+    button.addEventListener("click", () => setCheckoutStep(button.dataset.cartGoto));
+  });
+  cartReviewPanel?.querySelector("[data-place-order]")?.addEventListener("click", () => {
+    state.checkoutStep = "review";
+    checkoutForm?.requestSubmit();
+  });
+  cartReviewPanel?.querySelector("[data-whatsapp-review]")?.addEventListener("click", () => {
+    state.checkoutStep = "review";
+    submitWhatsAppOrder();
+  });
+}
+
+function renderCheckoutStep() {
+  if (!cartDrawer) return;
+  const lines = getCartLines();
+  const totals = getTotals();
+  if (!lines.length) state.checkoutStep = "cart";
+
+  cartDrawer.dataset.step = state.checkoutStep;
+  cartStepper?.querySelectorAll("[data-cart-step]").forEach((button) => {
+    const active = button.dataset.cartStep === state.checkoutStep;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+
+  if (checkoutForm) checkoutForm.hidden = state.checkoutStep !== "details";
+  if (cartReviewPanel) {
+    cartReviewPanel.hidden = state.checkoutStep === "details";
+    cartReviewPanel.innerHTML = state.checkoutStep === "review" ? renderOrderReview() : renderCartStepPanel(lines, totals);
+    bindCheckoutReviewActions();
+  }
+
+  const checkoutButton = checkoutForm?.querySelector(".checkout-button");
+  if (checkoutButton) {
+    checkoutButton.innerHTML = `<i data-lucide="badge-check"></i> Review booking`;
+  }
+
+  updateCheckoutExtraFields();
+  refreshIcons();
 }
 
 function createOrderId() {
@@ -1061,6 +1472,7 @@ function buildWhatsAppMessage(form, orderId) {
   const lines = getCartLines();
   const totals = getTotals();
   const payment = data.get("payment");
+  const adminNote = getCheckoutAdminNote(data);
   const items = lines
     .map((item, index) => `${index + 1}. ${item.name} (${item.size}) x ${item.quantity} = ${money(item.lineTotal)}`)
     .join("\n");
@@ -1087,7 +1499,8 @@ function buildWhatsAppMessage(form, orderId) {
     `Address: ${data.get("address")}`,
     `Order Type: ${data.get("orderType")}`,
     `Payment: ${payment}`,
-    `Payment Note: ${getPaymentNote(payment, totals.total)}`
+    `Payment Note: ${getPaymentNote(payment, totals.total)}`,
+    adminNote ? `Buyer Note: ${adminNote}` : ""
   ].join("\n");
 }
 
@@ -1129,7 +1542,7 @@ function createOrderRecord(form, orderId, source) {
     trackingUrl: "",
     dispatchDate: "",
     eta: "",
-    adminNote: "",
+    adminNote: getCheckoutAdminNote(data),
     totals,
     items: lines.map((item) => ({
       id: item.id,
@@ -1194,7 +1607,7 @@ function saveOrderRecord(order, options = {}) {
 async function loadCustomerOrdersFromBackend(phone) {
   const cleanPhone = normalizePhone(phone);
   try {
-    const params = new URLSearchParams({ phone: cleanPhone });
+    const params = getCustomerAuthParams(cleanPhone);
     const payload = await apiRequest(`/api/customer/dashboard?${params.toString()}`);
     if (payload.customer) {
       state.customer = { ...(state.customer || {}), ...payload.customer };
@@ -1205,9 +1618,15 @@ async function loadCustomerOrdersFromBackend(phone) {
     if (payload.orders?.length) upsertOrderRecords(payload.orders);
     else renderCustomerPortal();
     return payload.orders || [];
-  } catch {
+  } catch (error) {
+    if (/pin/i.test(error.message || "")) {
+      state.customerSyncStatus = "locked";
+      renderCustomerPortal();
+      return [];
+    }
+
     try {
-      const params = new URLSearchParams({ phone: cleanPhone });
+      const params = getCustomerAuthParams(cleanPhone);
       const payload = await apiRequest(`/api/orders/customer?${params.toString()}`);
       if (payload.orders?.length) upsertOrderRecords(payload.orders);
       return payload.orders || [];
@@ -1613,6 +2032,12 @@ function renderCustomerPortal() {
   const activeOrders = ordersForCustomer.filter((order) => !isClosedOrder(order)).length;
   const latestOrder = ordersForCustomer[0];
   const localSpend = ordersForCustomer.reduce((sum, order) => sum + Number(order.totals?.total || 0), 0);
+  const syncLabel =
+    state.customerSyncStatus === "synced"
+      ? "Backend synced"
+      : state.customerSyncStatus === "locked"
+        ? "PIN required"
+        : "Saved on this device";
   const summary = state.customerSummary || {
     totalOrders: ordersForCustomer.length,
     activeOrders,
@@ -1629,7 +2054,8 @@ function renderCustomerPortal() {
             <span>${escapeHtml(customer.phone)}</span>
             ${customer.email ? `<span>${escapeHtml(customer.email)}</span>` : ""}
             ${customer.location ? `<span>${escapeHtml(customer.location)}</span>` : ""}
-            <span>${state.customerSyncStatus === "synced" ? "Backend synced" : "Saved on this device"}</span>
+            ${customer.hasAccountPin ? `<span>PIN protected</span>` : ""}
+            <span>${syncLabel}</span>
           </div>`
         : `<p class="portal-empty">${portalMode === "track" ? "Enter your booking ID and phone number to see the latest status here." : "Save your login details first, then place an order or track an existing order ID."}</p>`
     }
@@ -1721,7 +2147,13 @@ async function refreshCustomerAccount() {
 
   setCustomerLoginStatus("Refreshing account...");
   await loadCustomerOrdersFromBackend(state.customer.phone);
-  setCustomerLoginStatus(state.customerSyncStatus === "synced" ? "Account synced with live orders." : "Showing saved account details.");
+  setCustomerLoginStatus(
+    state.customerSyncStatus === "synced"
+      ? "Account synced with live orders."
+      : state.customerSyncStatus === "locked"
+        ? "Enter your account PIN and open account again to refresh history."
+        : "Showing saved account details."
+  );
   showToast("Account refreshed");
 }
 
@@ -1731,6 +2163,7 @@ function logoutCustomer() {
   state.customerEnquiries = [];
   state.trackedOrder = null;
   window.localStorage.removeItem(STORAGE_KEYS.customer);
+  saveCustomerPin("");
   if (customerLoginForm) customerLoginForm.reset();
   setCustomerLoginStatus("Logged out on this device.");
   renderCustomerPortal();
@@ -1875,31 +2308,51 @@ function renderCart() {
   if (!cartItems || !cartTotals) return;
   const lines = getCartLines();
   const count = lines.reduce((sum, item) => sum + item.quantity, 0);
+  const totals = getTotals();
   document.querySelectorAll("[data-cart-count]").forEach((item) => {
     item.textContent = count;
   });
 
   cartItems.innerHTML = lines.length
-    ? lines
-        .map(
-          (item) => `
-          <div class="cart-line">
-            <div>
-              <h3>${item.name}</h3>
-              <p>${item.size} - ${money(item.price)} each</p>
-            </div>
-            <div>
-              <div class="quantity" aria-label="${item.name} quantity">
-                <button type="button" data-minus="${item.id}" aria-label="Decrease ${item.name}">-</button>
-                <span>${item.quantity}</span>
-                <button type="button" data-plus="${item.id}" aria-label="Increase ${item.name}">+</button>
+    ? `
+        ${renderCartHighlights(lines, totals)}
+        <div class="cart-line-list" aria-label="Cart products">
+          ${lines
+            .map(
+              (item) => `
+              <div class="cart-line">
+                <a class="cart-line-media" href="${productUrl(item)}" aria-label="Open ${escapeHtml(item.name)} details">
+                  ${renderProductVisual(item)}
+                </a>
+                <div class="cart-line-copy">
+                  <span>${escapeHtml(item.category)} / ${escapeHtml(item.size)}</span>
+                  <h3>${escapeHtml(item.name)}</h3>
+                  <p>${escapeHtml(item.description)}</p>
+                  <strong>${money(item.price)} each</strong>
+                </div>
+                <div class="cart-line-actions">
+                  <span class="cart-line-total">${money(item.lineTotal)}</span>
+                  <div class="quantity" aria-label="${escapeHtml(item.name)} quantity">
+                    <button type="button" data-minus="${item.id}" aria-label="Decrease ${escapeHtml(item.name)}">-</button>
+                    <span>${item.quantity}</span>
+                    <button type="button" data-plus="${item.id}" aria-label="Increase ${escapeHtml(item.name)}">+</button>
+                  </div>
+                  <button class="remove-line" type="button" data-remove="${item.id}">Remove</button>
+                </div>
               </div>
+            `
+            )
+            .join("")}
             </div>
-          </div>
-        `
-        )
-        .join("")
-    : `<div class="empty-cart">Your cart is empty.</div>`;
+        ${renderCartJourney()}
+      `
+    : `<div class="empty-cart">
+        <i data-lucide="shopping-bag"></i>
+        <strong>Your cart is empty.</strong>
+        <span>Add makhana, masala, poha, or combo packs to start a booking.</span>
+        <a href="./products.html">Browse products</a>
+        ${renderEmptyCartRecommendations()}
+      </div>`;
 
   cartItems.querySelectorAll("[data-minus]").forEach((button) => {
     button.addEventListener("click", () => setQuantity(button.dataset.minus, (state.cart.get(button.dataset.minus) || 0) - 1));
@@ -1907,15 +2360,20 @@ function renderCart() {
   cartItems.querySelectorAll("[data-plus]").forEach((button) => {
     button.addEventListener("click", () => setQuantity(button.dataset.plus, (state.cart.get(button.dataset.plus) || 0) + 1));
   });
+  cartItems.querySelectorAll("[data-remove]").forEach((button) => {
+    button.addEventListener("click", () => setQuantity(button.dataset.remove, 0));
+  });
+  bindAddButtons(cartItems);
 
-  const totals = getTotals();
   cartTotals.innerHTML = `
     <div><span>Subtotal</span><span>${money(totals.subtotal)}</span></div>
-    <div><span>Discount</span><span>${totals.discount ? `-${money(totals.discount)}` : money(0)}</span></div>
-    <div><span>Delivery</span><span>${totals.delivery ? money(totals.delivery) : "Free"}</span></div>
-    <div><strong>Total</strong><strong>${money(totals.total)}</strong></div>
+    <div><span>Coupon discount</span><span>${totals.discount ? `-${money(totals.discount)}` : money(0)}</span></div>
+    <div><span>Delivery estimate</span><span>${totals.delivery ? money(totals.delivery) : "Free"}</span></div>
+    <div class="grand-total"><strong>Total</strong><strong>${money(totals.total)}</strong></div>
   `;
   renderPaymentDetails();
+  renderCheckoutStep();
+  refreshIcons();
 }
 
 function openCart() {
@@ -1924,6 +2382,7 @@ function openCart() {
   if (!cartDrawer || !overlay) return;
   cartDrawer.classList.add("is-open");
   overlay.classList.add("is-open");
+  document.body.classList.add("cart-open");
   cartDrawer.setAttribute("aria-hidden", "false");
 }
 
@@ -1931,6 +2390,7 @@ function closeCart() {
   if (!cartDrawer || !overlay) return;
   cartDrawer.classList.remove("is-open");
   overlay.classList.remove("is-open");
+  document.body.classList.remove("cart-open");
   cartDrawer.setAttribute("aria-hidden", "true");
 }
 
@@ -2135,13 +2595,26 @@ document.querySelector("#sortSelect")?.addEventListener("change", (event) => {
 });
 
 paymentMethod?.addEventListener("change", renderPaymentDetails);
+orderTypeSelect?.addEventListener("change", () => {
+  updateCheckoutExtraFields();
+  renderCheckoutStep();
+});
 
 document.querySelectorAll(".cart-trigger").forEach((button) => {
   button.addEventListener("click", openCart);
 });
+cartStepper?.querySelectorAll("[data-cart-step]").forEach((button) => {
+  button.addEventListener("click", () => setCheckoutStep(button.dataset.cartStep));
+});
 document.querySelector(".close-cart")?.addEventListener("click", closeCart);
 document.querySelector(".close-detail")?.addEventListener("click", closeProductDetail);
 overlay?.addEventListener("click", () => {
+  closeCart();
+  closeProductDetail();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
   closeCart();
   closeProductDetail();
 });
@@ -2159,13 +2632,18 @@ document.querySelector("#applyCoupon")?.addEventListener("click", () => {
   }
 });
 
-document.querySelector("#whatsappOrder")?.addEventListener("click", () => {
+function submitWhatsAppOrder() {
   if (!state.cart.size) {
     showToast("Add at least one product first");
     return;
   }
 
   if (!checkoutForm.reportValidity()) return;
+  if (state.checkoutStep !== "review") {
+    setCheckoutStep("review", { skipValidation: true });
+    showToast("Review booking before WhatsApp");
+    return;
+  }
 
   const orderId = createOrderId();
   const order = createOrderRecord(checkoutForm, orderId, "WhatsApp order request");
@@ -2173,7 +2651,9 @@ document.querySelector("#whatsappOrder")?.addEventListener("click", () => {
   saveOrderRecord(order);
   window.open(getWhatsAppUrl(message), "_blank", "noopener,noreferrer");
   showToast(`Order ${orderId} ready in WhatsApp`);
-});
+}
+
+document.querySelector("#whatsappOrder")?.addEventListener("click", submitWhatsAppOrder);
 
 checkoutForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -2181,11 +2661,17 @@ checkoutForm?.addEventListener("submit", async (event) => {
     showToast("Add at least one product first");
     return;
   }
+  if (state.checkoutStep !== "review") {
+    setCheckoutStep("review");
+    showToast("Review booking before placing order");
+    return;
+  }
 
   const orderId = createOrderId();
   const order = createOrderRecord(event.currentTarget, orderId, "Website cart booking");
-  saveCustomer(order.customer);
-  const customerSync = syncCustomerProfile(order.customer);
+  const shouldSaveDetails = saveDetailsInput?.checked ?? true;
+  const customerSync = shouldSaveDetails ? syncCustomerProfile(order.customer) : Promise.resolve();
+  if (shouldSaveDetails) saveCustomer(order.customer);
   saveOrderRecord(order, { sync: false });
   const syncedOrder = await syncOrderRecord(order);
   await customerSync;
@@ -2195,6 +2681,8 @@ checkoutForm?.addEventListener("submit", async (event) => {
   couponInput.value = "";
   couponMessage.textContent = "";
   event.currentTarget.reset();
+  if (saveDetailsInput) saveDetailsInput.checked = true;
+  state.checkoutStep = "cart";
   renderCart();
   closeCart();
   showToast(`Order ${orderId} placed successfully`);
@@ -2204,12 +2692,21 @@ checkoutForm?.addEventListener("submit", async (event) => {
 customerLoginForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = new FormData(event.currentTarget);
+  const accountPin = normalizeAccessPin(data.get("customerPin"));
+  if (accountPin && accountPin.length < 4) {
+    setCustomerLoginStatus("Use a 4 to 6 digit account PIN.");
+    showToast("Use a 4 to 6 digit account PIN");
+    return;
+  }
+
   const customer = {
     name: String(data.get("customerName") || "").trim(),
     phone: String(data.get("customerPhone") || "").trim(),
     email: String(data.get("customerEmail") || "").trim(),
-    location: String(data.get("customerLocation") || "").trim()
+    location: String(data.get("customerLocation") || "").trim(),
+    hasAccountPin: Boolean(accountPin) || Boolean(state.customer?.hasAccountPin)
   };
+  if (accountPin) saveCustomerPin(accountPin);
 
   saveCustomer(customer);
   state.customerSummary = null;
@@ -2218,9 +2715,15 @@ customerLoginForm?.addEventListener("submit", async (event) => {
   prefillCheckoutFromCustomer();
   renderCustomerPortal();
   setCustomerLoginStatus("Opening account...");
-  await syncCustomerProfile(customer);
+  await syncCustomerProfile({ ...customer, accountPin: accountPin || loadCustomerPin() });
   await loadCustomerOrdersFromBackend(customer.phone);
-  setCustomerLoginStatus(state.customerSyncStatus === "synced" ? "Account synced with live orders." : "Saved on this device.");
+  setCustomerLoginStatus(
+    state.customerSyncStatus === "synced"
+      ? "Account synced with live orders."
+      : state.customerSyncStatus === "locked"
+        ? "Account PIN is required to view full order history."
+        : "Saved on this device."
+  );
   showToast("Customer profile saved");
 });
 
