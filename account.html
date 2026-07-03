@@ -63,9 +63,9 @@
       <section class="page-hero account-page-hero" aria-labelledby="account-page-title">
         <div>
           <p class="eyebrow">Customer account</p>
-          <h1 id="account-page-title">Customer login, profile, and order history.</h1>
+          <h1 id="account-page-title">Customer account and booking history.</h1>
           <p>
-            Save customer details once, prefill checkout faster, and see recent bookings connected to the same phone number.
+            Use your phone number and account PIN to open saved booking history, order status, and support requests.
           </p>
           <div class="hero-actions">
             <a class="primary-link" href="./products.html">
@@ -84,9 +84,9 @@
       <section class="customer-portal-section" id="customer-portal" aria-labelledby="customer-portal-title">
         <div class="portal-copy">
           <p class="eyebrow">Customer booking desk</p>
-          <h2 id="customer-portal-title">Login and manage your BandEvi profile.</h2>
+          <h2 id="customer-portal-title">A cleaner account login for repeat customers.</h2>
           <p>
-            This page is connected to the live backend. Saved customer details prefill checkout and help repeat buyers see recent booking history.
+            Phone number opens the customer profile. A 4-6 digit PIN protects full order history when the account already has one.
           </p>
           <div class="portal-highlights" aria-label="Booking desk features">
             <span>Customer profile</span>
@@ -100,39 +100,52 @@
         </div>
         <div class="portal-panel account-only">
           <form class="portal-form" id="customerLoginForm">
-            <h3>Customer login</h3>
-            <label>
-              <span>Name</span>
-              <input name="customerName" type="text" placeholder="Your name" required />
-            </label>
-            <label>
-              <span>Phone</span>
-              <input name="customerPhone" type="tel" placeholder="Phone number" required />
-            </label>
-            <label>
-              <span>Account PIN</span>
-              <input
-                name="customerPin"
-                type="password"
-                inputmode="numeric"
-                minlength="4"
-                maxlength="6"
-                placeholder="4-6 digit PIN"
-                autocomplete="one-time-code"
-              />
-              <small>Set or enter this PIN to protect full order history.</small>
-            </label>
-            <label>
-              <span>Email</span>
-              <input name="customerEmail" type="email" placeholder="Email for order updates" />
-            </label>
-            <label>
-              <span>Country / city</span>
-              <input name="customerLocation" type="text" placeholder="Example: India, Patna" />
-            </label>
+            <div class="portal-form-head">
+              <span class="portal-lock-mark">BG</span>
+              <div>
+                <h3>Customer login</h3>
+                <p>Fast access for tracking, reorder, and support.</p>
+              </div>
+            </div>
+            <div class="portal-login-grid">
+              <label class="portal-primary-field">
+                <span>Phone number</span>
+                <input name="customerPhone" type="tel" placeholder="Phone used for order" autocomplete="tel" required />
+              </label>
+              <label>
+                <span>Account PIN</span>
+                <input
+                  name="customerPin"
+                  type="password"
+                  inputmode="numeric"
+                  minlength="4"
+                  maxlength="6"
+                  placeholder="4-6 digit PIN"
+                  autocomplete="one-time-code"
+                />
+                <small>Use existing PIN or set a new PIN for this phone.</small>
+              </label>
+            </div>
+            <details class="portal-optional-profile" open>
+              <summary>Profile details</summary>
+              <div>
+                <label>
+                  <span>Name</span>
+                  <input name="customerName" type="text" placeholder="Your name" autocomplete="name" />
+                </label>
+                <label>
+                  <span>Email</span>
+                  <input name="customerEmail" type="email" placeholder="Email for order updates" autocomplete="email" />
+                </label>
+                <label>
+                  <span>Country / city</span>
+                  <input name="customerLocation" type="text" placeholder="Example: India, Patna" autocomplete="address-level2" />
+                </label>
+              </div>
+            </details>
             <button class="portal-button" type="submit">
               <i data-lucide="badge-check"></i>
-              Open account
+              Open account dashboard
             </button>
             <div class="portal-form-actions">
               <button class="portal-button secondary" id="refreshCustomerOrders" type="button">

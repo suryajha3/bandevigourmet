@@ -3010,7 +3010,7 @@ customerLoginForm?.addEventListener("submit", async (event) => {
   }
 
   const customer = {
-    name: String(data.get("customerName") || "").trim(),
+    name: String(data.get("customerName") || "").trim() || "Customer",
     phone: String(data.get("customerPhone") || "").trim(),
     email: String(data.get("customerEmail") || "").trim(),
     location: String(data.get("customerLocation") || "").trim(),

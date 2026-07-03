@@ -286,6 +286,32 @@ function adminProduct(product) {
   };
 }
 
+function listFromInput(value, maxItems = 20, maxLength = 120) {
+  const source = Array.isArray(value)
+    ? value
+    : text(value, 3000)
+        .split(/\r?\n|,/)
+        .map((item) => item.trim());
+  return source.map((item) => text(item, maxLength)).filter(Boolean).slice(0, maxItems);
+}
+
+function normalizeProductDetails(input = {}, existing = {}) {
+  const source = input && typeof input === "object" ? input : {};
+  const prior = existing && typeof existing === "object" ? existing : {};
+  return {
+    ingredients: listFromInput(source.ingredients ?? prior.ingredients, 40, 100),
+    nutrition: listFromInput(source.nutrition ?? prior.nutrition, 20, 120),
+    usage: listFromInput(source.usage ?? prior.usage, 20, 120),
+    trust: listFromInput(source.trust ?? prior.trust, 12, 120),
+    shelfLife: text(source.shelfLife ?? prior.shelfLife ?? "", 220),
+    storage: text(source.storage ?? prior.storage ?? "", 260),
+    origin: text(source.origin ?? prior.origin ?? "", 260),
+    flavorNotes: text(source.flavorNotes ?? prior.flavorNotes ?? "", 260),
+    allergen: text(source.allergen ?? prior.allergen ?? "", 260),
+    disclaimer: text(source.disclaimer ?? prior.disclaimer ?? "", 420)
+  };
+}
+
 function publicEnquiry(enquiry) {
   return {
     id: enquiry.id,
@@ -434,7 +460,7 @@ function normalizeProduct(input = {}, existing = {}) {
     badge: text(input.badge ?? existing.badge ?? "Pure", 80),
     rating: Math.max(0, Math.min(5, Number(input.rating ?? existing.rating ?? 4.8))),
     description: text(input.description ?? existing.description ?? "", 420),
-    image: text(input.image ?? existing.image ?? "", 500),
+    image: text(input.image ?? existing.image ?? "", 2_400_000),
     position: text(input.position ?? existing.position ?? "center", 80),
     fit: text(input.fit ?? existing.fit ?? "contain", 40),
     scale: text(input.scale ?? existing.scale ?? "1", 20),
@@ -443,7 +469,7 @@ function normalizeProduct(input = {}, existing = {}) {
     stockStatus,
     lowStockThreshold: Number.isFinite(lowStockThreshold) ? Math.max(0, lowStockThreshold) : 10,
     tags,
-    details: input.details || existing.details || {},
+    details: normalizeProductDetails(input.details, existing.details),
     adminNote: text(input.adminNote ?? existing.adminNote ?? "", 500),
     createdAt: existing.createdAt || input.createdAt || now,
     updatedAt: now
@@ -1041,7 +1067,11 @@ function productExportRows(db) {
     stock: product.stock ?? 0,
     stockStatus: product.stockStatus || "",
     lowStockThreshold: product.lowStockThreshold || 0,
-    image: product.image || "",
+    image: product.image?.startsWith("data:image/") ? "uploaded image" : product.image || "",
+    ingredients: (product.details?.ingredients || []).join("; "),
+    shelfLife: product.details?.shelfLife || "",
+    storage: product.details?.storage || "",
+    allergen: product.details?.allergen || "",
     tags: (product.tags || []).join("; "),
     updatedAt: product.updatedAt || ""
   }));
@@ -1157,7 +1187,7 @@ async function readBody(req) {
     let body = "";
     req.on("data", (chunk) => {
       body += chunk;
-      if (body.length > 1_000_000) {
+      if (body.length > 4_000_000) {
         rejectBody(new Error("Request body too large"));
         req.destroy();
       }

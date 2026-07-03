@@ -44,20 +44,36 @@
 
     <main class="admin-shell">
       <section class="admin-hero" aria-labelledby="admin-title">
-        <div>
+        <div class="admin-hero-copy">
           <p class="eyebrow">Private admin panel</p>
-          <h1 id="admin-title">Orders, bookings, and customer tracking.</h1>
+          <h1 id="admin-title">Brand control room for orders, products, and customers.</h1>
           <p>
-            Manage website bookings, update customer order status, and review wholesale enquiries from one focused desk.
+            Manage bookings, product stock, customer support, wholesale enquiries, and catalog details from one focused desk.
           </p>
+          <div class="admin-login-assurance" aria-label="Admin trust highlights">
+            <span>Private dashboard</span>
+            <span>Product stock control</span>
+            <span>Customer support desk</span>
+          </div>
         </div>
         <form class="admin-login" id="adminLoginForm">
-          <h2>Admin login</h2>
+          <div class="admin-login-head">
+            <span>BG</span>
+            <div>
+              <h2>Secure admin login</h2>
+              <p>Use the private admin password to open the live order desk.</p>
+            </div>
+          </div>
           <label>
-            <span>Password</span>
-            <input name="password" type="password" autocomplete="current-password" required />
+            <span>Admin password</span>
+            <input name="password" type="password" autocomplete="current-password" placeholder="Enter admin password" required />
           </label>
-          <button class="portal-button" type="submit">Login</button>
+          <button class="portal-button" type="submit">Open admin dashboard</button>
+          <div class="admin-login-help">
+            <span>Orders</span>
+            <span>Products</span>
+            <span>Support</span>
+          </div>
           <p id="adminLoginMessage"></p>
         </form>
       </section>

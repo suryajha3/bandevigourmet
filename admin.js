@@ -69,6 +69,71 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function isUploadedImage(value) {
+  return String(value || "").startsWith("data:image/");
+}
+
+function listToLines(value) {
+  return Array.isArray(value) ? value.join("\n") : String(value || "");
+}
+
+function formList(value) {
+  return String(value || "")
+    .split(/\r?\n|,/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function productImagePreviewMarkup(image = "", name = "Product") {
+  return image
+    ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(name)}" />`
+    : `<span>No image uploaded</span>`;
+}
+
+function compressProductImage(file) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith("image/")) {
+      reject(new Error("Upload a PNG, JPG, or WebP product image."));
+      return;
+    }
+    if (file.size > 8_000_000) {
+      reject(new Error("Image is too large. Please use a file under 8 MB."));
+      return;
+    }
+
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    image.onload = () => {
+      const maxSide = 1000;
+      const ratio = Math.min(1, maxSide / Math.max(image.width, image.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.width * ratio));
+      canvas.height = Math.max(1, Math.round(image.height * ratio));
+      const context = canvas.getContext("2d");
+      context.fillStyle = "#f8f5ed";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(objectUrl);
+      let quality = 0.82;
+      let dataUrl = canvas.toDataURL("image/webp", quality);
+      while (dataUrl.length > 1_500_000 && quality > 0.48) {
+        quality -= 0.08;
+        dataUrl = canvas.toDataURL("image/webp", quality);
+      }
+      if (dataUrl.length > 2_300_000) {
+        reject(new Error("Compressed image is still too large. Try a smaller product photo."));
+        return;
+      }
+      resolve(dataUrl);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Could not read this image file."));
+    };
+    image.src = objectUrl;
+  });
+}
+
 function showToast(message) {
   toast.textContent = message;
   toast.classList.add("is-visible");
@@ -178,6 +243,7 @@ function supportMatchesSearch(request) {
 }
 
 function productMatchesSearch(product) {
+  const details = product.details || {};
   return matchesSearch([
     product.id,
     product.name,
@@ -188,7 +254,13 @@ function productMatchesSearch(product) {
     product.stock,
     product.stockStatus,
     product.tags,
-    product.adminNote
+    product.adminNote,
+    details.ingredients,
+    details.shelfLife,
+    details.storage,
+    details.origin,
+    details.flavorNotes,
+    details.allergen
   ]);
 }
 
@@ -627,6 +699,80 @@ function productStockOptions(value = "in-stock") {
   ).join("");
 }
 
+function renderProductImageControls(product = {}) {
+  const image = product.image || "";
+  const pathValue = isUploadedImage(image) ? "" : image;
+  return `
+    <div class="admin-image-manager">
+      <div class="admin-upload-preview" data-image-upload-preview>
+        ${productImagePreviewMarkup(image, product.name || "Product")}
+      </div>
+      <div class="admin-image-fields">
+        <input name="image" type="hidden" value="${escapeHtml(image)}" />
+        <label class="admin-field-wide">
+          <span>Image URL or asset path</span>
+          <input name="imagePath" type="text" placeholder="/assets/product-image.jpg or https://..." value="${escapeHtml(pathValue)}" />
+        </label>
+        <label class="admin-file-upload">
+          <span>Upload real packet photo</span>
+          <input name="imageFile" type="file" accept="image/png,image/jpeg,image/webp" data-product-image-input />
+          <small>Images are compressed for web and saved with this product.</small>
+        </label>
+      </div>
+    </div>
+  `;
+}
+
+function renderProductDetailsEditor(details = {}, open = false) {
+  return `
+    <details class="admin-product-details-editor" ${open ? "open" : ""}>
+      <summary>Label, ingredient, and trust details</summary>
+      <div class="admin-detail-grid">
+        <label>
+          <span>Ingredients</span>
+          <textarea name="detailsIngredients" rows="4" placeholder="One ingredient per line">${escapeHtml(listToLines(details.ingredients))}</textarea>
+        </label>
+        <label>
+          <span>Nutrition display</span>
+          <textarea name="detailsNutrition" rows="4" placeholder="Serving, energy, protein...">${escapeHtml(listToLines(details.nutrition))}</textarea>
+        </label>
+        <label>
+          <span>Usage ideas</span>
+          <textarea name="detailsUsage" rows="3" placeholder="Tea-time snack, curry, gifting...">${escapeHtml(listToLines(details.usage))}</textarea>
+        </label>
+        <label>
+          <span>Trust highlights</span>
+          <textarea name="detailsTrust" rows="3" placeholder="No artificial color direction, batch-ready...">${escapeHtml(listToLines(details.trust))}</textarea>
+        </label>
+        <label>
+          <span>Shelf life</span>
+          <input name="detailsShelfLife" type="text" placeholder="Best before 9 months from packing" value="${escapeHtml(details.shelfLife || "")}" />
+        </label>
+        <label>
+          <span>Storage</span>
+          <input name="detailsStorage" type="text" placeholder="Store sealed in a cool, dry place" value="${escapeHtml(details.storage || "")}" />
+        </label>
+        <label>
+          <span>Origin note</span>
+          <input name="detailsOrigin" type="text" placeholder="Sourced and packed in India" value="${escapeHtml(details.origin || "")}" />
+        </label>
+        <label>
+          <span>Flavor notes</span>
+          <input name="detailsFlavorNotes" type="text" placeholder="Aromatic, warm, balanced..." value="${escapeHtml(details.flavorNotes || "")}" />
+        </label>
+        <label>
+          <span>Allergen note</span>
+          <input name="detailsAllergen" type="text" placeholder="Packed in a facility that may handle nuts..." value="${escapeHtml(details.allergen || "")}" />
+        </label>
+        <label>
+          <span>Claim disclaimer</span>
+          <textarea name="detailsDisclaimer" rows="3" placeholder="Replace display values with verified label details before commercial launch.">${escapeHtml(details.disclaimer || "")}</textarea>
+        </label>
+      </div>
+    </details>
+  `;
+}
+
 function renderProductsAdmin() {
   if (!productList) return;
   const visibleProducts = state.products.filter(productMatchesSearch);
@@ -646,9 +792,11 @@ function renderProductsAdmin() {
         <input name="size" type="text" placeholder="Pack size" required />
         <input name="badge" type="text" placeholder="Badge" value="Pure" />
         <input name="stock" type="number" min="0" step="1" placeholder="Stock" value="100" />
+        <input name="lowStockThreshold" type="number" min="0" step="1" placeholder="Low stock limit" value="10" />
         <select name="stockStatus" aria-label="Stock status">${productStockOptions()}</select>
-        <input name="image" type="text" placeholder="/assets/product-image.jpg" />
+        ${renderProductImageControls()}
         <textarea name="description" rows="2" placeholder="Short product description"></textarea>
+        ${renderProductDetailsEditor({}, true)}
         <button type="submit">Add product</button>
       </form>
     </article>
@@ -663,10 +811,15 @@ function renderProductsAdmin() {
   productList.querySelectorAll("[data-product-form]").forEach((form) => {
     form.addEventListener("submit", updateAdminProduct);
   });
+  productList.querySelectorAll("[data-product-image-input]").forEach((input) => {
+    input.addEventListener("change", handleProductImageUpload);
+  });
 }
 
 function renderProductAdminCard(product) {
   const tags = Array.isArray(product.tags) ? product.tags.join(", ") : "";
+  const details = product.details || {};
+  const ingredientCount = Array.isArray(details.ingredients) ? details.ingredients.length : 0;
   return `
     <article class="admin-product-card" data-status="${escapeHtml(product.stockStatus || "in-stock")}">
       <header>
@@ -677,11 +830,16 @@ function renderProductAdminCard(product) {
         <span class="status-pill">${product.active === false ? "inactive" : escapeHtml(product.stockStatus || "in-stock")}</span>
       </header>
       <div class="admin-product-preview">
-        ${product.image ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" />` : `<span>No image</span>`}
+        ${productImagePreviewMarkup(product.image, product.name)}
         <div>
           <strong>${escapeHtml(product.badge || "Pure")}</strong>
           <span>${escapeHtml(product.size || "")} / Stock ${Number(product.stock || 0)}</span>
           <small>${escapeHtml(product.description || "No description")}</small>
+          <div class="admin-product-proof-line">
+            <span>${ingredientCount ? `${ingredientCount} ingredients` : "Ingredients needed"}</span>
+            <span>${escapeHtml(details.shelfLife || "Shelf life needed")}</span>
+            <span>${escapeHtml(details.allergen || "Allergen note needed")}</span>
+          </div>
         </div>
       </div>
       <form class="admin-product-form" data-product-form="${escapeHtml(product.id)}">
@@ -693,10 +851,11 @@ function renderProductAdminCard(product) {
         <input name="stock" type="number" min="0" step="1" placeholder="Stock" value="${Number(product.stock || 0)}" />
         <input name="lowStockThreshold" type="number" min="0" step="1" placeholder="Low stock limit" value="${Number(product.lowStockThreshold || 10)}" />
         <select name="stockStatus" aria-label="Stock status">${productStockOptions(product.stockStatus)}</select>
-        <input name="image" type="text" placeholder="Image path" value="${escapeHtml(product.image || "")}" />
+        ${renderProductImageControls(product)}
         <input name="tags" type="text" placeholder="Tags" value="${escapeHtml(tags)}" />
         <input name="adminNote" type="text" placeholder="Admin note" value="${escapeHtml(product.adminNote || "")}" />
         <textarea name="description" rows="2" placeholder="Short product description">${escapeHtml(product.description || "")}</textarea>
+        ${renderProductDetailsEditor(details)}
         <label class="admin-checkbox">
           <input name="active" type="checkbox" ${product.active === false ? "" : "checked"} />
           <span>Active on storefront</span>
@@ -1102,6 +1261,8 @@ async function updateSupportRequest(event) {
 
 function productPayloadFromForm(form) {
   const data = new FormData(form);
+  const imagePath = String(data.get("imagePath") || "").trim();
+  const storedImage = String(data.get("image") || "").trim();
   return {
     name: data.get("name"),
     category: data.get("category"),
@@ -1111,12 +1272,47 @@ function productPayloadFromForm(form) {
     stock: Number(data.get("stock") || 0),
     lowStockThreshold: Number(data.get("lowStockThreshold") || 10),
     stockStatus: data.get("stockStatus"),
-    image: data.get("image"),
+    image: imagePath || storedImage,
     tags: data.get("tags"),
     adminNote: data.get("adminNote"),
     description: data.get("description"),
+    details: {
+      ingredients: formList(data.get("detailsIngredients")),
+      nutrition: formList(data.get("detailsNutrition")),
+      usage: formList(data.get("detailsUsage")),
+      trust: formList(data.get("detailsTrust")),
+      shelfLife: data.get("detailsShelfLife"),
+      storage: data.get("detailsStorage"),
+      origin: data.get("detailsOrigin"),
+      flavorNotes: data.get("detailsFlavorNotes"),
+      allergen: data.get("detailsAllergen"),
+      disclaimer: data.get("detailsDisclaimer")
+    },
     active: data.get("active") === "on" || form.hasAttribute("data-new-product-form")
   };
+}
+
+async function handleProductImageUpload(event) {
+  const input = event.currentTarget;
+  const file = input.files?.[0];
+  if (!file) return;
+  const form = input.closest("form");
+  const imageInput = form?.elements.image;
+  const pathInput = form?.elements.imagePath;
+  const preview = form?.querySelector("[data-image-upload-preview]");
+  if (!form || !imageInput) return;
+
+  try {
+    showToast("Preparing product image...");
+    const dataUrl = await compressProductImage(file);
+    imageInput.value = dataUrl;
+    if (pathInput) pathInput.value = "";
+    if (preview) preview.innerHTML = productImagePreviewMarkup(dataUrl, form.elements.name?.value || "Product");
+    showToast("Product image ready. Save product to apply.");
+  } catch (error) {
+    input.value = "";
+    showToast(error.message);
+  }
 }
 
 async function createAdminProduct(event) {
