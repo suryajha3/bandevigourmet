@@ -2657,6 +2657,7 @@ document.querySelector("#whatsappOrder")?.addEventListener("click", submitWhatsA
 
 checkoutForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const form = event.currentTarget;
   if (!state.cart.size) {
     showToast("Add at least one product first");
     return;
@@ -2668,7 +2669,7 @@ checkoutForm?.addEventListener("submit", async (event) => {
   }
 
   const orderId = createOrderId();
-  const order = createOrderRecord(event.currentTarget, orderId, "Website cart booking");
+  const order = createOrderRecord(form, orderId, "Website cart booking");
   const shouldSaveDetails = saveDetailsInput?.checked ?? true;
   const customerSync = shouldSaveDetails ? syncCustomerProfile(order.customer) : Promise.resolve();
   if (shouldSaveDetails) saveCustomer(order.customer);
@@ -2680,7 +2681,7 @@ checkoutForm?.addEventListener("submit", async (event) => {
   state.couponApplied = false;
   couponInput.value = "";
   couponMessage.textContent = "";
-  event.currentTarget.reset();
+  form.reset();
   if (saveDetailsInput) saveDetailsInput.checked = true;
   state.checkoutStep = "cart";
   renderCart();

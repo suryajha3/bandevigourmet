@@ -823,7 +823,8 @@ async function downloadAdminExport(type) {
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const data = new FormData(event.currentTarget);
+  const form = event.currentTarget;
+  const data = new FormData(form);
   loginMessage.textContent = "Checking password...";
   try {
     const payload = await api("/api/admin/login", {
@@ -832,7 +833,7 @@ loginForm.addEventListener("submit", async (event) => {
     });
     state.token = payload.token;
     window.sessionStorage.setItem(TOKEN_KEY, state.token);
-    event.currentTarget.reset();
+    form.reset();
     loginMessage.textContent = "";
     showToast("Admin logged in");
     await loadDashboard();
