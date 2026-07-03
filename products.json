@@ -1,4 +1,4 @@
-[
+﻿[
   {
     "id": "classic-makhana",
     "name": "Classic Roasted Makhana",
@@ -8,8 +8,10 @@
     "badge": "Best seller",
     "rating": 4.9,
     "description": "Lightly salted, slow roasted fox nuts with a clean crunch.",
-    "image": "/assets/product-classic-makhana.png",
-    "position": "32% 70%"
+    "image": "/assets/product-classic-makhana-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
   },
   {
     "id": "peri-peri-makhana",
@@ -20,7 +22,7 @@
     "badge": "Spicy",
     "rating": 4.8,
     "description": "Tangy chilli seasoning on crisp roasted makhana.",
-    "image": "/assets/product-peri-peri-makhana.png",
+    "image": "/assets/product-peri-peri-makhana-optimized.jpg",
     "position": "45% 74%"
   },
   {
@@ -32,7 +34,7 @@
     "badge": "Fresh",
     "rating": 4.7,
     "description": "Cooling mint masala with a bright, snackable finish.",
-    "image": "/assets/product-pudina-makhana.png",
+    "image": "/assets/product-pudina-makhana-optimized.jpg",
     "position": "64% 68%"
   },
   {
@@ -44,7 +46,7 @@
     "badge": "Sweet",
     "rating": 4.8,
     "description": "A crunchy sweet snack made with rich jaggery glaze.",
-    "image": "/assets/product-jaggery-makhana.png",
+    "image": "/assets/product-jaggery-makhana-optimized.jpg",
     "position": "70% 72%"
   },
   {
@@ -56,8 +58,10 @@
     "badge": "Aromatic",
     "rating": 4.9,
     "description": "Warm whole-spice blend for curries, dals, and gravies.",
-    "image": "/assets/product-garam-masala.png",
-    "position": "22% 58%"
+    "image": "/assets/product-garam-masala-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
   },
   {
     "id": "kitchen-king",
@@ -68,8 +72,10 @@
     "badge": "Daily",
     "rating": 4.7,
     "description": "Balanced masala for sabzi, paneer, pulao, and snacks.",
-    "image": "/assets/product-kitchen-king.png",
-    "position": "38% 55%"
+    "image": "/assets/product-kitchen-king-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
   },
   {
     "id": "chaat-masala",
@@ -80,8 +86,10 @@
     "badge": "Tangy",
     "rating": 4.8,
     "description": "Punchy black salt, dry mango, and roasted cumin notes.",
-    "image": "/assets/product-chaat-masala.png",
-    "position": "54% 55%"
+    "image": "/assets/product-chaat-masala-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
   },
   {
     "id": "turmeric-powder",
@@ -92,8 +100,10 @@
     "badge": "High curcumin",
     "rating": 4.9,
     "description": "Deep golden turmeric for cooking, milk, and wellness blends.",
-    "image": "/assets/product-turmeric-powder.png",
-    "position": "70% 54%"
+    "image": "/assets/product-turmeric-powder-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
   },
   {
     "id": "red-chilli",
@@ -104,20 +114,332 @@
     "badge": "Color rich",
     "rating": 4.8,
     "description": "Vibrant chilli powder with medium heat and bold color.",
-    "image": "/assets/product-red-chilli.png",
-    "position": "78% 58%"
+    "image": "/assets/product-red-chilli-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "chicken-masala",
+    "name": "Chicken Masala",
+    "category": "masala",
+    "price": 199,
+    "size": "100 g",
+    "badge": "Curry blend",
+    "rating": 4.8,
+    "description": "Bold Indian spice blend for rich chicken curry, roast, and marinades.",
+    "image": "/assets/product-chicken-masala-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "butter-chicken-masala",
+    "name": "Butter Chicken Masala",
+    "category": "masala",
+    "price": 229,
+    "size": "100 g",
+    "badge": "Restaurant",
+    "rating": 4.8,
+    "description": "Rich gravy masala for creamy butter chicken and festive curry plates.",
+    "image": "/assets/product-butter-chicken-masala-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "tandoori-chicken-masala",
+    "name": "Tandoori Chicken Masala",
+    "category": "masala",
+    "price": 229,
+    "size": "100 g",
+    "badge": "Tandoori",
+    "rating": 4.8,
+    "description": "Smoky spice blend for tandoori-style chicken, grills, and marinades.",
+    "image": "/assets/product-tandoori-chicken-masala-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "mutton-masala",
+    "name": "Mutton Masala",
+    "category": "masala",
+    "price": 219,
+    "size": "100 g",
+    "badge": "Slow cook",
+    "rating": 4.8,
+    "description": "Warm whole-spice masala for mutton curry, korma, and slow-cooked gravies.",
+    "image": "/assets/product-mutton-masala-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "nihari-masala",
+    "name": "Nihari Masala",
+    "category": "masala",
+    "price": 239,
+    "size": "100 g",
+    "badge": "Slow gravy",
+    "rating": 4.8,
+    "description": "Deep, warm masala for nihari-style slow-cooked gravies.",
+    "image": "/assets/product-nihari-masala-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "keema-masala",
+    "name": "Keema Masala",
+    "category": "masala",
+    "price": 219,
+    "size": "100 g",
+    "badge": "Keema",
+    "rating": 4.8,
+    "description": "Savory spice blend for keema, minced meat curry, and stuffed fillings.",
+    "image": "/assets/product-keema-masala-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "kebab-masala",
+    "name": "Kebab Masala",
+    "category": "masala",
+    "price": 219,
+    "size": "100 g",
+    "badge": "Grill",
+    "rating": 4.8,
+    "description": "Aromatic kebab masala for skewers, patties, rolls, and grill-style snacks.",
+    "image": "/assets/product-kebab-masala-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "fish-curry-masala",
+    "name": "Fish Curry Masala",
+    "category": "masala",
+    "price": 209,
+    "size": "100 g",
+    "badge": "Coastal",
+    "rating": 4.8,
+    "description": "Coastal-style spice blend for fish curry, fry marinades, and seafood gravies.",
+    "image": "/assets/product-fish-curry-masala-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "prawn-masala",
+    "name": "Prawn Masala",
+    "category": "masala",
+    "price": 249,
+    "size": "100 g",
+    "badge": "Seafood",
+    "rating": 4.8,
+    "description": "Bright seafood masala for prawn curry, fry, pulao, and coastal plates.",
+    "image": "/assets/product-prawn-masala-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "egg-curry-masala",
+    "name": "Egg Curry Masala",
+    "category": "masala",
+    "price": 169,
+    "size": "100 g",
+    "badge": "Quick curry",
+    "rating": 4.8,
+    "description": "Everyday masala for egg curry, anda bhurji, and fast family meals.",
+    "image": "/assets/product-egg-curry-masala-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "sabji-masala",
+    "name": "Sabji Masala",
+    "category": "masala",
+    "price": 169,
+    "size": "100 g",
+    "badge": "Everyday",
+    "rating": 4.8,
+    "description": "Balanced daily masala for aloo, mixed vegetables, dry sabzi, and lunchbox cooking.",
+    "image": "/assets/product-sabji-masala-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "biryani-masala",
+    "name": "Biryani Masala",
+    "category": "masala",
+    "price": 229,
+    "size": "100 g",
+    "badge": "Aromatic",
+    "rating": 4.9,
+    "description": "Layered spice blend for biryani, pulao, dum rice, and festive cooking.",
+    "image": "/assets/product-biryani-masala-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "paneer-masala",
+    "name": "Paneer Masala",
+    "category": "masala",
+    "price": 199,
+    "size": "100 g",
+    "badge": "Rich gravy",
+    "rating": 4.8,
+    "description": "Restaurant-style spice blend for paneer curry, kadai paneer, and creamy gravies.",
+    "image": "/assets/product-paneer-masala-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "pav-bhaji-masala",
+    "name": "Pav Bhaji Masala",
+    "category": "masala",
+    "price": 179,
+    "size": "100 g",
+    "badge": "Street style",
+    "rating": 4.8,
+    "description": "Tangy, buttery masala for pav bhaji, tawa pulao, sandwiches, and snack plates.",
+    "image": "/assets/product-pav-bhaji-masala-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "sambar-masala",
+    "name": "Sambar Masala",
+    "category": "masala",
+    "price": 179,
+    "size": "100 g",
+    "badge": "South Indian",
+    "rating": 4.8,
+    "description": "Curry leaf and dal-led masala for sambar, rasam-style broths, and lentil curries.",
+    "image": "/assets/product-sambar-masala-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "coriander-powder",
+    "name": "Coriander Powder",
+    "category": "masala",
+    "price": 139,
+    "size": "200 g",
+    "badge": "Dhania",
+    "rating": 4.7,
+    "description": "Single-ingredient coriander powder for daily curries, gravies, and vegetable dishes.",
+    "image": "/assets/product-coriander-powder-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "cumin-powder",
+    "name": "Roasted Cumin Powder",
+    "category": "masala",
+    "price": 159,
+    "size": "100 g",
+    "badge": "Jeera",
+    "rating": 4.8,
+    "description": "Roasted cumin powder for raita, chaat, dal, buttermilk, and everyday seasoning.",
+    "image": "/assets/product-cumin-powder-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
   },
   {
     "id": "premium-poha",
-    "name": "Premium Thick Poha",
+    "name": "Premium Poha 500g Pouch",
     "category": "poha",
     "price": 149,
     "size": "500 g",
-    "badge": "Breakfast staple",
+    "badge": "Pouch",
     "rating": 4.8,
-    "description": "Clean flattened rice for poha, chivda, namkeen, and quick Indian breakfasts.",
-    "image": "/assets/product-poha.png",
-    "position": "50% 56%"
+    "description": "Clean flattened rice pouch for poha, chivda, namkeen, and quick Indian breakfasts.",
+    "image": "/assets/product-poha-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "poha-1kg-pouch",
+    "name": "Premium Poha 1kg Pouch",
+    "category": "poha",
+    "price": 279,
+    "size": "1 kg",
+    "badge": "Refill",
+    "rating": 4.8,
+    "description": "Larger poha pouch for weekly breakfast prep, family cooking, and pantry refills.",
+    "image": "/assets/product-poha-1kg-pouch-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "poha-2kg-pouch",
+    "name": "Premium Poha 2kg Pouch",
+    "category": "poha",
+    "price": 529,
+    "size": "2 kg",
+    "badge": "Value pack",
+    "rating": 4.8,
+    "description": "Value poha pouch for large families, repeat breakfast use, and pantry stocking.",
+    "image": "/assets/product-poha-2kg-pouch-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "poha-500g-box",
+    "name": "Premium Poha 500g Box",
+    "category": "poha",
+    "price": 179,
+    "size": "500 g",
+    "badge": "Retail box",
+    "rating": 4.8,
+    "description": "Shelf-ready poha box for retail counters, gifting, and premium pantry display.",
+    "image": "/assets/product-poha-500g-box-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "poha-1kg-box",
+    "name": "Premium Poha 1kg Box",
+    "category": "poha",
+    "price": 329,
+    "size": "1 kg",
+    "badge": "Shelf ready",
+    "rating": 4.8,
+    "description": "Premium 1kg poha box for retail shelves, family use, and pantry replenishment.",
+    "image": "/assets/product-poha-1kg-box-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
+  },
+  {
+    "id": "poha-5kg-pack",
+    "name": "Premium Poha 5kg Bulk Pack",
+    "category": "poha",
+    "price": 1199,
+    "size": "5 kg",
+    "badge": "Bulk pack",
+    "rating": 4.8,
+    "description": "Bulk poha pack for food service, canteens, shops, and high-volume kitchens.",
+    "image": "/assets/product-poha-5kg-pack-optimized.jpg",
+    "position": "center",
+    "fit": "contain",
+    "scale": "1"
   },
   {
     "id": "whole-spice-combo",
@@ -128,7 +450,7 @@
     "badge": "Combo",
     "rating": 4.9,
     "description": "Cumin, coriander, cardamom, cloves, pepper, and cinnamon.",
-    "image": "/assets/product-whole-spice-combo.png",
+    "image": "/assets/product-whole-spice-combo-optimized.jpg",
     "position": "18% 46%"
   },
   {
@@ -140,19 +462,20 @@
     "badge": "Save Rs. 96",
     "rating": 4.9,
     "description": "Classic, peri peri, pudina, and jaggery makhana in one box.",
-    "image": "/assets/product-snack-combo.png",
+    "image": "/assets/product-snack-combo-optimized.jpg",
     "position": "50% 72%"
   },
   {
     "id": "masala-refill",
-    "name": "Masala Refill Box",
+    "name": "Signature Masala Refill Box",
     "category": "combo",
-    "price": 899,
-    "size": "8 packs",
+    "price": 1299,
+    "size": "12 packs",
     "badge": "Kitchen set",
     "rating": 4.8,
-    "description": "Everyday spice powders for a complete home pantry refill.",
-    "image": "/assets/product-masala-refill.png",
+    "description": "Curated kitchen masala refill with daily, curry, snack, and gravy blends.",
+    "image": "/assets/product-masala-refill-optimized.jpg",
     "position": "82% 46%"
   }
 ]
+

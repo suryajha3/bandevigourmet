@@ -42,6 +42,27 @@ const catalog = products.map((product) => ({
   details: productDetails[product.id] || {}
 }));
 
+const NON_VEG_MASALA_IDS = new Set([
+  "chicken-masala",
+  "butter-chicken-masala",
+  "tandoori-chicken-masala",
+  "mutton-masala",
+  "nihari-masala",
+  "keema-masala",
+  "kebab-masala",
+  "fish-curry-masala",
+  "prawn-masala",
+  "egg-curry-masala"
+]);
+
+const BULK_PACK_IDS = new Set([
+  "poha-2kg-pouch",
+  "poha-5kg-pack",
+  "whole-spice-combo",
+  "masala-refill",
+  "snack-combo"
+]);
+
 const STORAGE_KEYS = {
   customer: "bandevi-gourmet-customer",
   orders: "bandevi-gourmet-orders",
@@ -79,6 +100,8 @@ const state = {
 };
 
 ensureStoreShell();
+ensureMobileCategoryNav();
+ensureTrustInfrastructure();
 
 const rupee = new Intl.NumberFormat("en-IN", {
   maximumFractionDigits: 0
@@ -87,8 +110,10 @@ const rupee = new Intl.NumberFormat("en-IN", {
 const productGrid = document.querySelector("#productGrid");
 const makhanaProductGrid = document.querySelector("#makhanaProductGrid");
 const masalaProductGrid = document.querySelector("#masalaProductGrid");
+const nonVegMasalaProductGrid = document.querySelector("#nonVegMasalaProductGrid");
 const pohaProductGrid = document.querySelector("#pohaProductGrid");
 const comboProductGrid = document.querySelector("#comboProductGrid");
+const bulkProductGrid = document.querySelector("#bulkProductGrid");
 const singleProductPage = document.querySelector("#singleProductPage");
 const cartItems = document.querySelector("#cartItems");
 const cartTotals = document.querySelector("#cartTotals");
@@ -223,6 +248,233 @@ function ensureStoreShell() {
   }
 }
 
+function ensureMobileCategoryNav() {
+  const header = document.querySelector(".site-header");
+  if (!header || document.querySelector(".mobile-category-nav")) return;
+
+  header.insertAdjacentHTML(
+    "afterend",
+    `
+      <nav class="mobile-category-nav" aria-label="Mobile category shortcuts">
+        <a href="./products.html">All</a>
+        <a href="./makhana.html">Makhana</a>
+        <a href="./masala.html">Masala</a>
+        <a href="./poha.html">Poha</a>
+        <a href="./about.html#trust">Trust</a>
+        <a href="./track.html">Track</a>
+      </nav>
+    `
+  );
+}
+
+function businessValue(key) {
+  return STORE_CONFIG.business?.[key] || "Verification pending";
+}
+
+function renderTrustBadges() {
+  return (STORE_CONFIG.trustBadges || [])
+    .map((item) => `<span>${escapeHtml(item)}</span>`)
+    .join("");
+}
+
+function renderComplianceCards() {
+  const cards = [
+    { title: "FSSAI", value: businessValue("fssai"), icon: "shield-check" },
+    { title: "GST", value: businessValue("gst"), icon: "file-text" },
+    { title: "IEC / export", value: businessValue("iec"), icon: "globe-2" },
+    { title: "Lab reports", value: businessValue("labReports"), icon: "flask-conical" }
+  ];
+
+  return cards
+    .map(
+      (card) => `
+        <article>
+          <i data-lucide="${card.icon}"></i>
+          <strong>${escapeHtml(card.title)}</strong>
+          <span>${escapeHtml(card.value)}</span>
+        </article>
+      `
+    )
+    .join("");
+}
+
+function renderBusinessVerificationPanel() {
+  const details = [
+    ["Legal entity", businessValue("legalName")],
+    ["Registered address", businessValue("registeredAddress")],
+    ["Manufacturer / packer", businessValue("manufacturer")],
+    ["Packing address", businessValue("packerAddress")],
+    ["Support email", businessValue("supportEmail")],
+    ["Support phone", businessValue("supportPhone")]
+  ];
+
+  return `
+    <section class="business-verification-panel" id="business-verification" aria-labelledby="business-verification-title">
+      <div>
+        <p class="eyebrow">Business verification</p>
+        <h2 id="business-verification-title">Official details ready for verified records.</h2>
+        <p>
+          This trust area is prepared for ${escapeHtml(STORE_CONFIG.shopName)} legal, food-safety, tax, support, and export records. Replace pending values only after documents are confirmed.
+        </p>
+      </div>
+      <div class="business-verification-grid">
+        ${details
+          .map(
+            ([label, value]) => `
+              <span>
+                <strong>${escapeHtml(label)}</strong>
+                <small>${escapeHtml(value)}</small>
+              </span>
+            `
+          )
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderCheckoutAssurance() {
+  return `
+    <div class="checkout-assurance" aria-label="Checkout trust information">
+      <span><i data-lucide="badge-check"></i><strong>Booking ID</strong> Generated instantly for tracking.</span>
+      <span><i data-lucide="shield-check"></i><strong>Policy backed</strong> Refund, cancellation, and shipping terms are linked.</span>
+      <span><i data-lucide="message-circle"></i><strong>Support</strong> ${escapeHtml(businessValue("supportPhone"))}</span>
+    </div>
+  `;
+}
+
+function ensureTrustInfrastructure() {
+  ensureHeaderSliderLink();
+  ensureHeaderTrustRow();
+  ensureFooterTrust();
+  ensureCheckoutAssurance();
+  ensurePolicyBusinessPanel();
+  ensureAboutComplianceCards();
+}
+
+function ensureHeaderSliderLink() {
+  const nav = document.querySelector(".main-nav");
+  if (!nav || nav.querySelector('a[href="./slider.html"]')) return;
+
+  const link = document.createElement("a");
+  link.href = "./slider.html";
+  link.textContent = "Slider";
+  if (window.location.pathname.endsWith("/slider.html")) link.setAttribute("aria-current", "page");
+
+  const wholesaleLink = nav.querySelector('a[href="./wholesale.html"]');
+  if (wholesaleLink) nav.insertBefore(link, wholesaleLink);
+  else nav.appendChild(link);
+}
+
+function ensureHeaderTrustRow() {
+  const header = document.querySelector(".site-header");
+  if (!header) return;
+
+  let row = header.querySelector(".header-trust-row");
+  if (!row) {
+    header.insertAdjacentHTML("beforeend", `<div class="header-trust-row" aria-label="Trust highlights"></div>`);
+    row = header.querySelector(".header-trust-row");
+  }
+
+  row.innerHTML = `
+    ${renderTrustBadges()}
+    <a href="./about.html#trust">Trust center</a>
+    <a href="./policies.html">Policies</a>
+  `;
+}
+
+function ensureFooterTrust() {
+  const footer = document.querySelector(".site-footer");
+  if (!footer) return;
+
+  footer.classList.add("upgraded-footer");
+  footer.innerHTML = `
+    <div class="footer-intro">
+      <a class="brand footer-brand" href="./index.html" aria-label="${escapeHtml(STORE_CONFIG.shopName)} home">
+        <span class="brand-mark">B</span>
+        <span>
+          <strong>${escapeHtml(STORE_CONFIG.shopName)}</strong>
+          <small>Makhana, masala, poha, herbs, and Indian pantry products</small>
+        </span>
+      </a>
+      <p>
+        Premium Indian makhana, masala, poha, herbs, whole spices, and pantry bundles built around pure ingredients, clear product naming, and buyer-ready trust.
+      </p>
+      <div class="footer-trust-points" aria-label="Footer trust points">
+        ${renderTrustBadges()}
+      </div>
+    </div>
+    <nav class="footer-links" aria-label="Shop links">
+      <strong>Shop</strong>
+      <a href="./products.html">Products</a>
+      <a href="./makhana.html">Makhana</a>
+      <a href="./masala.html">Masala</a>
+      <a href="./poha.html">Poha</a>
+      <a href="./bundles.html">Bundles</a>
+    </nav>
+    <nav class="footer-links" aria-label="Support links">
+      <strong>Customer care</strong>
+      <a href="./account.html">Customer account</a>
+      <a href="./track.html">Track order</a>
+      <a href="./policies.html#terms">Terms</a>
+      <a href="./policies.html#privacy">Privacy</a>
+      <a href="./policies.html#cancellation">Cancellation</a>
+      <a href="./policies.html#refund">Refunds</a>
+    </nav>
+    <nav class="footer-links" aria-label="Business links">
+      <strong>Business</strong>
+      <a href="./about.html">About BandEvi</a>
+      <a href="./about.html#trust">Trust center</a>
+      <a href="./about.html#business-verification">Business verification</a>
+      <a href="./slider.html">Brand slider</a>
+      <a href="./wholesale.html">Wholesale enquiry</a>
+      <a href="./policies.html#faq">FAQ</a>
+    </nav>
+    <div class="footer-note footer-assurance">
+      <strong>Verified details</strong>
+      <div class="footer-business-list">
+        <span><b>FSSAI</b>${escapeHtml(businessValue("fssai"))}</span>
+        <span><b>GST</b>${escapeHtml(businessValue("gst"))}</span>
+        <span><b>Support</b>${escapeHtml(businessValue("supportPhone"))}</span>
+        <span><b>Email</b>${escapeHtml(businessValue("supportEmail"))}</span>
+      </div>
+      <small>${escapeHtml(STORE_CONFIG.claimDisclaimer)}</small>
+      <a class="footer-cta" href="./products.html">Start shopping</a>
+    </div>
+    <div class="footer-bottom">
+      <span>${escapeHtml(STORE_CONFIG.shopName)}, India</span>
+      <span>${escapeHtml(STORE_CONFIG.domain)}</span>
+      <span>${escapeHtml(STORE_CONFIG.supportHours)}</span>
+    </div>
+  `;
+}
+
+function ensureCheckoutAssurance() {
+  document.querySelectorAll(".checkout-form").forEach((form) => {
+    if (form.querySelector(".checkout-assurance")) return;
+    const totals = form.querySelector(".totals");
+    if (totals) totals.insertAdjacentHTML("beforebegin", renderCheckoutAssurance());
+  });
+}
+
+function ensurePolicyBusinessPanel() {
+  const legalJumpNav = document.querySelector(".legal-jump-nav");
+  if (!legalJumpNav || document.querySelector(".business-verification-panel")) return;
+
+  legalJumpNav.insertAdjacentHTML("beforeend", `<a href="#business-verification">Business verification</a>`);
+  legalJumpNav.insertAdjacentHTML("afterend", renderBusinessVerificationPanel());
+}
+
+function ensureAboutComplianceCards() {
+  const certList = document.querySelector(".cert-list");
+  if (certList) certList.innerHTML = renderComplianceCards();
+
+  const certSection = document.querySelector(".cert-section");
+  if (certSection && !document.querySelector(".business-verification-panel")) {
+    certSection.insertAdjacentHTML("afterend", renderBusinessVerificationPanel());
+  }
+}
+
 function money(value) {
   return `Rs. ${rupee.format(value)}`;
 }
@@ -354,6 +606,24 @@ function productImage(product) {
   return product.image || "/assets/makhana-masala-hero.png";
 }
 
+function hasProductImage(product) {
+  return Boolean(product.image && product.image.trim());
+}
+
+function renderProductVisual(product) {
+  if (hasProductImage(product)) {
+    return `<img src="${productImage(product)}" alt="${escapeHtml(product.name)}" style="--position: ${imagePosition(product)}; --fit: ${imageFit(product)}; --scale: ${imageScale(product)}" />`;
+  }
+
+  return `
+    <div class="product-photo-placeholder">
+      <span>${escapeHtml(product.category)}</span>
+      <strong>${escapeHtml(product.name)}</strong>
+      <small>Real packet photo pending</small>
+    </div>
+  `;
+}
+
 function productUrl(product) {
   return `./product.html?id=${encodeURIComponent(product.id)}`;
 }
@@ -362,12 +632,31 @@ function imagePosition(product) {
   return product.position || "center";
 }
 
+function imageFit(product) {
+  return product.fit || "cover";
+}
+
+function imageScale(product) {
+  return product.scale || "1.06";
+}
+
+function productFilterMatch(product, filter) {
+  if (filter === "all") return true;
+  if (filter === "nonveg-masala") return NON_VEG_MASALA_IDS.has(product.id);
+  if (filter === "bulk") return BULK_PACK_IDS.has(product.id);
+  return product.category === filter;
+}
+
+function productSearchText(product) {
+  const group = NON_VEG_MASALA_IDS.has(product.id) ? "non veg non-veg seafood meat chicken mutton" : "";
+  const pack = BULK_PACK_IDS.has(product.id) ? "bulk wholesale refill large pack" : "";
+  return `${product.name} ${product.category} ${product.description} ${group} ${pack} ${(product.details.ingredients || []).join(" ")}`.toLowerCase();
+}
+
 function getFilteredProducts() {
   const search = state.search.trim().toLowerCase();
   let visible = catalog.filter((product) => {
-    const categoryMatch = state.filter === "all" || product.category === state.filter;
-    const text = `${product.name} ${product.category} ${product.description} ${(product.details.ingredients || []).join(" ")}`.toLowerCase();
-    return categoryMatch && (!search || text.includes(search));
+    return productFilterMatch(product, state.filter) && (!search || productSearchText(product).includes(search));
   });
 
   if (state.sort === "low") visible = visible.toSorted((a, b) => a.price - b.price);
@@ -381,7 +670,7 @@ function renderProductCard(product) {
   return `
     <article class="product-card">
       <div class="product-media">
-        <img src="${productImage(product)}" alt="${product.name}" style="--position: ${imagePosition(product)}" />
+        ${renderProductVisual(product)}
         <span class="product-badge">${product.badge}</span>
       </div>
       <div class="product-body">
@@ -415,7 +704,7 @@ function renderCategoryCard(product) {
   return `
     <article class="category-card">
       <div class="category-thumb">
-        <img src="${productImage(product)}" alt="${product.name}" style="--position: ${imagePosition(product)}" />
+        ${renderProductVisual(product)}
       </div>
       <div class="category-info">
         <span>${product.badge}</span>
@@ -464,17 +753,18 @@ function renderProducts() {
 
 function renderCategoryProducts() {
   const categorySections = [
-    { category: "makhana", grid: makhanaProductGrid },
-    { category: "masala", grid: masalaProductGrid },
-    { category: "poha", grid: pohaProductGrid },
-    { category: "combo", grid: comboProductGrid }
+    { grid: makhanaProductGrid, products: catalog.filter((product) => product.category === "makhana") },
+    { grid: masalaProductGrid, products: catalog.filter((product) => product.category === "masala" && !NON_VEG_MASALA_IDS.has(product.id)) },
+    { grid: nonVegMasalaProductGrid, products: catalog.filter((product) => NON_VEG_MASALA_IDS.has(product.id)) },
+    { grid: pohaProductGrid, products: catalog.filter((product) => product.category === "poha") },
+    { grid: comboProductGrid, products: catalog.filter((product) => product.category === "combo") },
+    { grid: bulkProductGrid, products: catalog.filter((product) => BULK_PACK_IDS.has(product.id)) }
   ];
 
-  categorySections.forEach(({ category, grid }) => {
+  categorySections.forEach(({ grid, products }) => {
     if (!grid) return;
-    const categoryProducts = catalog.filter((product) => product.category === category);
-    grid.innerHTML = categoryProducts.length
-      ? categoryProducts.map(renderCategoryCard).join("")
+    grid.innerHTML = products.length
+      ? products.map(renderCategoryCard).join("")
       : `<article class="admin-empty">Products coming soon.</article>`;
     bindAddButtons(grid);
   });
@@ -534,6 +824,43 @@ function renderUsagePanel(details) {
   `;
 }
 
+function renderProductTrust(details, product) {
+  const trustItems = details.trust?.length
+    ? details.trust
+    : ["No artificial color direction", "Pure pantry positioning", "Batch and pack-date ready", "Wholesale enquiry support"];
+  const checklist = [
+    ["Allergen note", details.allergen || STORE_CONFIG.defaultAllergenNotice],
+    ["Manufacturer / packer", businessValue("manufacturer")],
+    ["FSSAI", businessValue("fssai")],
+    ["GST", businessValue("gst")]
+  ];
+
+  return `
+    <div class="product-trust-panel" aria-label="Product trust highlights">
+      <div>
+        <span>Trust promise</span>
+        <strong>${escapeHtml(product?.name || STORE_CONFIG.shopName)} is presented with clear label and buyer proof areas.</strong>
+      </div>
+      <div>
+        <ul>${trustItems.map((item) => `<li><i data-lucide="shield-check"></i>${escapeHtml(item)}</li>`).join("")}</ul>
+        <div class="product-proof-grid">
+          ${checklist
+            .map(
+              ([label, value]) => `
+                <span>
+                  <strong>${escapeHtml(label)}</strong>
+                  <small>${escapeHtml(value)}</small>
+                </span>
+              `
+            )
+            .join("")}
+        </div>
+        <p>${escapeHtml(STORE_CONFIG.claimDisclaimer)}</p>
+      </div>
+    </div>
+  `;
+}
+
 function renderSingleProductPage() {
   if (!singleProductPage) return;
 
@@ -551,7 +878,7 @@ function renderSingleProductPage() {
   singleProductPage.innerHTML = `
     <section class="single-product-hero" aria-labelledby="single-product-title">
       <div class="single-product-media">
-        <img src="${productImage(product)}" alt="${product.name}" style="--position: ${imagePosition(product)}" />
+        ${renderProductVisual(product)}
       </div>
       <div class="single-product-copy">
         <p class="eyebrow">${escapeHtml(product.category)} product</p>
@@ -589,6 +916,7 @@ function renderSingleProductPage() {
       </div>
       ${renderProductFacts(details)}
       ${renderUsagePanel(details)}
+      ${renderProductTrust(details, product)}
       <p class="detail-disclaimer">${details.disclaimer || "Replace display values with verified packaging details before final commercial launch."}</p>
     </section>
 
@@ -619,7 +947,7 @@ function openProductDetail(id) {
   closeCart();
   productDetailContent.innerHTML = `
     <div class="detail-hero">
-      <img src="${productImage(product)}" alt="${product.name}" style="--position: ${imagePosition(product)}" />
+      ${renderProductVisual(product)}
       <div>
         <span class="product-badge">${product.badge}</span>
         <h3>${product.name}</h3>
@@ -638,6 +966,7 @@ function openProductDetail(id) {
 
     ${renderProductFacts(details)}
     ${renderUsagePanel(details)}
+    ${renderProductTrust(details, product)}
 
     <p class="detail-disclaimer">${details.disclaimer || "Replace display values with verified packaging details before final commercial launch."}</p>
   `;
@@ -1697,6 +2026,92 @@ function initPromoSlider() {
   startPromoTimer();
 }
 
+function initBrandSlider() {
+  const slider = document.querySelector("[data-brand-slider]");
+  if (!slider) return;
+
+  const track = slider.querySelector("[data-brand-track]");
+  const slides = [...slider.querySelectorAll("[data-brand-slide]")];
+  const dotsWrap = slider.querySelector("[data-brand-dots]");
+  if (!track || !slides.length || !dotsWrap) return;
+
+  let index = 0;
+  let timer = null;
+  const panel = document.querySelector("[data-home-slide-panel]");
+  const panelEyebrow = panel?.querySelector("[data-home-slide-eyebrow]");
+  const panelTitle = panel?.querySelector("[data-home-slide-title]");
+  const panelCopy = panel?.querySelector("[data-home-slide-copy]");
+  const panelPrimary = panel?.querySelector("[data-home-slide-primary]");
+  const panelSecondary = panel?.querySelector("[data-home-slide-secondary]");
+
+  dotsWrap.innerHTML = slides
+    .map((_, slideIndex) => `<button class="brand-slider-dot" type="button" aria-label="Go to slide ${slideIndex + 1}"></button>`)
+    .join("");
+  const dots = [...dotsWrap.querySelectorAll(".brand-slider-dot")];
+
+  function updateHomeSlidePanel(slide) {
+    if (!panel || !slide) return;
+    if (panelEyebrow && slide.dataset.brandEyebrow) panelEyebrow.textContent = slide.dataset.brandEyebrow;
+    if (panelTitle && slide.dataset.brandTitle) panelTitle.textContent = slide.dataset.brandTitle;
+    if (panelCopy && slide.dataset.brandCopy) panelCopy.textContent = slide.dataset.brandCopy;
+
+    if (panelPrimary) {
+      panelPrimary.href = slide.dataset.brandPrimaryUrl || "./products.html";
+      const label = panelPrimary.querySelector("span");
+      if (label) label.textContent = slide.dataset.brandPrimaryLabel || "Shop products";
+    }
+
+    if (panelSecondary) {
+      panelSecondary.href = slide.dataset.brandSecondaryUrl || "./wholesale.html";
+      const label = panelSecondary.querySelector("span");
+      if (label) label.textContent = slide.dataset.brandSecondaryLabel || "Wholesale";
+    }
+  }
+
+  function go(nextIndex, manual = false) {
+    index = (nextIndex + slides.length) % slides.length;
+    track.style.transform = `translateX(-${index * 100}%)`;
+    slides.forEach((slide, slideIndex) => {
+      slide.setAttribute("aria-hidden", String(slideIndex !== index));
+    });
+    dots.forEach((dot, dotIndex) => {
+      dot.classList.toggle("is-active", dotIndex === index);
+    });
+    updateHomeSlidePanel(slides[index]);
+    if (manual) restart();
+  }
+
+  function stop() {
+    window.clearInterval(timer);
+  }
+
+  function start() {
+    if (slides.length < 2) return;
+    stop();
+    timer = window.setInterval(() => go(index + 1), 4500);
+  }
+
+  function restart() {
+    stop();
+    start();
+  }
+
+  slider.querySelector("[data-brand-prev]")?.addEventListener("click", () => go(index - 1, true));
+  slider.querySelector("[data-brand-next]")?.addEventListener("click", () => go(index + 1, true));
+  dots.forEach((dot, dotIndex) => dot.addEventListener("click", () => go(dotIndex, true)));
+  slider.addEventListener("mouseenter", stop);
+  slider.addEventListener("mouseleave", start);
+  slider.addEventListener("focusin", stop);
+  slider.addEventListener("focusout", start);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stop();
+    else start();
+  });
+
+  go(0);
+  start();
+}
+
 document.querySelectorAll(".tab").forEach((button) => {
   button.addEventListener("click", () => {
     setProductFilter(button.dataset.filter);
@@ -1885,6 +2300,7 @@ renderCart();
 prefillCustomerLoginForm();
 renderCustomerPortal();
 initPromoSlider();
+initBrandSlider();
 if (state.customer?.phone) {
   loadCustomerOrdersFromBackend(state.customer.phone);
 }

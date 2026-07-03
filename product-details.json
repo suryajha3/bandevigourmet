@@ -89,14 +89,257 @@
     "usage": ["Curries", "Tadka", "Marinades", "Snack seasoning"],
     "disclaimer": "Nutrition values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
   },
+  "chicken-masala": {
+    "ingredients": ["Coriander", "Red chilli", "Turmeric", "Cumin", "Black pepper", "Cloves", "Cinnamon", "Cardamom", "Dry ginger", "Garlic powder", "Fenugreek leaves"],
+    "nutrition": ["Serving: 5 g", "Energy: 18 kcal", "Protein: 0.6 g", "Carbohydrate: 3.2 g", "Fat: 0.3 g", "Fiber: 1 g"],
+    "shelfLife": "Best before 9 months from blending when sealed.",
+    "storage": "Store airtight away from heat, steam, and sunlight to protect aroma.",
+    "origin": "Indian whole-spice blend designed for chicken curry, roast, and marinades.",
+    "flavorNotes": "Warm, chilli-led, lightly garlicky, and rounded for rich gravy.",
+    "usage": ["Chicken curry", "Dry chicken roast", "Marinades", "Tandoori-style home cooking"],
+    "trust": ["No artificial color direction", "No synthetic flavor shortcut", "Batch and pack-date ready", "Retail and wholesale pack suitable"],
+    "disclaimer": "Blend composition and nutrition values are display values. Final commercial label should match approved recipe, lab report, and FSSAI packaging requirements."
+  },
+  "mutton-masala": {
+    "ingredients": ["Coriander", "Red chilli", "Cumin", "Black pepper", "Cloves", "Cinnamon", "Cardamom", "Bay leaf", "Dry ginger", "Nutmeg", "Mace"],
+    "nutrition": ["Serving: 5 g", "Energy: 19 kcal", "Protein: 0.6 g", "Carbohydrate: 3.1 g", "Fat: 0.4 g", "Fiber: 1 g"],
+    "shelfLife": "Best before 9 months from blending when sealed.",
+    "storage": "Keep sealed after opening. Avoid wet spoons and cooking steam.",
+    "origin": "Indian warm-spice profile for slow-cooked mutton and festive gravies.",
+    "flavorNotes": "Deep, warm, peppery, and aromatic with slow-cooked curry depth.",
+    "usage": ["Mutton curry", "Korma-style gravies", "Keema", "Slow-cooked marinades"],
+    "trust": ["Whole-spice led recipe direction", "No artificial color direction", "Suitable for premium retail shelf", "Clear ingredient communication"],
+    "disclaimer": "Blend composition and nutrition values are display values. Final commercial label should match approved recipe, lab report, and FSSAI packaging requirements."
+  },
+  "butter-chicken-masala": {
+    "ingredients": ["Coriander", "Red chilli", "Turmeric", "Cumin", "Black pepper", "Fenugreek leaves", "Cardamom", "Cinnamon", "Cloves", "Garlic powder", "Dry ginger"],
+    "nutrition": ["Serving: 5 g", "Energy: 19 kcal", "Protein: 0.6 g", "Carbohydrate: 3.2 g", "Fat: 0.4 g", "Fiber: 1 g"],
+    "shelfLife": "Best before 9 months from blending when sealed.",
+    "storage": "Keep sealed and dry. Avoid wet spoons, steam, and direct sunlight.",
+    "origin": "Indian restaurant-style gravy masala profile for butter chicken and creamy curry plates.",
+    "flavorNotes": "Rich, warm, mildly smoky, fenugreek-led, and creamy-gravy friendly.",
+    "usage": ["Butter chicken gravy", "Creamy chicken curry", "Paneer-style gravy", "Restaurant-style marinades"],
+    "trust": ["No artificial color direction", "No synthetic flavor shortcut", "Restaurant-style usage clarity", "Retail shelf ready"],
+    "disclaimer": "Blend composition and nutrition values are display values. Final commercial label should match approved recipe, lab report, and FSSAI packaging requirements."
+  },
+  "tandoori-chicken-masala": {
+    "ingredients": ["Red chilli", "Coriander", "Cumin", "Turmeric", "Black pepper", "Dry ginger", "Garlic powder", "Cloves", "Cinnamon", "Fenugreek leaves", "Dry mango powder"],
+    "nutrition": ["Serving: 5 g", "Energy: 18 kcal", "Protein: 0.6 g", "Carbohydrate: 3.1 g", "Fat: 0.3 g", "Fiber: 1 g"],
+    "shelfLife": "Best before 9 months from blending when sealed.",
+    "storage": "Store airtight away from heat and moisture to preserve smoky spice aroma.",
+    "origin": "Indian tandoori-style spice blend for marinades, grill plates, and roasted chicken.",
+    "flavorNotes": "Smoky, chilli-warm, tangy, and marinade-friendly.",
+    "usage": ["Tandoori chicken", "Grilled chicken", "Roasted vegetables", "Yogurt marinades"],
+    "trust": ["No artificial color direction", "Marinade-ready blend", "Clear ingredient communication", "Food-service friendly"],
+    "disclaimer": "Blend composition and nutrition values are display values. Final commercial label should match approved recipe, lab report, and FSSAI packaging requirements."
+  },
+  "nihari-masala": {
+    "ingredients": ["Coriander", "Cumin", "Red chilli", "Black pepper", "Dry ginger", "Fennel", "Cloves", "Cinnamon", "Cardamom", "Nutmeg", "Mace", "Bay leaf"],
+    "nutrition": ["Serving: 5 g", "Energy: 19 kcal", "Protein: 0.6 g", "Carbohydrate: 3 g", "Fat: 0.4 g", "Fiber: 1 g"],
+    "shelfLife": "Best before 9 months from blending when sealed.",
+    "storage": "Keep the pack closed tightly after opening and store in a cool, dry cabinet.",
+    "origin": "Slow-gravy Indian masala direction for nihari-style mutton, meat, and rich curry bases.",
+    "flavorNotes": "Deep, warm, peppery, aromatic, and slow-cooked gravy forward.",
+    "usage": ["Nihari-style gravy", "Mutton curry", "Slow-cooked meat", "Festive curry base"],
+    "trust": ["Whole-spice led recipe direction", "No artificial color direction", "Premium gravy identity", "Retail and wholesale pack suitable"],
+    "disclaimer": "Blend composition and nutrition values are display values. Final commercial label should match approved recipe, lab report, and FSSAI packaging requirements."
+  },
+  "keema-masala": {
+    "ingredients": ["Coriander", "Red chilli", "Cumin", "Black pepper", "Dry ginger", "Garlic powder", "Fennel", "Cinnamon", "Cloves", "Bay leaf"],
+    "nutrition": ["Serving: 5 g", "Energy: 18 kcal", "Protein: 0.6 g", "Carbohydrate: 3 g", "Fat: 0.4 g", "Fiber: 1 g"],
+    "shelfLife": "Best before 9 months from blending when sealed.",
+    "storage": "Store in a cool, dry place and keep the pouch or box closed tightly.",
+    "origin": "Savory Indian keema masala blend for minced meat curry, rolls, and stuffed fillings.",
+    "flavorNotes": "Bold, savory, pepper-warm, and onion-gravy friendly.",
+    "usage": ["Keema curry", "Stuffed paratha filling", "Keema rolls", "Restaurant-style bulk cooking"],
+    "trust": ["No synthetic flavor shortcut", "Batch-ready spice blend", "Food-service friendly", "Retail display ready"],
+    "disclaimer": "Blend composition and nutrition values are display values. Final commercial label should match approved recipe, lab report, and FSSAI packaging requirements."
+  },
+  "kebab-masala": {
+    "ingredients": ["Coriander", "Cumin", "Black pepper", "Red chilli", "Fennel", "Dry ginger", "Garlic powder", "Cloves", "Cinnamon", "Cardamom", "Dry mango powder"],
+    "nutrition": ["Serving: 5 g", "Energy: 18 kcal", "Protein: 0.6 g", "Carbohydrate: 3 g", "Fat: 0.3 g", "Fiber: 1 g"],
+    "shelfLife": "Best before 9 months from blending when sealed.",
+    "storage": "Store sealed and dry. Keep away from steam during cooking.",
+    "origin": "Indian kebab masala profile for skewers, patties, rolls, and grill-style snacks.",
+    "flavorNotes": "Aromatic, pepper-warm, lightly tangy, and grill-friendly.",
+    "usage": ["Seekh kebab", "Kebab patties", "Roll fillings", "Grilled snacks"],
+    "trust": ["No artificial color direction", "Grill and snack counter friendly", "Consistent repeat-use blend", "Retail shelf ready"],
+    "disclaimer": "Blend composition and nutrition values are display values. Final commercial label should match approved recipe, lab report, and FSSAI packaging requirements."
+  },
+  "fish-curry-masala": {
+    "ingredients": ["Coriander", "Red chilli", "Turmeric", "Cumin", "Fenugreek", "Mustard", "Black pepper", "Garlic powder", "Dry ginger", "Curry leaves"],
+    "nutrition": ["Serving: 5 g", "Energy: 18 kcal", "Protein: 0.6 g", "Carbohydrate: 3.1 g", "Fat: 0.3 g", "Fiber: 1 g"],
+    "shelfLife": "Best before 9 months from blending when sealed.",
+    "storage": "Keep airtight and dry to protect coastal spice aroma.",
+    "origin": "Coastal-style Indian fish curry masala profile for curry, fry, and seafood gravies.",
+    "flavorNotes": "Warm, turmeric-led, mildly tangy, and seafood-friendly.",
+    "usage": ["Fish curry", "Fish fry marinade", "Seafood gravy", "Rice meal prep"],
+    "trust": ["Regional recipe clarity", "No artificial color direction", "No synthetic flavor shortcut", "Retail and food-service ready"],
+    "disclaimer": "Blend composition and nutrition values are display values. Final commercial label should match approved recipe, lab report, and FSSAI packaging requirements."
+  },
+  "prawn-masala": {
+    "ingredients": ["Coriander", "Red chilli", "Turmeric", "Cumin", "Black pepper", "Garlic powder", "Dry ginger", "Fennel", "Curry leaves", "Dry mango powder"],
+    "nutrition": ["Serving: 5 g", "Energy: 18 kcal", "Protein: 0.6 g", "Carbohydrate: 3.1 g", "Fat: 0.3 g", "Fiber: 1 g"],
+    "shelfLife": "Best before 9 months from blending when sealed.",
+    "storage": "Store sealed in a cool, dry place and keep away from steam.",
+    "origin": "Indian seafood masala direction for prawn curry, fry, pulao, and coastal plates.",
+    "flavorNotes": "Bright, chilli-warm, garlic-led, and seafood-curry friendly.",
+    "usage": ["Prawn curry", "Prawn fry", "Seafood pulao", "Coastal gravy"],
+    "trust": ["Seafood usage clarity", "No artificial color direction", "Batch and pack-date ready", "Wholesale refill suitable"],
+    "disclaimer": "Blend composition and nutrition values are display values. Final commercial label should match approved recipe, lab report, and FSSAI packaging requirements."
+  },
+  "egg-curry-masala": {
+    "ingredients": ["Coriander", "Red chilli", "Turmeric", "Cumin", "Black pepper", "Dry ginger", "Garlic powder", "Fenugreek leaves", "Cinnamon", "Cloves"],
+    "nutrition": ["Serving: 5 g", "Energy: 17 kcal", "Protein: 0.5 g", "Carbohydrate: 3 g", "Fat: 0.3 g", "Fiber: 0.9 g"],
+    "shelfLife": "Best before 9 months from blending when sealed.",
+    "storage": "Close pack immediately after use and store away from moisture.",
+    "origin": "Everyday Indian egg curry masala for quick family meals and lunchbox cooking.",
+    "flavorNotes": "Balanced, warm, lightly tangy, and fast-curry friendly.",
+    "usage": ["Egg curry", "Anda bhurji", "Egg masala", "Quick gravy base"],
+    "trust": ["Daily-use clean pantry direction", "No artificial color direction", "Simple ingredient communication", "Family kitchen friendly"],
+    "disclaimer": "Blend composition and nutrition values are display values. Final commercial label should match approved recipe, lab report, and FSSAI packaging requirements."
+  },
+  "sabji-masala": {
+    "ingredients": ["Coriander", "Turmeric", "Red chilli", "Cumin", "Fennel", "Fenugreek leaves", "Dry mango powder", "Black pepper"],
+    "nutrition": ["Serving: 5 g", "Energy: 17 kcal", "Protein: 0.5 g", "Carbohydrate: 3.2 g", "Fat: 0.3 g", "Fiber: 0.9 g"],
+    "shelfLife": "Best before 9 months from blending when sealed.",
+    "storage": "Keep away from sunlight and moisture. Close pack immediately after use.",
+    "origin": "Everyday Indian vegetable masala for daily lunchbox and family cooking.",
+    "flavorNotes": "Balanced, lightly tangy, turmeric-warm, and vegetable-friendly.",
+    "usage": ["Aloo sabji", "Mixed vegetables", "Dry bhindi", "Lunchbox cooking"],
+    "trust": ["Daily-use clean pantry direction", "No artificial color direction", "Simple ingredient communication", "Family kitchen friendly"],
+    "disclaimer": "Blend composition and nutrition values are display values. Final commercial label should match approved recipe, lab report, and FSSAI packaging requirements."
+  },
+  "biryani-masala": {
+    "ingredients": ["Coriander", "Cumin", "Red chilli", "Bay leaf", "Cinnamon", "Cloves", "Cardamom", "Black pepper", "Mace", "Nutmeg", "Star anise", "Fennel"],
+    "nutrition": ["Serving: 5 g", "Energy: 19 kcal", "Protein: 0.6 g", "Carbohydrate: 3.2 g", "Fat: 0.4 g", "Fiber: 1 g"],
+    "shelfLife": "Best before 9 months from blending when sealed.",
+    "storage": "Store airtight to preserve layered whole-spice aroma.",
+    "origin": "Aromatic Indian rice masala blend for biryani, pulao, and dum-style dishes.",
+    "flavorNotes": "Layered, warm, floral, and festive with cardamom and whole-spice lift.",
+    "usage": ["Veg biryani", "Chicken biryani", "Mutton biryani", "Pulao and dum rice"],
+    "trust": ["Whole-spice aroma direction", "No artificial color direction", "Premium festive cooking identity", "Retail and gifting compatible"],
+    "disclaimer": "Blend composition and nutrition values are display values. Final commercial label should match approved recipe, lab report, and FSSAI packaging requirements."
+  },
+  "paneer-masala": {
+    "ingredients": ["Coriander", "Cumin", "Red chilli", "Turmeric", "Fenugreek leaves", "Dry mango powder", "Black pepper", "Cinnamon", "Cardamom", "Garlic powder"],
+    "nutrition": ["Serving: 5 g", "Energy: 18 kcal", "Protein: 0.5 g", "Carbohydrate: 3.3 g", "Fat: 0.3 g", "Fiber: 0.9 g"],
+    "shelfLife": "Best before 9 months from blending when sealed.",
+    "storage": "Keep dry and airtight. Avoid direct sunlight to protect natural spice color.",
+    "origin": "Indian paneer gravy blend for home kitchens, restaurants, and catering buyers.",
+    "flavorNotes": "Rich, mildly tangy, creamy-gravy friendly, and aromatic.",
+    "usage": ["Paneer curry", "Kadai paneer", "Paneer butter-style gravy", "Stuffed paratha filling"],
+    "trust": ["No synthetic flavor shortcut", "No artificial color direction", "Restaurant-style usage clarity", "Clean label ready"],
+    "disclaimer": "Blend composition and nutrition values are display values. Final commercial label should match approved recipe, lab report, and FSSAI packaging requirements."
+  },
+  "pav-bhaji-masala": {
+    "ingredients": ["Coriander", "Red chilli", "Cumin", "Dry mango powder", "Fennel", "Black pepper", "Cinnamon", "Cloves", "Cardamom", "Garlic powder", "Turmeric"],
+    "nutrition": ["Serving: 5 g", "Energy: 18 kcal", "Protein: 0.5 g", "Carbohydrate: 3.2 g", "Fat: 0.3 g", "Fiber: 0.9 g"],
+    "shelfLife": "Best before 9 months from blending when sealed.",
+    "storage": "Store sealed in a cool, dry place and keep away from steam.",
+    "origin": "Mumbai-style snack masala profile for pav bhaji and tawa dishes.",
+    "flavorNotes": "Tangy, chilli-warm, buttery aroma direction, and street-food friendly.",
+    "usage": ["Pav bhaji", "Tawa pulao", "Masala sandwiches", "Spiced potato filling"],
+    "trust": ["Snack counter friendly", "No artificial color direction", "Consistent repeat-use blend", "Retail shelf ready"],
+    "disclaimer": "Blend composition and nutrition values are display values. Final commercial label should match approved recipe, lab report, and FSSAI packaging requirements."
+  },
+  "sambar-masala": {
+    "ingredients": ["Coriander", "Toor dal", "Chana dal", "Cumin", "Black pepper", "Fenugreek", "Mustard", "Curry leaves", "Dry red chilli", "Turmeric"],
+    "nutrition": ["Serving: 5 g", "Energy: 18 kcal", "Protein: 0.7 g", "Carbohydrate: 3 g", "Fat: 0.3 g", "Fiber: 1 g"],
+    "shelfLife": "Best before 9 months from blending when sealed.",
+    "storage": "Store airtight and dry to preserve roasted dal and curry leaf aroma.",
+    "origin": "South Indian lentil curry masala profile for sambar and vegetable broths.",
+    "flavorNotes": "Roasted dal, curry leaf, mild chilli, and warm lentil-curry aroma.",
+    "usage": ["Sambar", "Vegetable lentil curry", "Rasam-style broth", "South Indian meal prep"],
+    "trust": ["Ingredient-led regional identity", "No artificial color direction", "Family kitchen friendly", "Wholesale refill suitable"],
+    "disclaimer": "Blend composition and nutrition values are display values. Final commercial label should match approved recipe, lab report, and FSSAI packaging requirements."
+  },
+  "coriander-powder": {
+    "ingredients": ["Coriander powder"],
+    "nutrition": ["Serving: 5 g", "Energy: 16 kcal", "Protein: 0.6 g", "Carbohydrate: 2.8 g", "Fat: 0.4 g", "Fiber: 1.2 g"],
+    "shelfLife": "Best before 12 months from grinding when sealed.",
+    "storage": "Keep airtight away from sunlight to protect natural aroma.",
+    "origin": "Single-ingredient Indian coriander powder for everyday cooking.",
+    "flavorNotes": "Earthy, citrusy, mild, and curry-base friendly.",
+    "usage": ["Daily curry base", "Vegetable dishes", "Gravies", "Marinades"],
+    "trust": ["Single-ingredient powder", "No artificial color direction", "No synthetic flavor shortcut", "Bulk refill friendly"],
+    "disclaimer": "Nutrition values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
+  "cumin-powder": {
+    "ingredients": ["Roasted cumin powder"],
+    "nutrition": ["Serving: 5 g", "Energy: 18 kcal", "Protein: 0.8 g", "Carbohydrate: 2.7 g", "Fat: 0.5 g", "Fiber: 0.9 g"],
+    "shelfLife": "Best before 12 months from grinding when sealed.",
+    "storage": "Store sealed and dry to preserve roasted jeera aroma.",
+    "origin": "Single-ingredient roasted cumin powder for Indian pantry use.",
+    "flavorNotes": "Deep roasted, nutty, earthy, and digestive-style seasoning aroma.",
+    "usage": ["Raita", "Chaat", "Buttermilk", "Dal and tadka", "Roasted snacks"],
+    "trust": ["Single-ingredient powder", "No artificial color direction", "No synthetic flavor shortcut", "Retail and food-service ready"],
+    "disclaimer": "Nutrition values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
   "premium-poha": {
     "ingredients": ["Flattened rice (poha)"],
     "nutrition": ["Serving: 50 g", "Energy: 175 kcal", "Protein: 3.5 g", "Carbohydrate: 38 g", "Fat: 0.5 g", "Best cooked with vegetables, peanuts, spices, and lemon"],
     "shelfLife": "Best before 6 months from packing when stored sealed.",
     "storage": "Store in an airtight container in a cool, dry place away from moisture.",
-    "origin": "Sourced and packed in India. Add exact mill or region after final sourcing.",
+    "origin": "Premium flattened rice pouch packed for Indian breakfast, snack, and pantry use.",
     "flavorNotes": "Neutral, light, and quick-cooking flattened rice with a soft texture after rinsing.",
     "usage": ["Breakfast poha", "Chivda and namkeen", "Tiffin recipes", "Light evening snack"],
+    "trust": ["Single-ingredient staple", "No artificial color direction", "Hygienic pantry pack", "Family kitchen friendly"],
+    "disclaimer": "Nutrition and shelf-life values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
+  "poha-1kg-pouch": {
+    "ingredients": ["Flattened rice (poha)"],
+    "nutrition": ["Serving: 50 g", "Energy: 175 kcal", "Protein: 3.5 g", "Carbohydrate: 38 g", "Fat: 0.5 g", "Best cooked with vegetables, peanuts, spices, and lemon"],
+    "shelfLife": "Best before 6 months from packing when stored sealed.",
+    "storage": "Transfer to an airtight container after opening. Keep away from moisture and strong aromas.",
+    "origin": "Premium flattened rice packed in a 1kg pouch for repeat family pantry use.",
+    "flavorNotes": "Light, neutral, quick-cooking, and suitable for both soft poha and dry snack preparations.",
+    "usage": ["Weekly breakfast prep", "Family poha", "Chivda batches", "Pantry refill"],
+    "trust": ["Single-ingredient staple", "No artificial color direction", "Refill-friendly pouch", "Clear pack-size communication"],
+    "disclaimer": "Nutrition and shelf-life values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
+  "poha-2kg-pouch": {
+    "ingredients": ["Flattened rice (poha)"],
+    "nutrition": ["Serving: 50 g", "Energy: 175 kcal", "Protein: 3.5 g", "Carbohydrate: 38 g", "Fat: 0.5 g", "Best cooked with vegetables, peanuts, spices, and lemon"],
+    "shelfLife": "Best before 6 months from packing when stored sealed.",
+    "storage": "Keep sealed until use. After opening, store in a dry airtight container.",
+    "origin": "Premium flattened rice value pouch for larger families and high-repeat pantry orders.",
+    "flavorNotes": "Clean, mild, neutral flattened rice for quick breakfast and snack recipes.",
+    "usage": ["Large family breakfast", "Monthly pantry stocking", "Chivda and namkeen", "Small food counter prep"],
+    "trust": ["Value pack clarity", "Single-ingredient staple", "No artificial color direction", "Bulk pantry suitable"],
+    "disclaimer": "Nutrition and shelf-life values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
+  "poha-500g-box": {
+    "ingredients": ["Flattened rice (poha)"],
+    "nutrition": ["Serving: 50 g", "Energy: 175 kcal", "Protein: 3.5 g", "Carbohydrate: 38 g", "Fat: 0.5 g", "Best cooked with vegetables, peanuts, spices, and lemon"],
+    "shelfLife": "Best before 6 months from packing when stored sealed.",
+    "storage": "Store the inner pack sealed in a cool, dry place away from moisture.",
+    "origin": "Shelf-ready premium poha box for retail display, gifting, and pantry buyers.",
+    "flavorNotes": "Neutral, light, and easy to season with lemon, peanuts, vegetables, and masala.",
+    "usage": ["Retail shelf", "Gift pantry box", "Breakfast poha", "Light evening snack"],
+    "trust": ["Retail display ready", "Single-ingredient staple", "No artificial color direction", "Premium box presentation"],
+    "disclaimer": "Nutrition and shelf-life values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
+  "poha-1kg-box": {
+    "ingredients": ["Flattened rice (poha)"],
+    "nutrition": ["Serving: 50 g", "Energy: 175 kcal", "Protein: 3.5 g", "Carbohydrate: 38 g", "Fat: 0.5 g", "Best cooked with vegetables, peanuts, spices, and lemon"],
+    "shelfLife": "Best before 6 months from packing when stored sealed.",
+    "storage": "Keep the box in a dry cabinet. Close inner pack tightly after each use.",
+    "origin": "Premium 1kg poha box for retail shelves, family use, and pantry replenishment.",
+    "flavorNotes": "Quick-cooking flattened rice with a clean, mild base for savory breakfast dishes.",
+    "usage": ["Family breakfast", "Retail shelf", "Pantry refill", "Tiffin recipes"],
+    "trust": ["Shelf-ready box", "Single-ingredient staple", "No artificial color direction", "Family kitchen friendly"],
+    "disclaimer": "Nutrition and shelf-life values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
+  },
+  "poha-5kg-pack": {
+    "ingredients": ["Flattened rice (poha)"],
+    "nutrition": ["Serving: 50 g", "Energy: 175 kcal", "Protein: 3.5 g", "Carbohydrate: 38 g", "Fat: 0.5 g", "Best cooked with vegetables, peanuts, spices, and lemon"],
+    "shelfLife": "Best before 6 months from packing when stored sealed.",
+    "storage": "Store in a dry, covered food-grade container after opening. Keep away from moisture.",
+    "origin": "Bulk premium poha pack for food service, canteens, retail refill, and high-volume kitchens.",
+    "flavorNotes": "Clean, neutral flattened rice for breakfast service, snack batches, and bulk meal prep.",
+    "usage": ["Food service", "Canteen breakfast", "Retail refill", "Bulk chivda batches"],
+    "trust": ["Bulk buyer friendly", "Single-ingredient staple", "No artificial color direction", "Wholesale enquiry suitable"],
     "disclaimer": "Nutrition and shelf-life values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
   },
   "whole-spice-combo": {
@@ -120,13 +363,13 @@
     "disclaimer": "Nutrition values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
   },
   "masala-refill": {
-    "ingredients": ["Turmeric", "Red chilli", "Garam masala", "Coriander", "Cumin", "Chaat masala", "Kitchen king", "Pepper blend"],
-    "nutrition": ["Serving: varies by masala", "Assorted spice refill set", "Use as required by recipe", "Refer individual pack values"],
-    "shelfLife": "Best before 9 to 12 months depending on spice type.",
+    "ingredients": ["Turmeric", "Red chilli", "Garam masala", "Kitchen king", "Chicken masala", "Mutton masala", "Sabji masala", "Biryani masala", "Paneer masala", "Pav bhaji masala", "Coriander powder", "Cumin powder"],
+    "nutrition": ["Serving: varies by masala", "Curated 12-pack spice refill set", "Use as required by recipe", "Refer individual pack values"],
+    "shelfLife": "Best before 9 to 12 months depending on spice type and final pack.",
     "storage": "Keep all packs airtight, dry, and away from direct sunlight.",
-    "origin": "Assorted Indian masala refill set for everyday kitchens.",
-    "flavorNotes": "Complete pantry range from earthy turmeric to warm garam masala.",
-    "usage": ["Monthly kitchen refill", "Starter pantry", "Retail bundle", "Gifting hamper"],
+    "origin": "Curated Indian masala refill set for everyday kitchens, retail counters, and wholesale buyers.",
+    "flavorNotes": "Signature pantry range from earthy turmeric to warm garam masala, curry blends, snack masala, and single-spice powders.",
+    "usage": ["Monthly kitchen refill", "Starter pantry", "Retail bundle", "Gifting hamper", "Food-service trial kit"],
     "disclaimer": "Nutrition values are approximate display values. Replace with lab-verified packaging values before final commercial launch."
   }
 }

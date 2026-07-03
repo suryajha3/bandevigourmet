@@ -13,6 +13,7 @@ export default defineConfig({
         masala: resolve(__dirname, "masala.html"),
         poha: resolve(__dirname, "poha.html"),
         bundles: resolve(__dirname, "bundles.html"),
+        slider: resolve(__dirname, "slider.html"),
         product: resolve(__dirname, "product.html"),
         account: resolve(__dirname, "account.html"),
         confirmation: resolve(__dirname, "confirmation.html"),

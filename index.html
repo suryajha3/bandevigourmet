@@ -81,29 +81,193 @@
     </header>
 
     <main id="top">
-      <section class="hero" aria-labelledby="hero-title">
-        <img src="./assets/makhana-masala-hero.png" alt="Roasted makhana with colorful masala spices" />
-        <div class="hero-shade"></div>
-        <div class="hero-content">
-          <p class="eyebrow">BandEvi Gourmet</p>
-          <h1 id="hero-title">Pure Indian pantry classics, packed for global shelves.</h1>
-          <p class="hero-copy">
-            Roasted makhana, fragrant masala, poha, herbs, and pantry combos made without artificial color, synthetic flavor shortcuts, or unnecessary additives.
+      <section class="home-brand-hero" aria-labelledby="hero-title">
+        <section class="brand-slider home-hero-slider" data-brand-slider aria-label="BandEvi Gourmet international homepage slider">
+          <button class="brand-slider-arrow brand-slider-prev" type="button" data-brand-prev aria-label="Previous slide">
+            <i data-lucide="chevron-left"></i>
+          </button>
+          <div class="brand-slider-track" data-brand-track>
+            <article
+              class="brand-slide"
+              data-brand-slide
+              data-brand-eyebrow="Global pantry range"
+              data-brand-title="Pure Indian pantry classics, packed for global shelves."
+              data-brand-copy="Makhana, masala, poha, herbs, and pantry combos made for retail, gifting, wholesale, and export conversations."
+              data-brand-primary-label="Shop products"
+              data-brand-primary-url="./products.html"
+              data-brand-secondary-label="Wholesale enquiry"
+              data-brand-secondary-url="./wholesale.html"
+            >
+              <picture>
+                <source media="(max-width: 700px)" srcset="/assets/slider/01_global_premium_hero_mobile.jpg" />
+                <img src="/assets/slider/01_global_premium_hero.jpg" alt="BandEvi Gourmet premium Indian grocery range" />
+              </picture>
+            </article>
+            <article
+              class="brand-slide"
+              data-brand-slide
+              data-brand-eyebrow="Signature masala"
+              data-brand-title="Daily spice refills for modern Indian kitchens."
+              data-brand-copy="Garam masala, turmeric, chilli, kitchen king, chaat masala, and pantry blends presented with premium shelf confidence."
+              data-brand-primary-label="Shop masala"
+              data-brand-primary-url="./masala.html"
+              data-brand-secondary-label="View bulk packs"
+              data-brand-secondary-url="./products.html#bulk-products"
+            >
+              <picture>
+                <source media="(max-width: 700px)" srcset="/assets/slider/02_signature_masala_library_mobile.jpg" />
+                <img src="/assets/slider/02_signature_masala_library.jpg" alt="BandEvi Gourmet signature masala library" />
+              </picture>
+            </article>
+            <article
+              class="brand-slide"
+              data-brand-slide
+              data-brand-eyebrow="Chef non-veg collection"
+              data-brand-title="Chicken, mutton, fish, prawn, egg, and kebab masalas."
+              data-brand-copy="A dedicated non-veg masala range for home cooks, restaurants, retailers, and distributor conversations."
+              data-brand-primary-label="Non-veg masala"
+              data-brand-primary-url="./products.html#nonveg-masala-products"
+              data-brand-secondary-label="Wholesale"
+              data-brand-secondary-url="./wholesale.html"
+            >
+              <picture>
+                <source media="(max-width: 700px)" srcset="/assets/slider/03_chef_nonveg_collection_mobile.jpg" />
+                <img src="/assets/slider/03_chef_nonveg_collection.jpg" alt="BandEvi Gourmet chef non-veg masala collection" />
+              </picture>
+            </article>
+            <article
+              class="brand-slide"
+              data-brand-slide
+              data-brand-eyebrow="Premium poha"
+              data-brand-title="Breakfast staples with retail and bulk pack options."
+              data-brand-copy="Premium poha packs for homes, repeat pantry buyers, food service, and wholesale supply."
+              data-brand-primary-label="Shop poha"
+              data-brand-primary-url="./poha.html"
+              data-brand-secondary-label="Bulk packs"
+              data-brand-secondary-url="./products.html#bulk-products"
+            >
+              <picture>
+                <source media="(max-width: 700px)" srcset="/assets/slider/04_premium_poha_range_mobile.jpg" />
+                <img src="/assets/slider/04_premium_poha_range.jpg" alt="BandEvi Gourmet premium poha range" />
+              </picture>
+            </article>
+            <article
+              class="brand-slide"
+              data-brand-slide
+              data-brand-eyebrow="Vegetarian kitchen classics"
+              data-brand-title="Veg masala staples for everyday Indian cooking."
+              data-brand-copy="Sabji, paneer, pav bhaji, sambar, coriander, cumin, and daily spice essentials organized for easy buying."
+              data-brand-primary-label="Veg masala"
+              data-brand-primary-url="./masala.html"
+              data-brand-secondary-label="All products"
+              data-brand-secondary-url="./products.html"
+            >
+              <picture>
+                <source media="(max-width: 700px)" srcset="/assets/slider/05_vegetarian_kitchen_classics_mobile.jpg" />
+                <img src="/assets/slider/05_vegetarian_kitchen_classics.jpg" alt="BandEvi Gourmet vegetarian kitchen classics" />
+              </picture>
+            </article>
+            <article
+              class="brand-slide"
+              data-brand-slide
+              data-brand-eyebrow="Makhana daily staples"
+              data-brand-title="Roasted makhana snacks for family and gifting carts."
+              data-brand-copy="Classic, peri peri, pudina, and jaggery makhana options for clean snacking and premium pantry bundles."
+              data-brand-primary-label="Shop makhana"
+              data-brand-primary-url="./makhana.html"
+              data-brand-secondary-label="View bundles"
+              data-brand-secondary-url="./bundles.html"
+            >
+              <picture>
+                <source media="(max-width: 700px)" srcset="/assets/slider/06_makhana_daily_staples_mobile.jpg" />
+                <img src="/assets/slider/06_makhana_daily_staples.jpg" alt="BandEvi Gourmet makhana and daily staples" />
+              </picture>
+            </article>
+          </div>
+          <button class="brand-slider-arrow brand-slider-next" type="button" data-brand-next aria-label="Next slide">
+            <i data-lucide="chevron-right"></i>
+          </button>
+          <div class="brand-slider-dots" data-brand-dots aria-label="Homepage slider navigation"></div>
+        </section>
+        <div class="home-brand-overlay" data-home-slide-panel>
+          <div class="home-hero-badges" aria-label="Homepage trust badges">
+            <span>No artificial colors</span>
+            <span>35 products</span>
+            <span>Order tracking</span>
+            <span>Wholesale ready</span>
+          </div>
+          <p class="eyebrow" data-home-slide-eyebrow>Global pantry range</p>
+          <h1 id="hero-title" data-home-slide-title>Pure Indian pantry classics, packed for global shelves.</h1>
+          <p data-home-slide-copy>
+            Makhana, masala, poha, herbs, and pantry combos made for retail, gifting, wholesale, and export conversations.
           </p>
           <div class="hero-actions">
-            <a class="primary-link" href="./products.html">
+            <a class="primary-link" href="./products.html" data-home-slide-primary>
               <i data-lucide="store"></i>
-              Shop products
+              <span>Shop products</span>
             </a>
-            <a class="secondary-link" href="./bundles.html">
-              <i data-lucide="package-check"></i>
-              View combos
-            </a>
-            <a class="secondary-link" href="./wholesale.html">
+            <a class="secondary-link" href="./wholesale.html" data-home-slide-secondary>
               <i data-lucide="handshake"></i>
-              Wholesale
+              <span>Wholesale enquiry</span>
             </a>
           </div>
+        </div>
+      </section>
+
+      <section class="international-collection" aria-labelledby="international-collection-title">
+        <div>
+          <p class="eyebrow">International brand collection</p>
+          <h2 id="international-collection-title">Premium ranges for retail, gifting, and wholesale buyers.</h2>
+        </div>
+        <div class="international-collection-grid">
+          <a href="./masala.html">
+            <strong>Signature masala</strong>
+            <span>Daily spice blends, veg classics, and kitchen refills.</span>
+          </a>
+          <a href="./products.html#nonveg-masala-products">
+            <strong>Chef non-veg masala</strong>
+            <span>Chicken, mutton, fish, prawn, egg, and kebab blends.</span>
+          </a>
+          <a href="./poha.html">
+            <strong>Premium poha</strong>
+            <span>Breakfast staples and bulk pack options.</span>
+          </a>
+          <a href="./makhana.html">
+            <strong>Makhana staples</strong>
+            <span>Roasted snack flavors for family and gifting orders.</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="shop-collection-strip" aria-labelledby="shop-collection-title">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Shop by collection</p>
+            <h2 id="shop-collection-title">Real products, clear buying paths.</h2>
+          </div>
+          <a class="category-link" href="./products.html">View all products</a>
+        </div>
+        <div class="shop-collection-grid">
+          <a href="./makhana.html">
+            <img src="/assets/product-classic-makhana-optimized.jpg" alt="Classic roasted makhana pack" />
+            <span>Makhana snacks</span>
+            <strong>Classic, peri peri, pudina, and jaggery flavors.</strong>
+          </a>
+          <a href="./masala.html">
+            <img src="/assets/product-garam-masala-optimized.jpg" alt="Premium garam masala pack" />
+            <span>Signature masala</span>
+            <strong>Daily spice essentials and vegetarian kitchen classics.</strong>
+          </a>
+          <a href="./products.html#nonveg-masala-products">
+            <img src="/assets/product-chicken-masala-optimized.jpg" alt="Chicken masala pack" />
+            <span>Non-veg masala</span>
+            <strong>Chicken, mutton, fish, prawn, egg, and kebab blends.</strong>
+          </a>
+          <a href="./poha.html">
+            <img src="/assets/product-poha-optimized.jpg" alt="Premium thick poha pack" />
+            <span>Poha range</span>
+            <strong>Retail pouches, boxes, and bulk-ready pack options.</strong>
+          </a>
         </div>
       </section>
 
@@ -186,7 +350,7 @@
                 Shop bundles
               </a>
             </div>
-            <img src="./assets/product-snack-combo.png" alt="BandEvi Gourmet makhana snack combo promotion" />
+            <img src="/assets/product-snack-combo-optimized.jpg" alt="BandEvi Gourmet makhana snack combo promotion" />
           </article>
 
           <article class="promo-slide" data-promo-slide aria-hidden="true">
@@ -212,7 +376,7 @@
                 Shop poha
               </a>
             </div>
-            <img src="./assets/product-poha.png" alt="BandEvi Gourmet premium poha promotional slide" />
+            <img src="/assets/product-poha-optimized.jpg" alt="BandEvi Gourmet premium poha promotional slide" />
           </article>
         </div>
 
@@ -231,7 +395,7 @@
             The home page now gives customers and business buyers a clear reason to trust the brand: pure ingredient direction, product clarity, booking status, policies, wholesale support, and documentation areas ready for verification.
           </p>
           <div class="home-trust-stats" aria-label="Store trust snapshot">
-            <span><strong>13</strong> live products</span>
+            <span><strong>35</strong> live products</span>
             <span><strong>4</strong> category pages</span>
             <span><strong>5</strong> tracking steps</span>
             <span><strong>24/7</strong> online enquiry</span>
@@ -277,10 +441,10 @@
           </div>
         </div>
         <div class="brand-gallery" aria-label="Premium product photography">
-          <img class="gallery-main" src="/assets/product-snack-combo.png" alt="Premium makhana snack combo" />
+          <img class="gallery-main" src="/assets/product-snack-combo-optimized.jpg" alt="Premium makhana snack combo" />
           <div class="gallery-stack">
-            <img src="/assets/product-garam-masala.png" alt="Premium garam masala" />
-            <img src="/assets/product-turmeric-powder.png" alt="Premium turmeric powder" />
+            <img src="/assets/product-garam-masala-optimized.jpg" alt="Premium garam masala" />
+            <img src="/assets/product-turmeric-powder-optimized.jpg" alt="Premium turmeric powder" />
           </div>
         </div>
       </section>
@@ -505,8 +669,10 @@
             <button class="tab is-active" type="button" data-filter="all">All</button>
             <button class="tab" type="button" data-filter="makhana">Makhana</button>
             <button class="tab" type="button" data-filter="masala">Masala</button>
+            <button class="tab" type="button" data-filter="nonveg-masala">Non-veg Masala</button>
             <button class="tab" type="button" data-filter="poha">Poha</button>
             <button class="tab" type="button" data-filter="combo">Combos</button>
+            <button class="tab" type="button" data-filter="bulk">Bulk Packs</button>
           </div>
           <label class="sort-control">
             <span>Sort</span>
@@ -538,11 +704,22 @@
           <div class="section-head">
             <div>
               <p class="eyebrow">Masala</p>
-              <h2>Masala products</h2>
+              <h2>Daily, veg, and spice masala products</h2>
             </div>
             <a class="category-link" href="#products" data-category-jump="masala">View masala</a>
           </div>
           <div class="category-grid" id="masalaProductGrid"></div>
+        </div>
+
+        <div class="category-section" id="nonveg-masala-products">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Non-veg masala</p>
+              <h2>Chicken, mutton, seafood, egg, and kebab masalas</h2>
+            </div>
+            <a class="category-link" href="#products" data-category-jump="nonveg-masala">View non-veg masala</a>
+          </div>
+          <div class="category-grid" id="nonVegMasalaProductGrid"></div>
         </div>
 
         <div class="category-section" id="poha-products">
@@ -554,6 +731,17 @@
             <a class="category-link" href="#products" data-category-jump="poha">View poha</a>
           </div>
           <div class="category-grid" id="pohaProductGrid"></div>
+        </div>
+
+        <div class="category-section" id="bulk-products">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Bulk and refills</p>
+              <h2>Large packs and repeat-buyer bundles</h2>
+            </div>
+            <a class="category-link" href="#products" data-category-jump="bulk">View bulk packs</a>
+          </div>
+          <div class="category-grid" id="bulkProductGrid"></div>
         </div>
       </section>
 
