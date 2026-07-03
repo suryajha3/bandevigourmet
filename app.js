@@ -112,6 +112,12 @@ const state = {
   trackedOrder: null
 };
 
+const googleAuth = {
+  clientId: null,
+  initialized: false,
+  loading: null
+};
+
 ensureStoreShell();
 ensureMobileCategoryNav();
 ensureTrustInfrastructure();
@@ -139,10 +145,14 @@ const wholesaleForm = document.querySelector("#wholesaleForm");
 const paymentMethod = document.querySelector("#paymentMethod");
 const paymentDetails = document.querySelector("#paymentDetails");
 const customerLoginForm = document.querySelector("#customerLoginForm");
+const customerSignupForm = document.querySelector("#customerSignupForm");
+const customerForgotForm = document.querySelector("#customerForgotForm");
 const orderLookupForm = document.querySelector("#orderLookupForm");
 const customerSupportForm = document.querySelector("#customerSupportForm");
 const customerDashboard = document.querySelector("#customerDashboard");
 const customerLoginStatus = document.querySelector("#customerLoginStatus");
+const customerSignupStatus = document.querySelector("#customerSignupStatus");
+const customerForgotStatus = document.querySelector("#customerForgotStatus");
 const customerSupportStatus = document.querySelector("#customerSupportStatus");
 const confirmationPage = document.querySelector("#confirmationPage");
 const overlay = document.querySelector("[data-overlay]");
@@ -285,11 +295,7 @@ function ensureCartCheckoutEnhancements() {
           </button>
           <button type="button" data-cart-step="details" aria-selected="false">
             <span>2</span>
-            Details
-          </button>
-          <button type="button" data-cart-step="review" aria-selected="false">
-            <span>3</span>
-            Review
+            Checkout
           </button>
         </div>
         <div class="cart-trust-row" aria-label="Checkout trust points">
@@ -1409,9 +1415,7 @@ function getFreeDeliverySummary(totals) {
 function renderCheckoutFlowCards(activeStep = state.checkoutStep) {
   const flow = [
     { id: "cart", icon: "shopping-bag", title: "Cart", text: "Pack sizes and quantity checked" },
-    { id: "details", icon: "map-pin", title: "Details", text: "Delivery and contact captured" },
-    { id: "review", icon: "badge-check", title: "Review", text: "Booking ID ready to create" },
-    { id: "track", icon: "radar", title: "Track", text: "Customer can follow status" }
+    { id: "details", icon: "badge-check", title: "Checkout", text: "Delivery details and booking confirmation" }
   ];
   const activeIndex = Math.max(0, flow.findIndex((item) => item.id === activeStep));
 
@@ -1421,7 +1425,7 @@ function renderCheckoutFlowCards(activeStep = state.checkoutStep) {
         .map((item, index) => {
           const statusClass = [
             index < activeIndex ? "is-done" : "",
-            index === activeIndex || (item.id === "track" && activeStep === "review") ? "is-active" : ""
+            index === activeIndex ? "is-active" : ""
           ]
             .filter(Boolean)
             .join(" ");
@@ -1480,8 +1484,7 @@ function renderCartDeliveryPlan(lines) {
       </div>
       <div>
         <span><b>1</b>Review products</span>
-        <span><b>2</b>Confirm details</span>
-        <span><b>3</b>Track order</span>
+        <span><b>2</b>Add details and place booking</span>
       </div>
     </div>
   `;
@@ -1492,7 +1495,7 @@ function renderCartStepPanel(lines, totals) {
     <div class="cart-side-panel">
       <p class="eyebrow">Cart check</p>
       <h3>${lines.length ? "Your products are ready." : "Start with a trusted pantry cart."}</h3>
-      <p>${lines.length ? "Review quantity, apply coupon if available, then continue to delivery details." : "Choose from popular BandEvi Gourmet products and build a booking-ready cart."}</p>
+      <p>${lines.length ? "Review quantity, apply coupon if available, then continue to one clean checkout page." : "Choose from popular BandEvi Gourmet products and build a booking-ready cart."}</p>
       ${renderCheckoutFlowCards("cart")}
       <div class="cart-side-totals">
         <span><strong>${money(totals.subtotal)}</strong><small>Subtotal</small></span>
@@ -1502,7 +1505,7 @@ function renderCartStepPanel(lines, totals) {
       ${renderCartAssuranceCards(lines, totals)}
       ${renderCartDeliveryPlan(lines)}
       <button class="checkout-button" type="button" data-cart-goto="details" ${lines.length ? "" : "disabled"}>
-        Continue to details
+        Continue to checkout
       </button>
       <a class="secondary-checkout-link" href="./products.html">Browse more products</a>
     </div>
@@ -1597,12 +1600,12 @@ function renderOrderReview() {
 }
 
 function setCheckoutStep(step, options = {}) {
-  const nextStep = ["cart", "details", "review"].includes(step) ? step : "cart";
+  const nextStep = step === "review" ? "details" : ["cart", "details"].includes(step) ? step : "cart";
   if (nextStep === "details" && !state.cart.size) {
     showToast("Add at least one product first");
     return;
   }
-  if (nextStep === "review" && !options.skipValidation) {
+  if (nextStep === "details" && options.validate) {
     if (!state.cart.size) {
       showToast("Add at least one product first");
       return;
@@ -1649,14 +1652,14 @@ function renderCheckoutStep() {
   if (checkoutForm) checkoutForm.hidden = state.checkoutStep !== "details";
   if (cartReviewPanel) {
     cartReviewPanel.hidden = state.checkoutStep === "details";
-    cartReviewPanel.innerHTML = state.checkoutStep === "review" ? renderOrderReview() : renderCartStepPanel(lines, totals);
+    cartReviewPanel.innerHTML = renderCartStepPanel(lines, totals);
     cartReviewPanel.scrollTop = 0;
     bindCheckoutReviewActions();
   }
 
   const checkoutButton = checkoutForm?.querySelector(".checkout-button");
   if (checkoutButton) {
-    checkoutButton.innerHTML = `<i data-lucide="badge-check"></i> Review booking`;
+    checkoutButton.innerHTML = `<i data-lucide="badge-check"></i> Place booking`;
   }
 
   updateCheckoutExtraFields();
@@ -2246,12 +2249,195 @@ function prefillCheckoutFromCustomer() {
 }
 
 function prefillCustomerLoginForm() {
-  if (!state.customer || !customerLoginForm) return;
+  if (!state.customer) return;
 
-  customerLoginForm.elements.customerName.value = state.customer.name || "";
-  customerLoginForm.elements.customerPhone.value = state.customer.phone || "";
-  customerLoginForm.elements.customerEmail.value = state.customer.email || "";
-  customerLoginForm.elements.customerLocation.value = state.customer.location || "";
+  if (customerLoginForm) {
+    if (customerLoginForm.elements.customerName) customerLoginForm.elements.customerName.value = state.customer.name || "";
+    if (customerLoginForm.elements.customerPhone) customerLoginForm.elements.customerPhone.value = state.customer.phone || "";
+    if (customerLoginForm.elements.customerEmail) customerLoginForm.elements.customerEmail.value = state.customer.email || "";
+    if (customerLoginForm.elements.customerLocation) customerLoginForm.elements.customerLocation.value = state.customer.location || "";
+  }
+  if (customerSignupForm) {
+    if (customerSignupForm.elements.customerName) customerSignupForm.elements.customerName.value = state.customer.name || "";
+    if (customerSignupForm.elements.customerPhone) customerSignupForm.elements.customerPhone.value = state.customer.phone || "";
+    if (customerSignupForm.elements.customerEmail) customerSignupForm.elements.customerEmail.value = state.customer.email || "";
+    if (customerSignupForm.elements.customerLocation) customerSignupForm.elements.customerLocation.value = state.customer.location || "";
+  }
+}
+
+function setAuthMode(mode = "signin") {
+  const nextMode = ["signin", "signup", "forgot"].includes(mode) ? mode : "signin";
+  document.querySelectorAll("[data-auth-mode]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.authMode === nextMode);
+    button.setAttribute("aria-pressed", String(button.dataset.authMode === nextMode));
+  });
+  document.querySelectorAll("[data-auth-panel]").forEach((panel) => {
+    panel.classList.toggle("is-active", panel.dataset.authPanel === nextMode);
+  });
+  if (nextMode === "signin") setLoginStep(customerLoginForm?.dataset.loginStep || "identity");
+}
+
+function setLoginStep(step = "identity", options = {}) {
+  if (!customerLoginForm) return;
+  const nextStep = step === "secure" ? "secure" : "identity";
+  customerLoginForm.dataset.loginStep = nextStep;
+  customerLoginForm.querySelectorAll(".account-login-step").forEach((panel) => {
+    panel.classList.toggle("is-active", panel.dataset.step === nextStep);
+  });
+  const markers = customerLoginForm.querySelectorAll(".auth-step-line span");
+  markers.forEach((marker, index) => marker.classList.toggle("is-active", index === 0 || nextStep === "secure"));
+  if (options.focus) {
+    if (nextStep === "secure") {
+      customerLoginForm.elements.customerPin?.focus();
+    } else {
+      customerLoginForm.elements.customerPhone?.focus();
+    }
+  }
+}
+
+function openCustomerDashboard(customer, message = "Opening dashboard...") {
+  if (!customer) return;
+  saveCustomer(customer);
+  prefillCheckoutFromCustomer();
+  prefillCustomerSupportForm();
+  renderCustomerPortal();
+  setCustomerLoginStatus(message);
+  customerDashboard?.scrollIntoView({ block: "start" });
+  if (window.location.hash !== "#customer-dashboard") {
+    window.history.replaceState(null, "", `${window.location.pathname}#customer-dashboard`);
+  }
+}
+
+function setCustomerSignupStatus(message = "") {
+  if (customerSignupStatus) customerSignupStatus.textContent = message;
+}
+
+function setCustomerForgotStatus(message = "") {
+  if (customerForgotStatus) customerForgotStatus.textContent = message;
+}
+
+function getGoogleClientId() {
+  return document.querySelector('meta[name="google-client-id"]')?.content || window.BANDEVI_GOOGLE_CLIENT_ID || "";
+}
+
+function setGoogleAuthStatus(message) {
+  setCustomerLoginStatus(message);
+  setCustomerSignupStatus(message);
+}
+
+function loadExternalScript(src, id) {
+  const existing = document.getElementById(id);
+  if (existing) {
+    return existing.dataset.loaded === "true"
+      ? Promise.resolve()
+      : new Promise((resolve, reject) => {
+          existing.addEventListener("load", resolve, { once: true });
+          existing.addEventListener("error", reject, { once: true });
+        });
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.id = id;
+    script.src = src;
+    script.async = true;
+    script.defer = true;
+    script.addEventListener(
+      "load",
+      () => {
+        script.dataset.loaded = "true";
+        resolve();
+      },
+      { once: true }
+    );
+    script.addEventListener("error", reject, { once: true });
+    document.head.appendChild(script);
+  });
+}
+
+async function loadGoogleAuthConfig() {
+  if (googleAuth.clientId !== null) return googleAuth.clientId;
+
+  try {
+    const config = await apiRequest("/api/auth/config");
+    googleAuth.clientId = String(config.googleClientId || getGoogleClientId() || "").trim();
+  } catch {
+    googleAuth.clientId = String(getGoogleClientId() || "").trim();
+  }
+
+  document.querySelectorAll("[data-google-login]").forEach((button) => {
+    button.dataset.configured = googleAuth.clientId ? "true" : "false";
+  });
+  return googleAuth.clientId;
+}
+
+function prefillGoogleProfile(profile = {}) {
+  const name = String(profile.name || "").trim();
+  const email = String(profile.email || "").trim();
+  const phone = normalizePhone(customerSignupForm?.elements.customerPhone?.value || customerLoginForm?.elements.customerPhone?.value || "");
+
+  [customerLoginForm, customerSignupForm, checkoutForm].forEach((form) => {
+    if (!form) return;
+    if (name && form.elements.customerName && !form.elements.customerName.value) form.elements.customerName.value = name;
+    if (name && form.elements.name && !form.elements.name.value) form.elements.name.value = name;
+    if (email && form.elements.customerEmail && !form.elements.customerEmail.value) form.elements.customerEmail.value = email;
+    if (email && form.elements.email && !form.elements.email.value) form.elements.email.value = email;
+    if (phone && form.elements.customerPhone && !form.elements.customerPhone.value) form.elements.customerPhone.value = phone;
+    if (phone && form.elements.phone && !form.elements.phone.value) form.elements.phone.value = phone;
+  });
+
+  setAuthMode("signup");
+  setGoogleAuthStatus("Google account verified. Add phone and PIN to finish the customer account.");
+  showToast("Google profile added");
+}
+
+async function handleGoogleCredentialResponse(response = {}) {
+  const credential = response.credential || "";
+  if (!credential) {
+    setGoogleAuthStatus("Google login did not return an account. Try again or use phone and PIN.");
+    return;
+  }
+
+  setGoogleAuthStatus("Verifying Google account...");
+  try {
+    const result = await apiRequest("/api/auth/google", {
+      method: "POST",
+      body: JSON.stringify({ credential })
+    });
+    prefillGoogleProfile(result.profile || {});
+  } catch (error) {
+    setGoogleAuthStatus(error.message || "Google login could not be verified. Use phone and PIN for now.");
+    showToast("Google login could not verify");
+  }
+}
+
+async function ensureGoogleIdentityReady() {
+  const clientId = await loadGoogleAuthConfig();
+  if (!clientId) {
+    setGoogleAuthStatus("Google login is ready. Add GOOGLE_CLIENT_ID in Render to activate it.");
+    showToast("Google login needs Client ID");
+    return false;
+  }
+
+  if (!googleAuth.loading) {
+    googleAuth.loading = loadExternalScript("https://accounts.google.com/gsi/client", "google-identity-services");
+  }
+  await googleAuth.loading;
+
+  if (!window.google?.accounts?.id) {
+    throw new Error("Google login script did not load. Please try again.");
+  }
+
+  if (!googleAuth.initialized) {
+    window.google.accounts.id.initialize({
+      client_id: clientId,
+      callback: handleGoogleCredentialResponse,
+      cancel_on_tap_outside: false
+    });
+    googleAuth.initialized = true;
+  }
+
+  return true;
 }
 
 function prefillCustomerSupportForm(order = state.trackedOrder) {
@@ -2291,6 +2477,12 @@ function renderCustomerPortal() {
 
   const portalMode = customerDashboard.dataset.mode || "account";
   const customer = state.customer;
+  document.body.classList.toggle("customer-authed", Boolean(customer));
+  customerDashboard.hidden = !customer && portalMode === "account" && !state.trackedOrder;
+  if (customerDashboard.hidden) {
+    customerDashboard.innerHTML = "";
+    return;
+  }
   const ordersForCustomer = customer
     ? state.orders.filter((order) => normalizePhone(order.customer?.phone) === normalizePhone(customer.phone))
     : state.orders;
@@ -2468,7 +2660,13 @@ function logoutCustomer() {
   window.localStorage.removeItem(STORAGE_KEYS.customer);
   saveCustomerPin("");
   if (customerLoginForm) customerLoginForm.reset();
+  if (customerSignupForm) customerSignupForm.reset();
+  if (customerForgotForm) customerForgotForm.reset();
+  setLoginStep("identity");
+  setAuthMode("signin");
   setCustomerLoginStatus("Logged out on this device.");
+  setCustomerSignupStatus("");
+  setCustomerForgotStatus("");
   renderCustomerPortal();
   showToast("Customer logged out");
 }
@@ -2942,12 +3140,12 @@ function submitWhatsAppOrder() {
     return;
   }
 
-  if (!checkoutForm.reportValidity()) return;
-  if (state.checkoutStep !== "review") {
-    setCheckoutStep("review", { skipValidation: true });
-    showToast("Review booking before WhatsApp");
+  if (state.checkoutStep !== "details") {
+    setCheckoutStep("details");
+    showToast("Add delivery details before WhatsApp");
     return;
   }
+  if (!checkoutForm.reportValidity()) return;
 
   const orderId = createOrderId();
   const order = createOrderRecord(checkoutForm, orderId, "WhatsApp order request");
@@ -2966,9 +3164,9 @@ checkoutForm?.addEventListener("submit", async (event) => {
     showToast("Add at least one product first");
     return;
   }
-  if (state.checkoutStep !== "review") {
-    setCheckoutStep("review");
-    showToast("Review booking before placing order");
+  if (state.checkoutStep !== "details") {
+    setCheckoutStep("details");
+    showToast("Add delivery details before placing order");
     return;
   }
   const stockIssue = getCartStockIssue();
@@ -2999,9 +3197,57 @@ checkoutForm?.addEventListener("submit", async (event) => {
   redirectToConfirmation(syncedOrder || order);
 });
 
+document.querySelectorAll("[data-auth-mode]").forEach((button) => {
+  button.addEventListener("click", () => setAuthMode(button.dataset.authMode));
+});
+
+customerLoginForm?.querySelector("[data-login-next]")?.addEventListener("click", () => {
+  const phone = normalizePhone(customerLoginForm.elements.customerPhone?.value);
+  if (!phone) {
+    setCustomerLoginStatus("Enter your phone number first.");
+    showToast("Enter your phone number first");
+    return;
+  }
+  setLoginStep("secure", { focus: true });
+});
+
+customerLoginForm?.querySelector("[data-login-back]")?.addEventListener("click", () => {
+  setLoginStep("identity", { focus: true });
+});
+
+document.querySelectorAll("[data-google-login]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    setGoogleAuthStatus("Opening Google sign in...");
+    try {
+      const ready = await ensureGoogleIdentityReady();
+      if (!ready) return;
+      window.google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
+          setGoogleAuthStatus("Google sign in is active. If no Google prompt opens, use phone and PIN or try again.");
+        }
+      });
+    } catch (error) {
+      setGoogleAuthStatus(error.message || "Google login could not start. Use phone and PIN for now.");
+      showToast("Google login could not start");
+    }
+  });
+});
+
 customerLoginForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const data = new FormData(event.currentTarget);
+  const form = event.currentTarget;
+  if (form.dataset.loginStep !== "secure") {
+    const phone = normalizePhone(form.elements.customerPhone?.value);
+    if (!phone) {
+      setCustomerLoginStatus("Enter your phone number first.");
+      showToast("Enter your phone number first");
+      return;
+    }
+    setLoginStep("secure", { focus: true });
+    return;
+  }
+
+  const data = new FormData(form);
   const accountPin = normalizeAccessPin(data.get("customerPin"));
   if (accountPin && accountPin.length < 4) {
     setCustomerLoginStatus("Use a 4 to 6 digit account PIN.");
@@ -3018,23 +3264,92 @@ customerLoginForm?.addEventListener("submit", async (event) => {
   };
   if (accountPin) saveCustomerPin(accountPin);
 
-  saveCustomer(customer);
   state.customerSummary = null;
   state.customerEnquiries = [];
   state.trackedOrder = null;
-  prefillCheckoutFromCustomer();
-  renderCustomerPortal();
-  setCustomerLoginStatus("Opening account...");
-  await syncCustomerProfile({ ...customer, accountPin: accountPin || loadCustomerPin() });
-  await loadCustomerOrdersFromBackend(customer.phone);
-  setCustomerLoginStatus(
-    state.customerSyncStatus === "synced"
-      ? "Account synced with live orders."
-      : state.customerSyncStatus === "locked"
-        ? "Account PIN is required to view full order history."
-        : "Saved on this device."
-  );
-  showToast("Customer profile saved");
+  openCustomerDashboard(customer, "Dashboard opened. Syncing live orders...");
+  showToast("Dashboard opened");
+
+  try {
+    await syncCustomerProfile({ ...customer, accountPin: accountPin || loadCustomerPin() });
+    await loadCustomerOrdersFromBackend(customer.phone);
+    setCustomerLoginStatus(
+      state.customerSyncStatus === "synced"
+        ? "Account synced with live orders."
+        : state.customerSyncStatus === "locked"
+          ? "Account PIN is required to view full order history."
+          : "Saved on this device."
+    );
+  } catch (error) {
+    setCustomerLoginStatus(error.message || "Dashboard opened from saved details.");
+  }
+});
+
+customerSignupForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const data = new FormData(event.currentTarget);
+  const accountPin = normalizeAccessPin(data.get("customerPin"));
+  if (accountPin.length < 4) {
+    setCustomerSignupStatus("Create a 4 to 6 digit account PIN.");
+    showToast("Create a 4 to 6 digit account PIN");
+    return;
+  }
+
+  const customer = {
+    name: String(data.get("customerName") || "").trim() || "Customer",
+    phone: String(data.get("customerPhone") || "").trim(),
+    email: String(data.get("customerEmail") || "").trim(),
+    location: String(data.get("customerLocation") || "").trim(),
+    hasAccountPin: true
+  };
+  saveCustomerPin(accountPin);
+  state.customerSummary = null;
+  state.customerEnquiries = [];
+  state.trackedOrder = null;
+  openCustomerDashboard(customer, "Account created. Syncing live orders...");
+  setCustomerSignupStatus("Account created.");
+  showToast("Account created");
+
+  try {
+    await syncCustomerProfile({ ...customer, accountPin });
+    await loadCustomerOrdersFromBackend(customer.phone);
+    setCustomerSignupStatus("Account synced with live orders.");
+  } catch (error) {
+    setCustomerSignupStatus(error.message || "Account saved on this device.");
+  }
+});
+
+customerForgotForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const phone = normalizePhone(data.get("forgotPhone"));
+  const message = String(data.get("forgotMessage") || "I need help resetting my BandEvi Gourmet account PIN.").trim();
+  if (!phone) {
+    setCustomerForgotStatus("Enter the phone number connected with your account.");
+    showToast("Enter your phone number");
+    return;
+  }
+
+  setCustomerForgotStatus("Sending PIN reset request...");
+  try {
+    const result = await apiRequest("/api/customer/support", {
+      method: "POST",
+      body: JSON.stringify({
+        phone,
+        topic: "Account PIN reset",
+        message,
+        name: state.customer?.name || "Customer",
+        email: state.customer?.email || ""
+      })
+    });
+    setCustomerForgotStatus(`PIN reset request ${result.supportRequest.id} created. Support will contact you.`);
+    showToast("PIN reset request sent");
+    form.reset();
+  } catch (error) {
+    setCustomerForgotStatus(error.message || "PIN reset request could not be sent.");
+    showToast(error.message || "Request failed");
+  }
 });
 
 customerSupportForm?.addEventListener("submit", async (event) => {
@@ -3161,6 +3476,10 @@ renderSingleProductPage();
 renderCart();
 syncCatalogFromBackend();
 prefillCustomerLoginForm();
+loadGoogleAuthConfig();
+if (window.location.hash === "#signup") setAuthMode("signup");
+else if (window.location.hash === "#forgot") setAuthMode("forgot");
+else setAuthMode("signin");
 renderCustomerPortal();
 initPromoSlider();
 initBrandSlider();

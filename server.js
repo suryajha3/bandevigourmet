@@ -30,6 +30,7 @@ const SMTP_PASS = process.env.SMTP_PASS || "";
 const SMTP_SECURE = process.env.SMTP_SECURE === "true" || SMTP_PORT === 465;
 const ORDER_WEBHOOK_URL = process.env.ORDER_WEBHOOK_URL || "";
 const ORDER_WEBHOOK_SECRET = process.env.ORDER_WEBHOOK_SECRET || "";
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const TOKEN_TTL_MS = 1000 * 60 * 60 * 12;
 const CLOSED_ORDER_STATUSES = new Set(["delivered", "cancelled"]);
 const ORDER_STATUSES = new Set(["booked", "confirmed", "packed", "dispatched", "delivered", "cancelled"]);
@@ -1329,6 +1330,50 @@ async function handleApi(req, res, url) {
     if (shouldPersist) await writeDb(db);
     jsonResponse(res, 200, { products: products.filter((product) => product.active !== false).map(publicProduct) });
     return true;
+  }
+
+  if (url.pathname === "/api/auth/config" && req.method === "GET") {
+    jsonResponse(res, 200, { googleClientId: GOOGLE_CLIENT_ID });
+    return true;
+  }
+
+  if (url.pathname === "/api/auth/google" && req.method === "POST") {
+    if (!GOOGLE_CLIENT_ID) {
+      jsonResponse(res, 400, { error: "Google login is not configured yet." });
+      return true;
+    }
+
+    const payload = await readBody(req);
+    const credential = text(payload.credential, 5000);
+    if (!credential) {
+      jsonResponse(res, 400, { error: "Google credential is required." });
+      return true;
+    }
+
+    try {
+      const tokenResponse = await fetch(
+        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`
+      );
+      const tokenInfo = await tokenResponse.json().catch(() => ({}));
+      if (!tokenResponse.ok || tokenInfo.aud !== GOOGLE_CLIENT_ID) {
+        jsonResponse(res, 401, { error: "Google login could not be verified." });
+        return true;
+      }
+
+      jsonResponse(res, 200, {
+        profile: {
+          name: text(tokenInfo.name, 120),
+          email: text(tokenInfo.email, 160),
+          picture: text(tokenInfo.picture, 300),
+          emailVerified: tokenInfo.email_verified === true || tokenInfo.email_verified === "true",
+          googleSub: text(tokenInfo.sub, 120)
+        }
+      });
+      return true;
+    } catch {
+      jsonResponse(res, 502, { error: "Google login verification is temporarily unavailable." });
+      return true;
+    }
   }
 
   if (url.pathname === "/api/orders" && req.method === "POST") {

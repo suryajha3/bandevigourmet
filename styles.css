@@ -2243,6 +2243,14 @@ a {
   color: #fff;
 }
 
+body.customer-authed .customer-portal-section {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+body.customer-authed .customer-portal-section .portal-copy {
+  display: none;
+}
+
 .portal-copy h2 {
   margin: 0;
   font-size: clamp(32px, 6vw, 54px);
@@ -2297,6 +2305,24 @@ a {
   grid-template-columns: 1fr;
 }
 
+body.customer-authed .portal-panel.account-only {
+  order: 2;
+  grid-column: 1;
+}
+
+.account-auth-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+body.customer-authed .account-auth-card {
+  display: none;
+}
+
 .portal-form,
 .portal-dashboard {
   padding: 18px;
@@ -2308,6 +2334,103 @@ a {
 .portal-form {
   display: grid;
   gap: 12px;
+}
+
+.account-auth-card .portal-form {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.auth-switcher {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.auth-switcher button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.auth-switcher button.is-active {
+  background: #fff;
+  color: var(--green);
+}
+
+.google-login-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 46px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 950;
+}
+
+.google-login-button span {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--green);
+}
+
+.google-login-button[data-configured="false"] {
+  border-style: dashed;
+}
+
+.auth-panel,
+.account-login-step {
+  display: none;
+}
+
+.auth-panel.is-active,
+.account-login-step.is-active {
+  display: grid;
+}
+
+.account-login-step {
+  gap: 12px;
+}
+
+.auth-step-line {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.auth-step-line span {
+  display: grid;
+  place-items: center;
+  min-height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.auth-step-line span.is-active {
+  background: #eef6f0;
+  color: var(--green);
 }
 
 .portal-form-head {
@@ -2412,6 +2535,10 @@ a {
   background: rgba(255, 255, 255, 0.16);
 }
 
+body:not(.customer-authed) .support-form {
+  display: none;
+}
+
 .portal-button {
   display: inline-flex;
   align-items: center;
@@ -2458,9 +2585,19 @@ a {
 }
 
 .portal-dashboard {
-  grid-column: 2;
+  grid-column: 1 / -1;
   display: grid;
   gap: 14px;
+  scroll-margin-top: 110px;
+}
+
+body.customer-authed .portal-dashboard {
+  order: 1;
+  grid-column: 1;
+}
+
+.portal-dashboard[hidden] {
+  display: none;
 }
 
 .portal-empty {
@@ -3251,6 +3388,7 @@ a {
   width: min(1180px, calc(100vw - 28px));
   height: min(92vh, 880px);
   max-height: calc(100vh - 28px);
+  overflow-y: auto;
   padding: clamp(16px, 2.6vw, 28px);
   border: 1px solid rgba(255, 255, 255, 0.42);
   border-radius: 8px;
@@ -3292,7 +3430,7 @@ a {
   grid-column: 1 / -1;
   grid-row: 2;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   padding: 12px 0 0;
 }
@@ -3372,7 +3510,7 @@ a {
   gap: 14px;
   min-height: 0;
   padding: 16px 2px 0 0;
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .empty-cart {
@@ -3848,7 +3986,7 @@ a {
   gap: 10px;
   min-height: 0;
   padding: 16px;
-  overflow-y: auto;
+  overflow: visible;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
@@ -3913,7 +4051,7 @@ a {
   grid-column: 2;
   grid-row: 6;
   min-height: 0;
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .cart-review-panel[hidden] {
