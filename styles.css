@@ -2243,6 +2243,11 @@ a {
   color: #fff;
 }
 
+.account-page-section {
+  grid-template-columns: minmax(300px, 0.58fr) minmax(720px, 1.42fr);
+  width: min(1440px, calc(100% - 36px));
+}
+
 body.customer-authed .customer-portal-section {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -2398,7 +2403,7 @@ body.customer-authed .account-auth-card {
 
 .account-auth-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+  grid-template-columns: minmax(360px, 1fr) minmax(360px, 1fr);
   gap: 18px;
   align-items: start;
 }
@@ -3864,6 +3869,152 @@ body.customer-authed .portal-dashboard {
   cursor: pointer;
   font-size: 12px;
   font-weight: 900;
+}
+
+.cart-coupon-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid rgba(230, 165, 30, 0.32);
+  border-radius: 8px;
+  background: #fff8df;
+}
+
+.cart-coupon-card div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cart-coupon-card strong {
+  color: #1b1608;
+  line-height: 1.25;
+}
+
+.cart-coupon-card span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.cart-coupon-card button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--green);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.cart-coupon-card button:disabled {
+  background: rgba(30, 89, 75, 0.18);
+  color: var(--green);
+  cursor: default;
+}
+
+.cart-add-on-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfaf5;
+}
+
+.cart-add-on-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cart-add-on-head strong {
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.cart-add-on-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cart-add-on-card {
+  display: grid;
+  grid-template-rows: 92px auto auto;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.cart-add-on-card a {
+  display: block;
+  min-height: 92px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+}
+
+.cart-add-on-card img,
+.cart-add-on-card .product-photo-placeholder {
+  width: 100%;
+  height: 92px;
+  object-fit: var(--fit, cover);
+  object-position: var(--position, center);
+  transform: scale(var(--scale, 1));
+}
+
+.cart-add-on-card .product-photo-placeholder {
+  padding: 8px;
+}
+
+.cart-add-on-card div {
+  min-width: 0;
+}
+
+.cart-add-on-card strong {
+  display: block;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.cart-add-on-card span {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.cart-add-on-card button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--green);
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.cart-add-on-card button svg {
+  width: 14px;
+  height: 14px;
 }
 
 .cart-journey {
@@ -6233,6 +6384,10 @@ body.customer-authed .portal-dashboard {
     grid-template-columns: 1fr;
   }
 
+  .account-page-section {
+    grid-template-columns: 1fr;
+  }
+
   .account-side-stack {
     padding-left: 0;
     padding-top: 18px;
@@ -6341,6 +6496,10 @@ body.customer-authed .portal-dashboard {
   .review-support-card,
   .review-checklist {
     grid-template-columns: 1fr;
+  }
+
+  .cart-add-on-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -6654,6 +6813,14 @@ body.customer-authed .portal-dashboard {
     grid-template-columns: auto auto auto;
     align-items: center;
     justify-items: start;
+  }
+
+  .cart-coupon-card {
+    grid-template-columns: 1fr;
+  }
+
+  .cart-add-on-grid {
+    grid-template-columns: 1fr;
   }
 
   .cart-journey {

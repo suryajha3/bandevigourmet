@@ -1349,6 +1349,83 @@ function renderEmptyCartRecommendations() {
   `;
 }
 
+function getCartAddOnProducts(lines) {
+  const selectedIds = new Set(lines.map((item) => item.id));
+  const selectedCategories = new Set(lines.map((item) => item.category));
+  const preferredIds = [
+    "garam-masala",
+    "sabji-masala",
+    "paneer-masala",
+    "classic-makhana",
+    "peri-peri-makhana",
+    "poha-1kg-pouch",
+    "snack-combo"
+  ];
+  const preferred = preferredIds.map((id) => catalog.find((product) => product.id === id)).filter(Boolean);
+  const categoryBoost = catalog.filter(
+    (product) => !selectedIds.has(product.id) && !selectedCategories.has(product.category) && product.active !== false
+  );
+  const merged = [...preferred, ...categoryBoost]
+    .filter((product) => product && !selectedIds.has(product.id) && isProductAvailable(product, 1))
+    .filter((product, index, all) => all.findIndex((item) => item.id === product.id) === index);
+
+  return merged.slice(0, 4);
+}
+
+function renderCartCouponCard(totals) {
+  const discountText = state.couponApplied ? `${money(totals.discount)} saved with SPICE10` : "Use SPICE10 for 10% off";
+  const helperText = state.couponApplied
+    ? "Coupon is already applied to this booking."
+    : "Apply the launch coupon before entering delivery details.";
+
+  return `
+    <div class="cart-coupon-card">
+      <div>
+        <strong>${escapeHtml(discountText)}</strong>
+        <span>${escapeHtml(helperText)}</span>
+      </div>
+      <button type="button" data-apply-cart-coupon ${state.couponApplied ? "disabled" : ""}>
+        ${state.couponApplied ? "Applied" : "Apply"}
+      </button>
+    </div>
+  `;
+}
+
+function renderCartAddOns(lines) {
+  const suggestions = getCartAddOnProducts(lines);
+  if (!suggestions.length) return "";
+
+  return `
+    <section class="cart-add-on-panel" aria-label="Complete your cart">
+      <div class="cart-add-on-head">
+        <span class="eyebrow">Complete your cart</span>
+        <strong>Add trusted pantry picks</strong>
+      </div>
+      <div class="cart-add-on-grid">
+        ${suggestions
+          .map(
+            (product) => `
+              <article class="cart-add-on-card">
+                <a href="${productUrl(product)}" aria-label="Open ${escapeHtml(product.name)} details">
+                  ${renderProductVisual(product)}
+                </a>
+                <div>
+                  <strong>${escapeHtml(product.name)}</strong>
+                  <span>${money(product.price)} / ${escapeHtml(product.size)}</span>
+                </div>
+                <button type="button" data-add="${product.id}">
+                  <i data-lucide="plus"></i>
+                  Add
+                </button>
+              </article>
+            `
+          )
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
 function getCheckoutFormData() {
   return checkoutForm ? new FormData(checkoutForm) : new FormData();
 }
@@ -2846,6 +2923,8 @@ function renderCart() {
             )
             .join("")}
             </div>
+        ${renderCartCouponCard(totals)}
+        ${renderCartAddOns(lines)}
         ${renderCartJourney()}
       `
     : `<div class="empty-cart">
@@ -2864,6 +2943,13 @@ function renderCart() {
   });
   cartItems.querySelectorAll("[data-remove]").forEach((button) => {
     button.addEventListener("click", () => setQuantity(button.dataset.remove, 0));
+  });
+  cartItems.querySelector("[data-apply-cart-coupon]")?.addEventListener("click", () => {
+    state.couponApplied = true;
+    if (couponInput) couponInput.value = "SPICE10";
+    if (couponMessage) couponMessage.textContent = "SPICE10 applied.";
+    renderCart();
+    showToast("SPICE10 applied");
   });
   bindAddButtons(cartItems);
 
