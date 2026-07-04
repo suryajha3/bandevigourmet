@@ -19,7 +19,7 @@ export const STORE_CONFIG = {
     labReports: "COA / lab report files to be linked after verification"
   },
   trustBadges: [
-    "No artificial color direction",
+    "No artificial colors",
     "Ingredient-led recipes",
     "Order ID tracking",
     "Policy-backed checkout"

@@ -35,6 +35,14 @@ import { STORE_CONFIG } from "./store-config.js";
 
 const API_TIMEOUT_MS = 6000;
 const API_ORIGIN = window.location.origin;
+const FREE_DELIVERY_AT = 999;
+const LAUNCH_COUPON_CODE = "SPICE10";
+const DEFAULT_MRP_MULTIPLIERS = {
+  makhana: 1.18,
+  masala: 1.22,
+  poha: 1.16,
+  combo: 1.14
+};
 
 let catalog = buildCatalog(products);
 
@@ -85,15 +93,21 @@ const ORDER_LABELS = {
 function buildCatalog(productList) {
   return (Array.isArray(productList) ? productList : [])
     .filter((product) => product.active !== false)
-    .map((product) => ({
-      ...product,
-      price: Number(product.price || 0),
-      rating: Number(product.rating || 4.8),
-      stock: Number(product.stock ?? 100),
-      stockStatus: product.stockStatus || "in-stock",
-      lowStockThreshold: Number(product.lowStockThreshold || 10),
-      details: product.details || productDetails[product.id] || {}
-    }));
+    .map((product) => {
+      const category = String(product.category || "masala").toLowerCase();
+      const pricing = normalizeProductPricing(product, category);
+      return {
+        ...product,
+        ...pricing,
+        category,
+        price: pricing.offerPrice,
+        rating: Number(product.rating || 4.8),
+        stock: Number(product.stock ?? 100),
+        stockStatus: product.stockStatus || "in-stock",
+        lowStockThreshold: Number(product.lowStockThreshold || 10),
+        details: product.details || productDetails[product.id] || {}
+      };
+    });
 }
 
 const state = {
@@ -466,17 +480,7 @@ function ensureTrustInfrastructure() {
 }
 
 function ensureHeaderSliderLink() {
-  const nav = document.querySelector(".main-nav");
-  if (!nav || nav.querySelector('a[href="./slider.html"]')) return;
-
-  const link = document.createElement("a");
-  link.href = "./slider.html";
-  link.textContent = "Slider";
-  if (window.location.pathname.endsWith("/slider.html")) link.setAttribute("aria-current", "page");
-
-  const wholesaleLink = nav.querySelector('a[href="./wholesale.html"]');
-  if (wholesaleLink) nav.insertBefore(link, wholesaleLink);
-  else nav.appendChild(link);
+  document.querySelector('.main-nav a[href="./slider.html"]')?.remove();
 }
 
 function ensureHeaderTrustRow() {
@@ -590,6 +594,85 @@ function ensureAboutComplianceCards() {
 
 function money(value) {
   return `Rs. ${rupee.format(value)}`;
+}
+
+function getDefaultMrp(offerPrice, category) {
+  const offer = Math.max(0, Number(offerPrice || 0));
+  if (!offer) return 0;
+  const multiplier = DEFAULT_MRP_MULTIPLIERS[category] || 1.18;
+  const rounded = Math.ceil((offer * multiplier) / 10) * 10 - 1;
+  return Math.max(offer, rounded);
+}
+
+function normalizeProductPricing(product = {}, category = product.category || "masala") {
+  const offerPrice = Math.max(0, Number(product.offerPrice ?? product.price ?? 0));
+  const explicitMrp = Number(product.mrp || 0);
+  const explicitDiscount = Number(product.discountPrice || 0);
+  const mrp = Math.max(
+    offerPrice,
+    explicitMrp > 0 ? explicitMrp : explicitDiscount > 0 ? offerPrice + explicitDiscount : getDefaultMrp(offerPrice, category)
+  );
+  const discountPrice = Math.max(0, mrp - offerPrice);
+  const discountPercent = mrp > offerPrice && mrp > 0 ? Math.round((discountPrice / mrp) * 100) : 0;
+  return {
+    mrp,
+    offerPrice,
+    discountPrice,
+    discountPercent
+  };
+}
+
+function getPricingLabel(product) {
+  if (BULK_PACK_IDS.has(product.id)) return "Bulk pack price";
+  if (product.category === "combo") return "Bundle price";
+  if (product.category === "masala") return "Spice pack price";
+  if (product.category === "makhana") return "Snack pack price";
+  if (product.category === "poha") return "Pantry pack price";
+  return "Pack price";
+}
+
+function getFreeDeliveryPriceText(amount) {
+  const remaining = Math.max(0, FREE_DELIVERY_AT - Number(amount || 0));
+  return remaining ? `${money(remaining)} to free delivery` : "Free delivery eligible";
+}
+
+function getPricingSupportText(product) {
+  return `${getFreeDeliveryPriceText(product.price)} / ${LAUNCH_COUPON_CODE} coupon`;
+}
+
+function renderProductPricing(product, variant = "card") {
+  const pricing = normalizeProductPricing(product, product.category);
+  const discountLabel = pricing.discountPrice ? `${pricing.discountPercent}% off` : "Best price";
+  const savingsLabel = pricing.discountPrice ? `Save ${money(pricing.discountPrice)}` : "No markup";
+  return `
+    <div class="price-panel price-panel--${variant}">
+      <div class="price-panel-top">
+        <span>${escapeHtml(getPricingLabel(product))}</span>
+        <small>${escapeHtml(product.size)}</small>
+      </div>
+      <div class="price-panel-main">
+        <span class="price-mrp"><small>MRP</small><s>${money(pricing.mrp)}</s></span>
+        <span class="price-offer"><small>Offer price</small><strong>${money(pricing.offerPrice)}</strong></span>
+        <span class="price-discount"><small>Discount</small><b>${escapeHtml(discountLabel)}</b></span>
+      </div>
+      <div class="price-panel-notes">
+        <span>${escapeHtml(savingsLabel)} on this pack</span>
+        <span>${escapeHtml(getPricingSupportText(product))}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderCompactPricing(product) {
+  const pricing = normalizeProductPricing(product, product.category);
+  return `
+    <span class="compact-price">
+      <strong>${money(pricing.offerPrice)}</strong>
+      ${pricing.discountPrice ? `<s>${money(pricing.mrp)}</s>` : ""}
+      <small>${escapeHtml(product.size)}</small>
+      ${pricing.discountPrice ? `<b>${pricing.discountPercent}% off</b>` : ""}
+    </span>
+  `;
 }
 
 function escapeHtml(value) {
@@ -890,10 +973,7 @@ function renderProductCard(product) {
           No artificial colors or synthetic flavor shortcuts
         </div>
         <span class="stock-pill is-${getStockStatus(product)}">${escapeHtml(getStockLabel(product))}</span>
-        <div class="price-row">
-          <span class="price">${money(product.price)}</span>
-          <span class="pack-size">${product.size}</span>
-        </div>
+        ${renderProductPricing(product)}
         <div class="card-actions">
           <a class="detail-button" href="${productUrl(product)}">View details</a>
           <button type="button" data-add="${product.id}" ${available ? "" : "disabled"}>
@@ -916,7 +996,7 @@ function renderCategoryCard(product) {
       <div class="category-info">
         <span>${product.badge}</span>
         <h3>${product.name}</h3>
-        <p>${product.size} - ${money(product.price)}</p>
+        ${renderProductPricing(product, "category")}
         <small class="clean-label-line">
           <i data-lucide="leaf"></i>
           Pure pantry direction
@@ -1098,10 +1178,8 @@ function renderSingleProductPage() {
           <span>${escapeHtml(product.size)}</span>
           <span>${product.rating}/5 rating</span>
         </div>
-        <div class="single-product-price">
-          <strong>${money(product.price)}</strong>
-          <span>${escapeHtml(getStockLabel(product))} / cart booking and WhatsApp support available</span>
-        </div>
+        ${renderProductPricing(product, "single")}
+        <p class="single-product-price-note">${escapeHtml(getStockLabel(product))} / cart booking and WhatsApp support available</p>
         <div class="single-product-actions">
           <button type="button" data-add="${product.id}" ${available ? "" : "disabled"}>
             <i data-lucide="plus"></i>
@@ -1162,9 +1240,8 @@ function openProductDetail(id) {
         <span class="product-badge">${product.badge}</span>
         <h3>${product.name}</h3>
         <p>${product.description}</p>
+        ${renderProductPricing(product, "detail")}
         <div class="detail-price">
-          <strong>${money(product.price)}</strong>
-          <span>${product.size}</span>
           <span>${product.rating}/5 rating</span>
           <span>${escapeHtml(getStockLabel(product))}</span>
         </div>
@@ -1239,7 +1316,7 @@ function getCartLines() {
 function getTotals() {
   const subtotal = getCartLines().reduce((sum, item) => sum + item.lineTotal, 0);
   const discount = state.couponApplied ? Math.round(subtotal * 0.1) : 0;
-  const delivery = subtotal === 0 || subtotal - discount >= 999 ? 0 : 69;
+  const delivery = subtotal === 0 || subtotal - discount >= FREE_DELIVERY_AT ? 0 : 69;
   const total = subtotal - discount + delivery;
   return { subtotal, discount, delivery, total };
 }
@@ -1252,10 +1329,9 @@ function getCartCategorySummary(lines) {
 }
 
 function renderCartProgress(totals) {
-  const freeDeliveryAt = 999;
   const qualifiedAmount = Math.max(0, totals.subtotal - totals.discount);
-  const remaining = Math.max(0, freeDeliveryAt - qualifiedAmount);
-  const progress = Math.min(100, Math.round((qualifiedAmount / freeDeliveryAt) * 100));
+  const remaining = Math.max(0, FREE_DELIVERY_AT - qualifiedAmount);
+  const progress = Math.min(100, Math.round((qualifiedAmount / FREE_DELIVERY_AT) * 100));
 
   return `
     <div class="cart-progress" aria-label="Free delivery progress">
@@ -1287,6 +1363,7 @@ function renderCartHighlights(lines, totals) {
       <div class="cart-hero-total">
         <small>Payable total</small>
         <strong>${money(totals.total)}</strong>
+        <span>${totals.delivery ? `${money(totals.delivery)} delivery` : "Free delivery"}</span>
       </div>
     </div>
     ${renderCartProgress(totals)}
@@ -1335,7 +1412,7 @@ function renderEmptyCartRecommendations() {
               </a>
               <div>
                 <strong>${escapeHtml(product.name)}</strong>
-                <span>${money(product.price)} / ${escapeHtml(product.size)}</span>
+                ${renderCompactPricing(product)}
               </div>
               <button type="button" data-add="${product.id}">
                 <i data-lucide="plus"></i>
@@ -1373,7 +1450,7 @@ function getCartAddOnProducts(lines) {
 }
 
 function renderCartCouponCard(totals) {
-  const discountText = state.couponApplied ? `${money(totals.discount)} saved with SPICE10` : "Use SPICE10 for 10% off";
+  const discountText = state.couponApplied ? `${money(totals.discount)} saved with ${LAUNCH_COUPON_CODE}` : `Use ${LAUNCH_COUPON_CODE} for 10% off`;
   const helperText = state.couponApplied
     ? "Coupon is already applied to this booking."
     : "Apply the launch coupon before entering delivery details.";
@@ -1411,7 +1488,7 @@ function renderCartAddOns(lines) {
                 </a>
                 <div>
                   <strong>${escapeHtml(product.name)}</strong>
-                  <span>${money(product.price)} / ${escapeHtml(product.size)}</span>
+                  ${renderCompactPricing(product)}
                 </div>
                 <button type="button" data-add="${product.id}">
                   <i data-lucide="plus"></i>
@@ -1485,7 +1562,7 @@ function getCartRangeText(lines) {
 
 function getFreeDeliverySummary(totals) {
   const qualifiedAmount = Math.max(0, totals.subtotal - totals.discount);
-  const remaining = Math.max(0, 999 - qualifiedAmount);
+  const remaining = Math.max(0, FREE_DELIVERY_AT - qualifiedAmount);
   return remaining ? `${money(remaining)} more for free delivery` : "Free delivery unlocked";
 }
 
@@ -1863,6 +1940,10 @@ function createOrderRecord(form, orderId, source) {
       size: item.size,
       quantity: item.quantity,
       price: item.price,
+      offerPrice: item.offerPrice || item.price,
+      mrp: item.mrp || item.price,
+      discountPrice: item.discountPrice || 0,
+      discountPercent: item.discountPercent || 0,
       lineTotal: item.lineTotal
     })),
     statusHistory: [
@@ -3032,10 +3113,16 @@ function renderCart() {
                   <h3>${escapeHtml(item.name)}</h3>
                   <p>${escapeHtml(item.description)}</p>
                   <span class="stock-pill is-${getStockStatus(item)}">${escapeHtml(getStockLabel(item))}</span>
-                  <strong>${money(item.price)} each</strong>
+                  <div class="cart-line-unit-price">
+                    <span>Unit price</span>
+                    ${renderCompactPricing(item)}
+                  </div>
                 </div>
                 <div class="cart-line-actions">
-                  <span class="cart-line-total">${money(item.lineTotal)}</span>
+                  <span class="cart-line-total">
+                    <small>Line total</small>
+                    <strong>${money(item.lineTotal)}</strong>
+                  </span>
                   <div class="quantity" aria-label="${escapeHtml(item.name)} quantity">
                     <button type="button" data-minus="${item.id}" aria-label="Decrease ${escapeHtml(item.name)}">-</button>
                     <span>${item.quantity}</span>
@@ -3071,10 +3158,10 @@ function renderCart() {
   });
   cartItems.querySelector("[data-apply-cart-coupon]")?.addEventListener("click", () => {
     state.couponApplied = true;
-    if (couponInput) couponInput.value = "SPICE10";
-    if (couponMessage) couponMessage.textContent = "SPICE10 applied.";
+    if (couponInput) couponInput.value = LAUNCH_COUPON_CODE;
+    if (couponMessage) couponMessage.textContent = `${LAUNCH_COUPON_CODE} applied.`;
     renderCart();
-    showToast("SPICE10 applied");
+    showToast(`${LAUNCH_COUPON_CODE} applied`);
   });
   bindAddButtons(cartItems);
 
@@ -3334,13 +3421,13 @@ document.addEventListener("keydown", (event) => {
 
 document.querySelector("#applyCoupon")?.addEventListener("click", () => {
   const code = couponInput.value.trim().toUpperCase();
-  if (code === "SPICE10") {
+  if (code === LAUNCH_COUPON_CODE) {
     state.couponApplied = true;
-    couponMessage.textContent = "SPICE10 applied.";
+    couponMessage.textContent = `${LAUNCH_COUPON_CODE} applied.`;
     renderCart();
   } else {
     state.couponApplied = false;
-    couponMessage.textContent = "Try SPICE10 for 10% off.";
+    couponMessage.textContent = `Try ${LAUNCH_COUPON_CODE} for 10% off.`;
     renderCart();
   }
 });

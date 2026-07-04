@@ -2,6 +2,7 @@ node_modules/
 dist/
 .vite/
 server-data/
+server-data-*/
 *.tmp
 .chrome-check-*/
 .qa-*-profile/

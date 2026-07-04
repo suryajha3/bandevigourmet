@@ -16,5 +16,18 @@
     "lucide": "^1.22.0",
     "nodemailer": "^9.0.3",
     "pg": "^8.22.0"
-  }
+  },
+  "description": "A standalone storefront project for selling roasted makhana, Indian masala powders, whole spices, and combo packs.",
+  "main": "admin.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/suryajha3/bandevigourmet.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/suryajha3/bandevigourmet/issues"
+  },
+  "homepage": "https://github.com/suryajha3/bandevigourmet#readme"
 }

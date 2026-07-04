@@ -41,6 +41,8 @@ const state = {
 const loginForm = document.querySelector("#adminLoginForm");
 const loginMessage = document.querySelector("#adminLoginMessage");
 const dashboard = document.querySelector("#adminDashboard");
+const adminHero = document.querySelector(".admin-hero");
+const adminNavLinks = Array.from(document.querySelectorAll("[data-admin-nav]"));
 const statusBox = document.querySelector("#adminStatus");
 const statsBox = document.querySelector("#adminStats");
 const pipelineBox = document.querySelector("#adminPipeline");
@@ -55,9 +57,25 @@ const searchInput = document.querySelector("#adminSearchInput");
 const orderFilterInput = document.querySelector("#adminOrderFilter");
 const leadFilterInput = document.querySelector("#adminLeadFilter");
 const toast = document.querySelector("#adminToast");
+const ADMIN_SECTIONS = ["orders", "products", "notifications", "support", "wholesale", "customers"];
 
 function money(value) {
   return `Rs. ${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(value || 0)}`;
+}
+
+function getProductPricing(product = {}) {
+  const offerPrice = Math.max(0, Number(product.offerPrice ?? product.price ?? 0));
+  const explicitDiscount = Math.max(0, Number(product.discountPrice || 0));
+  const mrp = Math.max(offerPrice, Number(product.mrp || 0) || offerPrice + explicitDiscount);
+  const discountPrice = Math.max(0, Number(product.discountPrice ?? mrp - offerPrice));
+  const discountPercent = mrp > offerPrice && mrp > 0 ? Math.round((discountPrice / mrp) * 100) : Number(product.discountPercent || 0);
+  return { mrp, offerPrice, discountPrice, discountPercent };
+}
+
+function pricingSummary(product = {}) {
+  const pricing = getProductPricing(product);
+  const discount = pricing.discountPrice ? `${money(pricing.discountPrice)} saved / ${pricing.discountPercent}% off` : "No discount";
+  return `MRP ${money(pricing.mrp)} | Offer ${money(pricing.offerPrice)} | ${discount}`;
 }
 
 function escapeHtml(value) {
@@ -160,6 +178,33 @@ async function api(path, options = {}) {
 
 function setStatus(message, type = "info") {
   statusBox.innerHTML = `<div class="admin-alert ${type}">${escapeHtml(message)}</div>`;
+}
+
+function setAdminAuthenticated(isAuthenticated) {
+  document.body.classList.toggle("admin-authed", Boolean(isAuthenticated));
+  if (adminHero) adminHero.hidden = Boolean(isAuthenticated);
+  if (!dashboard) return;
+  dashboard.hidden = !isAuthenticated;
+}
+
+function getActiveAdminSection() {
+  const hash = window.location.hash.replace("#", "");
+  return ADMIN_SECTIONS.includes(hash) ? hash : "orders";
+}
+
+function updateAdminNavState(section = getActiveAdminSection()) {
+  adminNavLinks.forEach((link) => {
+    const active = link.dataset.adminNav === section;
+    link.classList.toggle("is-active", active);
+    link.setAttribute("aria-current", active ? "page" : "false");
+  });
+}
+
+function showAdminSection(section = getActiveAdminSection(), scroll = true) {
+  updateAdminNavState(section);
+  if (!state.token || dashboard?.hidden) return;
+  const target = document.getElementById(section);
+  if (target && scroll) target.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
 function formatDate(value) {
@@ -527,11 +572,15 @@ function renderAdminOrderItems(order) {
       ${items
         .map((item) => {
           const itemTotal = item.lineTotal || (item.price || 0) * (item.quantity || 0);
+          const pricing = getProductPricing(item);
+          const priceNote = pricing.discountPrice
+            ? `Offer ${money(pricing.offerPrice)} / MRP ${money(pricing.mrp)} / ${pricing.discountPercent}% off`
+            : `Offer ${money(pricing.offerPrice)}`;
           return `
             <div class="admin-order-item">
               <span>
                 <strong>${escapeHtml(item.name || "Product")}</strong>
-                <small>${escapeHtml(item.size || "Pack size pending")} x ${item.quantity || 0}</small>
+                <small>${escapeHtml(item.size || "Pack size pending")} x ${item.quantity || 0} | ${escapeHtml(priceNote)}</small>
               </span>
               <b>${money(itemTotal)}</b>
             </div>
@@ -839,7 +888,9 @@ function renderProductsAdmin() {
       <form class="admin-product-form" data-new-product-form>
         <input name="name" type="text" placeholder="Product name" required />
         <select name="category" aria-label="Product category">${productCategoryOptions()}</select>
-        <input name="price" type="number" min="0" step="1" placeholder="Price" required />
+        <input name="mrp" type="number" min="0" step="1" placeholder="MRP" />
+        <input name="price" type="number" min="0" step="1" placeholder="Offer price" required />
+        <input name="discountPrice" type="number" min="0" step="1" placeholder="Discount savings" />
         <input name="size" type="text" placeholder="Pack size" required />
         <input name="badge" type="text" placeholder="Badge" value="Pure" />
         <input name="stock" type="number" min="0" step="1" placeholder="Stock" value="100" />
@@ -871,12 +922,13 @@ function renderProductAdminCard(product) {
   const tags = Array.isArray(product.tags) ? product.tags.join(", ") : "";
   const details = product.details || {};
   const ingredientCount = Array.isArray(details.ingredients) ? details.ingredients.length : 0;
+  const pricing = getProductPricing(product);
   return `
     <article class="admin-product-card" data-status="${escapeHtml(product.stockStatus || "in-stock")}">
       <header>
         <div>
           <h3>${escapeHtml(product.name || product.id)}</h3>
-          <p>${escapeHtml(product.id)} | ${escapeHtml(product.category || "product")} | ${money(product.price)}</p>
+          <p>${escapeHtml(product.id)} | ${escapeHtml(product.category || "product")} | ${escapeHtml(pricingSummary(product))}</p>
         </div>
         <span class="status-pill">${product.active === false ? "inactive" : escapeHtml(product.stockStatus || "in-stock")}</span>
       </header>
@@ -896,7 +948,9 @@ function renderProductAdminCard(product) {
       <form class="admin-product-form" data-product-form="${escapeHtml(product.id)}">
         <input name="name" type="text" placeholder="Product name" value="${escapeHtml(product.name || "")}" required />
         <select name="category" aria-label="Product category">${productCategoryOptions(product.category)}</select>
-        <input name="price" type="number" min="0" step="1" placeholder="Price" value="${Number(product.price || 0)}" />
+        <input name="mrp" type="number" min="0" step="1" placeholder="MRP" value="${pricing.mrp}" />
+        <input name="price" type="number" min="0" step="1" placeholder="Offer price" value="${pricing.offerPrice}" />
+        <input name="discountPrice" type="number" min="0" step="1" placeholder="Discount savings" value="${pricing.discountPrice}" />
         <input name="size" type="text" placeholder="Pack size" value="${escapeHtml(product.size || "")}" />
         <input name="badge" type="text" placeholder="Badge" value="${escapeHtml(product.badge || "")}" />
         <input name="stock" type="number" min="0" step="1" placeholder="Stock" value="${Number(product.stock || 0)}" />
@@ -979,8 +1033,9 @@ function renderAll() {
 
 async function loadDashboard() {
   if (!state.token) {
-    dashboard.hidden = true;
+    setAdminAuthenticated(false);
     setStatus("Login with the admin password to manage orders.");
+    updateAdminNavState();
     return;
   }
 
@@ -1005,11 +1060,12 @@ async function loadDashboard() {
     state.supportRequests = supportPayload.supportRequests || [];
     state.products = productsPayload.products || [];
     state.notificationConfig = notificationsPayload.config || null;
-    dashboard.hidden = false;
+    setAdminAuthenticated(true);
     setStatus("Admin backend connected.", "success");
     renderAll();
+    showAdminSection(getActiveAdminSection(), Boolean(window.location.hash));
   } catch (error) {
-    dashboard.hidden = true;
+    setAdminAuthenticated(false);
     setStatus(error.message, "error");
   }
 }
@@ -1334,10 +1390,14 @@ function productPayloadFromForm(form) {
   const data = new FormData(form);
   const imagePath = String(data.get("imagePath") || "").trim();
   const storedImage = String(data.get("image") || "").trim();
+  const discountValue = String(data.get("discountPrice") || "").trim();
   return {
     name: data.get("name"),
     category: data.get("category"),
+    mrp: Number(data.get("mrp") || 0),
     price: Number(data.get("price") || 0),
+    offerPrice: Number(data.get("price") || 0),
+    ...(discountValue ? { discountPrice: Number(discountValue) } : {}),
     size: data.get("size"),
     badge: data.get("badge"),
     stock: Number(data.get("stock") || 0),
@@ -1487,6 +1547,24 @@ document.querySelectorAll("[data-export]").forEach((button) => {
   button.addEventListener("click", () => downloadAdminExport(button.dataset.export));
 });
 
+adminNavLinks.forEach((link) => {
+  link.addEventListener("click", (event) => {
+    event.preventDefault();
+    const section = link.dataset.adminNav;
+    if (!ADMIN_SECTIONS.includes(section)) return;
+    history.replaceState(null, "", `#${section}`);
+    showAdminSection(section);
+  });
+});
+
+document.querySelector(".admin-header .brand")?.addEventListener("click", (event) => {
+  event.preventDefault();
+  history.replaceState(null, "", "#orders");
+  showAdminSection("orders");
+});
+
+window.addEventListener("hashchange", () => showAdminSection(getActiveAdminSection(), true));
+
 document.querySelector("#refreshAdmin").addEventListener("click", loadDashboard);
 document.querySelector("#logoutAdmin").addEventListener("click", () => {
   state.token = "";
@@ -1500,7 +1578,8 @@ document.querySelector("#logoutAdmin").addEventListener("click", () => {
   state.products = [];
   state.notificationConfig = null;
   window.sessionStorage.removeItem(TOKEN_KEY);
-  dashboard.hidden = true;
+  setAdminAuthenticated(false);
+  updateAdminNavState();
   setStatus("Logged out.");
 });
 

@@ -37,6 +37,12 @@ const ORDER_STATUSES = new Set(["booked", "confirmed", "packed", "dispatched", "
 const WHOLESALE_STATUSES = new Set(["new", "contacted", "quoted", "sample-sent", "converted", "closed"]);
 const SUPPORT_STATUSES = new Set(["new", "reviewing", "waiting-customer", "resolved", "closed"]);
 const PRODUCT_STOCK_STATUSES = new Set(["in-stock", "low-stock", "out-of-stock", "preorder"]);
+const DEFAULT_MRP_MULTIPLIERS = {
+  makhana: 1.18,
+  masala: 1.22,
+  poha: 1.16,
+  combo: 1.14
+};
 const API_CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
@@ -129,6 +135,27 @@ function notificationId() {
 
 function money(value) {
   return `Rs. ${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Number(value || 0))}`;
+}
+
+function getDefaultMrp(offerPrice, category) {
+  const offer = Math.max(0, Number(offerPrice || 0));
+  if (!offer) return 0;
+  const multiplier = DEFAULT_MRP_MULTIPLIERS[category] || 1.18;
+  const rounded = Math.ceil((offer * multiplier) / 10) * 10 - 1;
+  return Math.max(offer, rounded);
+}
+
+function normalizeProductPricing(input = {}, existing = {}, category = "masala") {
+  const offerPrice = Math.max(0, Number(input.offerPrice ?? input.price ?? existing.offerPrice ?? existing.price ?? 0));
+  const explicitMrp = Number(input.mrp ?? existing.mrp ?? 0);
+  const explicitDiscount = Number(input.discountPrice ?? existing.discountPrice ?? 0);
+  const mrp = Math.max(
+    offerPrice,
+    explicitMrp > 0 ? explicitMrp : explicitDiscount > 0 ? offerPrice + explicitDiscount : getDefaultMrp(offerPrice, category)
+  );
+  const discountPrice = Math.max(0, mrp - offerPrice);
+  const discountPercent = mrp > offerPrice && mrp > 0 ? Math.round((discountPrice / mrp) * 100) : 0;
+  return { mrp, offerPrice, discountPrice, discountPercent };
 }
 
 function html(value) {
@@ -257,11 +284,16 @@ function adminSupportRequest(request) {
 }
 
 function publicProduct(product) {
+  const pricing = normalizeProductPricing(product, product, product.category || "masala");
   return {
     id: product.id,
     name: product.name,
     category: product.category,
-    price: Number(product.price || 0),
+    price: pricing.offerPrice,
+    offerPrice: pricing.offerPrice,
+    mrp: pricing.mrp,
+    discountPrice: pricing.discountPrice,
+    discountPercent: pricing.discountPercent,
     size: product.size,
     badge: product.badge,
     rating: Number(product.rating || 0),
@@ -451,12 +483,18 @@ function normalizeProduct(input = {}, existing = {}) {
         .map((tag) => text(tag, 50))
         .filter(Boolean)
         .slice(0, 12);
+  const category = text(input.category ?? existing.category ?? "masala", 40).toLowerCase();
+  const pricing = normalizeProductPricing(input, existing, category);
 
   return {
     id,
     name: text(input.name ?? existing.name ?? "New product", 160),
-    category: text(input.category ?? existing.category ?? "masala", 40).toLowerCase(),
-    price: Math.max(0, Number(input.price ?? existing.price ?? 0)),
+    category,
+    price: pricing.offerPrice,
+    offerPrice: pricing.offerPrice,
+    mrp: pricing.mrp,
+    discountPrice: pricing.discountPrice,
+    discountPercent: pricing.discountPercent,
     size: text(input.size ?? existing.size ?? "100 g", 80),
     badge: text(input.badge ?? existing.badge ?? "Pure", 80),
     rating: Math.max(0, Math.min(5, Number(input.rating ?? existing.rating ?? 4.8))),
@@ -1061,6 +1099,10 @@ function productExportRows(db) {
     id: product.id,
     name: product.name || "",
     category: product.category || "",
+    mrp: product.mrp || 0,
+    offerPrice: product.offerPrice || product.price || 0,
+    discountPrice: product.discountPrice || 0,
+    discountPercent: product.discountPercent || 0,
     price: product.price || 0,
     size: product.size || "",
     badge: product.badge || "",
@@ -1287,6 +1329,10 @@ function normalizeOrder(input) {
       size: text(item.size, 80),
       quantity: Number(item.quantity || 0),
       price: Number(item.price || 0),
+      offerPrice: Number(item.offerPrice || item.price || 0),
+      mrp: Number(item.mrp || item.price || 0),
+      discountPrice: Number(item.discountPrice || 0),
+      discountPercent: Number(item.discountPercent || 0),
       lineTotal: Number(item.lineTotal || 0)
     })),
     statusHistory: [
