@@ -25,6 +25,7 @@
       <nav class="main-nav" aria-label="Admin navigation">
         <a href="#orders" data-admin-nav="orders">Orders</a>
         <a href="#products" data-admin-nav="products">Products</a>
+        <a href="#coupons" data-admin-nav="coupons">Offers</a>
         <a href="#notifications" data-admin-nav="notifications">Notifications</a>
         <a href="#support" data-admin-nav="support">Support</a>
         <a href="#wholesale" data-admin-nav="wholesale">Wholesale</a>
@@ -157,6 +158,17 @@
             <button class="admin-export-button" type="button" data-export="products">Export products</button>
           </div>
           <div class="admin-order-list" id="adminProductList"></div>
+        </section>
+
+        <section class="admin-panel" id="coupons" aria-labelledby="coupons-admin-title">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Offer manager</p>
+              <h2 id="coupons-admin-title">Coupons and checkout savings</h2>
+            </div>
+            <button class="admin-export-button" type="button" data-export="coupons">Export offers</button>
+          </div>
+          <div class="admin-order-list" id="adminCouponList"></div>
         </section>
 
         <section class="admin-panel" id="support" aria-labelledby="support-admin-title">

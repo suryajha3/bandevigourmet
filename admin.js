@@ -32,6 +32,7 @@ const state = {
   notifications: [],
   supportRequests: [],
   products: [],
+  coupons: [],
   notificationConfig: null,
   search: "",
   orderFilter: "all",
@@ -53,11 +54,12 @@ const customerList = document.querySelector("#adminCustomerList");
 const notificationList = document.querySelector("#adminNotificationList");
 const supportList = document.querySelector("#adminSupportList");
 const productList = document.querySelector("#adminProductList");
+const couponList = document.querySelector("#adminCouponList");
 const searchInput = document.querySelector("#adminSearchInput");
 const orderFilterInput = document.querySelector("#adminOrderFilter");
 const leadFilterInput = document.querySelector("#adminLeadFilter");
 const toast = document.querySelector("#adminToast");
-const ADMIN_SECTIONS = ["orders", "products", "notifications", "support", "wholesale", "customers"];
+const ADMIN_SECTIONS = ["orders", "products", "coupons", "notifications", "support", "wholesale", "customers"];
 
 function money(value) {
   return `Rs. ${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(value || 0)}`;
@@ -457,6 +459,8 @@ function renderStats() {
     featuredProducts: state.products.filter((item) => item.featured === true).length,
     missingImageProducts: state.products.filter((item) => !item.image).length,
     lowStockProducts: state.products.filter((item) => ["low-stock", "out-of-stock"].includes(item.stockStatus)).length,
+    coupons: state.coupons.length,
+    activeCoupons: state.coupons.filter((item) => item.active !== false).length,
     pendingNotifications: state.notifications.filter((item) => ["queued", "ready", "failed"].includes(item.status)).length
   };
 
@@ -471,6 +475,7 @@ function renderStats() {
     <article><strong>${summary.featuredProducts || 0}</strong><span>Featured</span></article>
     <article><strong>${summary.missingImageProducts || 0}</strong><span>Missing photos</span></article>
     <article><strong>${summary.lowStockProducts || 0}</strong><span>Low stock</span></article>
+    <article><strong>${summary.activeCoupons || 0}</strong><span>Active offers</span></article>
     <article><strong>${summary.openSupportRequests || 0}</strong><span>Open support</span></article>
     <article><strong>${summary.pendingNotifications || 0}</strong><span>Open alerts</span></article>
   `;
@@ -954,6 +959,149 @@ function renderProductDetailsEditor(details = {}, open = false) {
   `;
 }
 
+function couponTypeOptions(selected = "percent") {
+  const options = [
+    ["percent", "Percent discount"],
+    ["fixed", "Fixed amount off"],
+    ["free-delivery", "Free delivery"]
+  ];
+  return options
+    .map(([value, label]) => `<option value="${value}" ${selected === value ? "selected" : ""}>${label}</option>`)
+    .join("");
+}
+
+function couponTypeLabel(type) {
+  if (type === "fixed") return "Fixed amount";
+  if (type === "free-delivery") return "Free delivery";
+  return "Percent discount";
+}
+
+function couponSavingsLabel(coupon = {}) {
+  if (coupon.type === "free-delivery") return "Free delivery";
+  if (coupon.type === "fixed") return `${money(Number(coupon.value || 0))} off`;
+  return `${Number(coupon.value || 0)}% off`;
+}
+
+function couponMatchesSearch(coupon = {}) {
+  const query = state.search.trim().toLowerCase();
+  if (!query) return true;
+  return [coupon.code, coupon.label, coupon.type, coupon.adminNote].some((value) => String(value || "").toLowerCase().includes(query));
+}
+
+function renderCouponManagerBoard(coupons = [], visibleCount = coupons.length) {
+  const activeCoupons = coupons.filter((coupon) => coupon.active !== false);
+  const shownCoupons = coupons.filter((coupon) => coupon.autoShow === true && coupon.active !== false);
+  const limitedCoupons = coupons.filter((coupon) => Number(coupon.usageLimit || 0) > 0);
+  const totalUsage = coupons.reduce((sum, coupon) => sum + Number(coupon.usedCount || 0), 0);
+  return `
+    <div class="admin-product-board" aria-label="Coupon summary">
+      <article><strong>${coupons.length}</strong><span>Total offers</span></article>
+      <article><strong>${activeCoupons.length}</strong><span>Active offers</span></article>
+      <article><strong>${shownCoupons.length}</strong><span>Shown in cart</span></article>
+      <article><strong>${limitedCoupons.length}</strong><span>Usage limited</span></article>
+      <article><strong>${totalUsage}</strong><span>Total uses</span></article>
+      <article><strong>${visibleCount}</strong><span>Showing after search</span></article>
+    </div>
+  `;
+}
+
+function renderCouponsAdmin() {
+  if (!couponList) return;
+  const visibleCoupons = state.coupons.filter(couponMatchesSearch);
+
+  couponList.innerHTML = `
+    ${renderCouponManagerBoard(state.coupons, visibleCoupons.length)}
+    <article class="admin-product-card admin-new-product">
+      <header>
+        <div>
+          <h3>Add new offer</h3>
+          <p>Create a checkout coupon for launch offers, festive campaigns, or free-delivery campaigns.</p>
+        </div>
+      </header>
+      <form class="admin-product-form" data-new-coupon-form>
+        <input name="code" type="text" placeholder="Coupon code, e.g. SPICE10" required />
+        <input name="label" type="text" placeholder="Offer label" required />
+        <select name="type" aria-label="Coupon type">${couponTypeOptions()}</select>
+        <input name="value" type="number" min="0" step="1" placeholder="Value: 10 or 100" value="10" />
+        <input name="minSubtotal" type="number" min="0" step="1" placeholder="Minimum cart value" value="0" />
+        <input name="maxDiscount" type="number" min="0" step="1" placeholder="Max discount cap" value="250" />
+        <input name="usageLimit" type="number" min="0" step="1" placeholder="Usage limit, 0 = no limit" value="0" />
+        <input name="startsAt" type="text" placeholder="Start date/time optional" />
+        <input name="endsAt" type="text" placeholder="End date/time optional" />
+        <input name="adminNote" type="text" placeholder="Internal note" />
+        <label class="admin-checkbox">
+          <input name="autoShow" type="checkbox" checked />
+          <span>Show this offer inside cart</span>
+        </label>
+        <label class="admin-checkbox">
+          <input name="active" type="checkbox" checked />
+          <span>Active at checkout</span>
+        </label>
+        <button type="submit">Add offer</button>
+      </form>
+    </article>
+    ${
+      visibleCoupons.length
+        ? visibleCoupons.map(renderCouponAdminCard).join("")
+        : `<div class="admin-empty">No offers matched the current search.</div>`
+    }
+  `;
+
+  couponList.querySelector("[data-new-coupon-form]")?.addEventListener("submit", createAdminCoupon);
+  couponList.querySelectorAll("[data-coupon-form]").forEach((form) => {
+    form.addEventListener("submit", updateAdminCoupon);
+  });
+}
+
+function renderCouponAdminCard(coupon = {}) {
+  const status = coupon.active === false ? "inactive" : "in-stock";
+  const usageLimit = Number(coupon.usageLimit || 0);
+  const usedCount = Number(coupon.usedCount || 0);
+  return `
+    <article class="admin-product-card" data-status="${status}">
+      <header>
+        <div>
+          <h3>${escapeHtml(coupon.code || "Offer")}</h3>
+          <p>${escapeHtml(coupon.label || "")} | ${escapeHtml(couponTypeLabel(coupon.type))} | ${escapeHtml(couponSavingsLabel(coupon))}</p>
+        </div>
+        <div class="admin-product-status-stack">
+          <span class="status-pill">${coupon.active === false ? "inactive" : "active"}</span>
+          ${coupon.autoShow ? `<span class="status-pill featured">Cart visible</span>` : ""}
+        </div>
+      </header>
+      <div class="admin-product-kpi-grid">
+        <span><strong>Savings</strong>${escapeHtml(couponSavingsLabel(coupon))}</span>
+        <span><strong>Minimum</strong>${money(Number(coupon.minSubtotal || 0))}</span>
+        <span><strong>Cap</strong>${Number(coupon.maxDiscount || 0) ? money(Number(coupon.maxDiscount || 0)) : "No cap"}</span>
+        <span><strong>Usage</strong>${usedCount}${usageLimit ? ` / ${usageLimit}` : " used"}</span>
+      </div>
+      <form class="admin-product-form" data-coupon-form="${escapeHtml(coupon.code || "")}">
+        <input name="code" type="text" value="${escapeHtml(coupon.code || "")}" readonly />
+        <input name="label" type="text" placeholder="Offer label" value="${escapeHtml(coupon.label || "")}" required />
+        <select name="type" aria-label="Coupon type">${couponTypeOptions(coupon.type)}</select>
+        <input name="value" type="number" min="0" step="1" placeholder="Value" value="${Number(coupon.value || 0)}" />
+        <input name="minSubtotal" type="number" min="0" step="1" placeholder="Minimum cart value" value="${Number(coupon.minSubtotal || 0)}" />
+        <input name="maxDiscount" type="number" min="0" step="1" placeholder="Max discount cap" value="${Number(coupon.maxDiscount || 0)}" />
+        <input name="usageLimit" type="number" min="0" step="1" placeholder="Usage limit" value="${usageLimit}" />
+        <input name="usedCount" type="number" min="0" step="1" placeholder="Used count" value="${usedCount}" />
+        <input name="startsAt" type="text" placeholder="Start date/time optional" value="${escapeHtml(coupon.startsAt || "")}" />
+        <input name="endsAt" type="text" placeholder="End date/time optional" value="${escapeHtml(coupon.endsAt || "")}" />
+        <input name="adminNote" type="text" placeholder="Internal note" value="${escapeHtml(coupon.adminNote || "")}" />
+        <label class="admin-checkbox">
+          <input name="autoShow" type="checkbox" ${coupon.autoShow ? "checked" : ""} />
+          <span>Show this offer inside cart</span>
+        </label>
+        <label class="admin-checkbox">
+          <input name="active" type="checkbox" ${coupon.active === false ? "" : "checked"} />
+          <span>Active at checkout</span>
+        </label>
+        <button type="submit">Update offer</button>
+      </form>
+      <small>Updated ${escapeHtml(formatDate(coupon.updatedAt))}</small>
+    </article>
+  `;
+}
+
 function renderProductsAdmin() {
   if (!productList) return;
   const visibleProducts = state.products.filter(productMatchesSearch);
@@ -1132,6 +1280,7 @@ function renderAll() {
   renderNotifications();
   renderOrders();
   renderProductsAdmin();
+  renderCouponsAdmin();
   renderWholesale();
   renderSupportRequests();
   renderCustomers();
@@ -1147,7 +1296,17 @@ async function loadDashboard() {
 
   try {
     setStatus("Loading admin data...");
-    const [ordersPayload, wholesalePayload, summaryPayload, customersPayload, storagePayload, notificationsPayload, supportPayload, productsPayload] = await Promise.all([
+    const [
+      ordersPayload,
+      wholesalePayload,
+      summaryPayload,
+      customersPayload,
+      storagePayload,
+      notificationsPayload,
+      supportPayload,
+      productsPayload,
+      couponsPayload
+    ] = await Promise.all([
       api("/api/admin/orders"),
       api("/api/admin/wholesale"),
       api("/api/admin/summary").catch(() => ({ summary: null })),
@@ -1155,7 +1314,8 @@ async function loadDashboard() {
       api("/api/admin/storage").catch(() => ({ storage: null })),
       api("/api/admin/notifications").catch(() => ({ notifications: [], config: null })),
       api("/api/admin/support").catch(() => ({ supportRequests: [] })),
-      api("/api/admin/products").catch(() => ({ products: [] }))
+      api("/api/admin/products").catch(() => ({ products: [] })),
+      api("/api/admin/coupons").catch(() => ({ coupons: [] }))
     ]);
     state.orders = ordersPayload.orders || [];
     state.enquiries = wholesalePayload.enquiries || [];
@@ -1165,6 +1325,7 @@ async function loadDashboard() {
     state.notifications = notificationsPayload.notifications || [];
     state.supportRequests = supportPayload.supportRequests || [];
     state.products = productsPayload.products || [];
+    state.coupons = couponsPayload.coupons || [];
     state.notificationConfig = notificationsPayload.config || null;
     setAdminAuthenticated(true);
     setStatus("Admin backend connected.", "success");
@@ -1589,6 +1750,61 @@ async function updateAdminProduct(event) {
   }
 }
 
+function couponPayloadFromForm(form) {
+  const data = new FormData(form);
+  return {
+    code: data.get("code"),
+    label: data.get("label"),
+    type: data.get("type"),
+    value: Number(data.get("value") || 0),
+    minSubtotal: Number(data.get("minSubtotal") || 0),
+    maxDiscount: Number(data.get("maxDiscount") || 0),
+    usageLimit: Number(data.get("usageLimit") || 0),
+    usedCount: Number(data.get("usedCount") || 0),
+    startsAt: data.get("startsAt"),
+    endsAt: data.get("endsAt"),
+    adminNote: data.get("adminNote"),
+    autoShow: form.elements.autoShow ? data.get("autoShow") === "on" : false,
+    active: form.elements.active ? data.get("active") === "on" : false
+  };
+}
+
+async function createAdminCoupon(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  try {
+    const payload = await api("/api/admin/coupons", {
+      method: "POST",
+      body: JSON.stringify(couponPayloadFromForm(form))
+    });
+    state.coupons = [payload.coupon, ...state.coupons];
+    form.reset();
+    renderAll();
+    showToast("Offer added");
+    loadDashboard();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function updateAdminCoupon(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const couponCode = form.dataset.couponForm;
+  try {
+    const payload = await api(`/api/admin/coupons/${encodeURIComponent(couponCode)}`, {
+      method: "PATCH",
+      body: JSON.stringify(couponPayloadFromForm(form))
+    });
+    state.coupons = state.coupons.map((coupon) => (coupon.code === payload.coupon.code ? payload.coupon : coupon));
+    renderAll();
+    showToast(`${payload.coupon.code} updated`);
+    loadDashboard();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
 async function downloadAdminExport(type) {
   try {
     const response = await fetch(`${API_ORIGIN}/api/admin/export?type=${encodeURIComponent(type)}`, {
@@ -1683,6 +1899,7 @@ document.querySelector("#logoutAdmin").addEventListener("click", () => {
   state.notifications = [];
   state.supportRequests = [];
   state.products = [];
+  state.coupons = [];
   state.notificationConfig = null;
   window.sessionStorage.removeItem(TOKEN_KEY);
   setAdminAuthenticated(false);

@@ -36,7 +36,17 @@ import { STORE_CONFIG } from "./store-config.js";
 const API_TIMEOUT_MS = 6000;
 const API_ORIGIN = window.location.origin;
 const FREE_DELIVERY_AT = 999;
+const DEFAULT_DELIVERY_FEE = 69;
 const LAUNCH_COUPON_CODE = "SPICE10";
+const DEFAULT_COUPON = {
+  code: LAUNCH_COUPON_CODE,
+  label: "Launch 10% off",
+  type: "percent",
+  value: 10,
+  minSubtotal: 0,
+  maxDiscount: 250,
+  autoShow: true
+};
 const DEFAULT_MRP_MULTIPLIERS = {
   makhana: 1.18,
   masala: 1.22,
@@ -128,6 +138,8 @@ const state = {
   search: "",
   sort: "featured",
   couponApplied: false,
+  availableCoupons: [DEFAULT_COUPON],
+  activeCoupon: null,
   checkoutStep: "cart",
   cart: loadCart(),
   customer: loadCustomer(),
@@ -765,8 +777,116 @@ function getFreeDeliveryPriceText(amount) {
   return remaining ? `${money(remaining)} to free delivery` : "Free delivery eligible";
 }
 
+function normalizeCouponForClient(coupon = {}) {
+  const code = String(coupon.code || "").trim().toUpperCase().replace(/[^A-Z0-9-]/g, "");
+  if (!code) return null;
+  const type = ["percent", "fixed", "free-delivery"].includes(coupon.type) ? coupon.type : "percent";
+  return {
+    code,
+    label: String(coupon.label || `${code} offer`).trim(),
+    type,
+    value: Math.max(0, Number(coupon.value || 0)),
+    minSubtotal: Math.max(0, Number(coupon.minSubtotal || 0)),
+    maxDiscount: Math.max(0, Number(coupon.maxDiscount || 0)),
+    autoShow: coupon.autoShow !== false
+  };
+}
+
+function getDisplayCoupon() {
+  return state.activeCoupon || state.availableCoupons.find((coupon) => coupon.autoShow !== false) || DEFAULT_COUPON;
+}
+
+function couponValueText(coupon = getDisplayCoupon()) {
+  if (coupon.type === "free-delivery") return "free delivery";
+  if (coupon.type === "fixed") return `${money(coupon.value)} off`;
+  return `${Number(coupon.value || 0)}% off`;
+}
+
+function calculateCouponDiscount(coupon, subtotal) {
+  const activeCoupon = normalizeCouponForClient(coupon);
+  const amount = Math.max(0, Number(subtotal || 0));
+  if (!activeCoupon || amount < Number(activeCoupon.minSubtotal || 0)) return { discount: 0, freeDelivery: false };
+  if (activeCoupon.type === "free-delivery") return { discount: 0, freeDelivery: true };
+  const rawDiscount =
+    activeCoupon.type === "fixed" ? Number(activeCoupon.value || 0) : Math.round((amount * Number(activeCoupon.value || 0)) / 100);
+  const cappedDiscount = activeCoupon.maxDiscount ? Math.min(rawDiscount, activeCoupon.maxDiscount) : rawDiscount;
+  return { discount: Math.max(0, Math.min(amount, Math.round(cappedDiscount))), freeDelivery: false };
+}
+
+function localCouponValidation(code, subtotal) {
+  const couponCode = String(code || "").trim().toUpperCase();
+  const coupon = state.availableCoupons.find((item) => item.code === couponCode) || (couponCode === DEFAULT_COUPON.code ? DEFAULT_COUPON : null);
+  if (!coupon) return { valid: false, message: "Coupon code was not found." };
+  if (subtotal < Number(coupon.minSubtotal || 0)) {
+    return { valid: false, message: `${money(Number(coupon.minSubtotal || 0) - subtotal)} more needed for this coupon.` };
+  }
+  const couponValue = calculateCouponDiscount(coupon, subtotal);
+  return {
+    valid: true,
+    coupon,
+    discount: couponValue.discount,
+    freeDelivery: couponValue.freeDelivery,
+    message: couponValue.freeDelivery ? `${coupon.code} gives free delivery.` : `${coupon.code} applied.`
+  };
+}
+
+async function syncCouponsFromBackend() {
+  try {
+    const payload = await apiRequest("/api/coupons");
+    const coupons = (payload.coupons || []).map(normalizeCouponForClient).filter(Boolean);
+    state.availableCoupons = coupons.length ? coupons : [DEFAULT_COUPON];
+    if (state.activeCoupon && !state.availableCoupons.some((coupon) => coupon.code === state.activeCoupon.code)) {
+      state.activeCoupon = null;
+      state.couponApplied = false;
+    }
+    renderCart();
+    renderProducts();
+    renderCategoryProducts();
+  } catch {
+    state.availableCoupons = [DEFAULT_COUPON];
+  }
+}
+
+async function applyCouponCode(code = getDisplayCoupon().code) {
+  const couponCode = String(code || "").trim().toUpperCase();
+  const subtotal = getCartLines().reduce((sum, item) => sum + item.lineTotal, 0);
+  if (!couponCode) {
+    state.activeCoupon = null;
+    state.couponApplied = false;
+    if (couponMessage) couponMessage.textContent = "Enter a coupon code.";
+    renderCart();
+    return;
+  }
+
+  let result = null;
+  try {
+    result = await apiRequest("/api/coupons/validate", {
+      method: "POST",
+      body: JSON.stringify({ code: couponCode, subtotal, delivery: DEFAULT_DELIVERY_FEE })
+    });
+  } catch {
+    result = localCouponValidation(couponCode, subtotal);
+  }
+
+  if (result?.valid && result.coupon) {
+    state.activeCoupon = normalizeCouponForClient(result.coupon);
+    state.couponApplied = true;
+    if (couponInput) couponInput.value = state.activeCoupon.code;
+    if (couponMessage) couponMessage.textContent = result.message || `${state.activeCoupon.code} applied.`;
+    renderCart();
+    showToast(`${state.activeCoupon.code} applied`);
+    return;
+  }
+
+  state.activeCoupon = null;
+  state.couponApplied = false;
+  if (couponMessage) couponMessage.textContent = result?.message || "Coupon could not be applied.";
+  renderCart();
+}
+
 function getPricingSupportText(product) {
-  return `${getFreeDeliveryPriceText(product.price)} / ${LAUNCH_COUPON_CODE} coupon`;
+  const coupon = getDisplayCoupon();
+  return `${getFreeDeliveryPriceText(product.price)} / ${coupon.code} coupon`;
 }
 
 function renderProductPricing(product, variant = "card") {
@@ -1512,10 +1632,18 @@ function getCartLines() {
 
 function getTotals() {
   const subtotal = getCartLines().reduce((sum, item) => sum + item.lineTotal, 0);
-  const discount = state.couponApplied ? Math.round(subtotal * 0.1) : 0;
-  const delivery = subtotal === 0 || subtotal - discount >= FREE_DELIVERY_AT ? 0 : 69;
+  const couponValue = calculateCouponDiscount(state.activeCoupon, subtotal);
+  const discount = couponValue.discount;
+  const delivery = subtotal === 0 || couponValue.freeDelivery || subtotal - discount >= FREE_DELIVERY_AT ? 0 : DEFAULT_DELIVERY_FEE;
   const total = subtotal - discount + delivery;
-  return { subtotal, discount, delivery, total };
+  return {
+    subtotal,
+    discount,
+    delivery,
+    total,
+    couponCode: state.activeCoupon?.code || "",
+    freeDeliveryCoupon: couponValue.freeDelivery
+  };
 }
 
 function getCartCategorySummary(lines) {
@@ -1647,10 +1775,16 @@ function getCartAddOnProducts(lines) {
 }
 
 function renderCartCouponCard(totals) {
-  const discountText = state.couponApplied ? `${money(totals.discount)} saved with ${LAUNCH_COUPON_CODE}` : `Use ${LAUNCH_COUPON_CODE} for 10% off`;
-  const helperText = state.couponApplied
-    ? "Coupon is already applied to this booking."
-    : "Apply the launch coupon before entering delivery details.";
+  const coupon = getDisplayCoupon();
+  const couponApplied = Boolean(state.activeCoupon);
+  const discountText = couponApplied
+    ? totals.freeDeliveryCoupon
+      ? `Free delivery with ${coupon.code}`
+      : `${money(totals.discount)} saved with ${coupon.code}`
+    : `Use ${coupon.code} for ${couponValueText(coupon)}`;
+  const helperText = couponApplied
+    ? "Offer is already applied to this booking."
+    : `${coupon.label || "Apply this offer"} before entering delivery details.`;
 
   return `
     <div class="cart-coupon-card">
@@ -1658,8 +1792,8 @@ function renderCartCouponCard(totals) {
         <strong>${escapeHtml(discountText)}</strong>
         <span>${escapeHtml(helperText)}</span>
       </div>
-      <button type="button" data-apply-cart-coupon ${state.couponApplied ? "disabled" : ""}>
-        ${state.couponApplied ? "Applied" : "Apply"}
+      <button type="button" data-apply-cart-coupon="${escapeHtml(coupon.code)}" ${couponApplied ? "disabled" : ""}>
+        ${couponApplied ? "Applied" : "Apply"}
       </button>
     </div>
   `;
@@ -2074,6 +2208,7 @@ function buildWhatsAppMessage(form, orderId) {
     "",
     `Subtotal: ${money(totals.subtotal)}`,
     `Discount: ${totals.discount ? `-${money(totals.discount)}` : money(0)}`,
+    state.activeCoupon ? `Coupon: ${state.activeCoupon.code} (${state.activeCoupon.label})` : "",
     `Delivery: ${totals.delivery ? money(totals.delivery) : "Free"}`,
     `Total: ${money(totals.total)}`,
     "",
@@ -2130,6 +2265,16 @@ function createOrderRecord(form, orderId, source) {
     dispatchDate: "",
     eta: "",
     adminNote: getCheckoutAdminNote(data),
+    coupon: state.activeCoupon
+      ? {
+          code: state.activeCoupon.code,
+          label: state.activeCoupon.label,
+          type: state.activeCoupon.type,
+          value: state.activeCoupon.value,
+          discount: totals.discount,
+          freeDelivery: totals.freeDeliveryCoupon
+        }
+      : null,
     totals,
     items: lines.map((item) => ({
       id: item.id,
@@ -3353,12 +3498,8 @@ function renderCart() {
   cartItems.querySelectorAll("[data-remove]").forEach((button) => {
     button.addEventListener("click", () => setQuantity(button.dataset.remove, 0));
   });
-  cartItems.querySelector("[data-apply-cart-coupon]")?.addEventListener("click", () => {
-    state.couponApplied = true;
-    if (couponInput) couponInput.value = LAUNCH_COUPON_CODE;
-    if (couponMessage) couponMessage.textContent = `${LAUNCH_COUPON_CODE} applied.`;
-    renderCart();
-    showToast(`${LAUNCH_COUPON_CODE} applied`);
+  cartItems.querySelector("[data-apply-cart-coupon]")?.addEventListener("click", (event) => {
+    applyCouponCode(event.currentTarget.dataset.applyCartCoupon || getDisplayCoupon().code);
   });
   bindAddButtons(cartItems);
 
@@ -3623,16 +3764,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 document.querySelector("#applyCoupon")?.addEventListener("click", () => {
-  const code = couponInput.value.trim().toUpperCase();
-  if (code === LAUNCH_COUPON_CODE) {
-    state.couponApplied = true;
-    couponMessage.textContent = `${LAUNCH_COUPON_CODE} applied.`;
-    renderCart();
-  } else {
-    state.couponApplied = false;
-    couponMessage.textContent = `Try ${LAUNCH_COUPON_CODE} for 10% off.`;
-    renderCart();
-  }
+  applyCouponCode(couponInput?.value || getDisplayCoupon().code);
 });
 
 function submitWhatsAppOrder() {
@@ -3696,8 +3828,9 @@ checkoutForm?.addEventListener("submit", async (event) => {
     state.cart.clear();
     saveCart();
     state.couponApplied = false;
-    couponInput.value = "";
-    couponMessage.textContent = "";
+    state.activeCoupon = null;
+    if (couponInput) couponInput.value = "";
+    if (couponMessage) couponMessage.textContent = "";
     form.reset();
     if (saveDetailsInput) saveDetailsInput.checked = true;
     state.checkoutStep = "cart";
@@ -4015,6 +4148,7 @@ renderHomeRange();
 renderSingleProductPage();
 renderCart();
 syncCatalogFromBackend();
+syncCouponsFromBackend();
 prefillCustomerLoginForm();
 loadGoogleAuthConfig();
 if (window.location.hash === "#signup") setAuthMode("signup");

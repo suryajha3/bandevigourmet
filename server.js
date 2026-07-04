@@ -37,6 +37,9 @@ const ORDER_STATUSES = new Set(["booked", "confirmed", "packed", "dispatched", "
 const WHOLESALE_STATUSES = new Set(["new", "contacted", "quoted", "sample-sent", "converted", "closed"]);
 const SUPPORT_STATUSES = new Set(["new", "reviewing", "waiting-customer", "resolved", "closed"]);
 const PRODUCT_STOCK_STATUSES = new Set(["in-stock", "low-stock", "out-of-stock", "preorder"]);
+const COUPON_TYPES = new Set(["percent", "fixed", "free-delivery"]);
+const FREE_DELIVERY_AT = Number(process.env.FREE_DELIVERY_AT || 999);
+const DEFAULT_DELIVERY_FEE = Number(process.env.DEFAULT_DELIVERY_FEE || 69);
 const DEFAULT_MRP_MULTIPLIERS = {
   makhana: 1.18,
   masala: 1.22,
@@ -106,6 +109,12 @@ function cleanProductId(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function cleanCouponCode(value) {
+  return text(value, 40)
+    .toUpperCase()
+    .replace(/[^A-Z0-9-]/g, "");
 }
 
 function cleanAccessPin(value) {
@@ -231,6 +240,7 @@ function publicOrder(order) {
     dispatchDate: order.dispatchDate,
     eta: order.eta,
     adminNote: order.adminNote,
+    coupon: order.coupon || null,
     totals: order.totals,
     items: order.items,
     statusHistory: order.statusHistory || []
@@ -325,6 +335,82 @@ function adminProduct(product) {
   };
 }
 
+function defaultCoupons() {
+  return [
+    normalizeCoupon({
+      code: "SPICE10",
+      label: "Launch 10% off",
+      type: "percent",
+      value: 10,
+      minSubtotal: 0,
+      maxDiscount: 250,
+      usageLimit: 0,
+      usedCount: 0,
+      active: true,
+      autoShow: true,
+      adminNote: "Default launch coupon for storefront checkout."
+    })
+  ];
+}
+
+function normalizeCoupon(input = {}, existing = {}) {
+  const now = new Date().toISOString();
+  const requestedType = text(input.type ?? existing.type ?? "percent", 40);
+  const type = COUPON_TYPES.has(requestedType) ? requestedType : "percent";
+  const rawValue = Number(input.value ?? existing.value ?? (type === "percent" ? 10 : 0));
+  const value =
+    type === "percent"
+      ? Math.max(0, Math.min(90, rawValue || 0))
+      : type === "fixed"
+        ? Math.max(0, rawValue || 0)
+        : 0;
+  const code = cleanCouponCode(input.code || existing.code) || "SPICE10";
+
+  return {
+    code,
+    label: text(input.label ?? existing.label ?? `${code} offer`, 120),
+    type,
+    value,
+    minSubtotal: Math.max(0, Number(input.minSubtotal ?? existing.minSubtotal ?? 0) || 0),
+    maxDiscount: Math.max(0, Number(input.maxDiscount ?? existing.maxDiscount ?? 0) || 0),
+    usageLimit: Math.max(0, Number(input.usageLimit ?? existing.usageLimit ?? 0) || 0),
+    usedCount: Math.max(0, Number(input.usedCount ?? existing.usedCount ?? 0) || 0),
+    active: input.active === undefined ? existing.active !== false : booleanFlag(input.active, false),
+    autoShow: input.autoShow === undefined ? existing.autoShow === true : booleanFlag(input.autoShow, false),
+    startsAt: text(input.startsAt ?? existing.startsAt ?? "", 80),
+    endsAt: text(input.endsAt ?? existing.endsAt ?? "", 80),
+    adminNote: text(input.adminNote ?? existing.adminNote ?? "", 500),
+    createdAt: existing.createdAt || input.createdAt || now,
+    updatedAt: now
+  };
+}
+
+function publicCoupon(coupon) {
+  return {
+    code: coupon.code,
+    label: coupon.label,
+    type: coupon.type,
+    value: Number(coupon.value || 0),
+    minSubtotal: Number(coupon.minSubtotal || 0),
+    maxDiscount: Number(coupon.maxDiscount || 0),
+    autoShow: coupon.autoShow === true,
+    startsAt: coupon.startsAt || "",
+    endsAt: coupon.endsAt || ""
+  };
+}
+
+function adminCoupon(coupon) {
+  return {
+    ...publicCoupon(coupon),
+    active: coupon.active !== false,
+    usageLimit: Number(coupon.usageLimit || 0),
+    usedCount: Number(coupon.usedCount || 0),
+    adminNote: coupon.adminNote || "",
+    createdAt: coupon.createdAt || "",
+    updatedAt: coupon.updatedAt || ""
+  };
+}
+
 function listFromInput(value, maxItems = 20, maxLength = 120) {
   const source = Array.isArray(value)
     ? value
@@ -393,7 +479,7 @@ function isClosedOrder(order) {
 }
 
 function emptyDb() {
-  return { orders: [], wholesale: [], customers: [], notifications: [], supportRequests: [], products: [], events: [] };
+  return { orders: [], wholesale: [], customers: [], notifications: [], supportRequests: [], products: [], coupons: [], events: [] };
 }
 
 function normalizeDb(db) {
@@ -407,6 +493,7 @@ function normalizeDb(db) {
     notifications: Array.isArray(safeDb.notifications) ? safeDb.notifications : [],
     supportRequests: Array.isArray(safeDb.supportRequests) ? safeDb.supportRequests : [],
     products: Array.isArray(safeDb.products) ? safeDb.products : [],
+    coupons: Array.isArray(safeDb.coupons) ? safeDb.coupons : [],
     events: Array.isArray(safeDb.events) ? safeDb.events : []
   };
 }
@@ -531,6 +618,116 @@ async function ensureManagedProducts(db) {
   return db.products;
 }
 
+function ensureManagedCoupons(db) {
+  if (!Array.isArray(db.coupons) || !db.coupons.length) {
+    db.coupons = defaultCoupons();
+  } else {
+    db.coupons = db.coupons.map((coupon) => normalizeCoupon(coupon, coupon));
+  }
+  return db.coupons;
+}
+
+function findCoupon(db, code) {
+  const couponCode = cleanCouponCode(code);
+  if (!couponCode) return null;
+  return ensureManagedCoupons(db).find((coupon) => cleanCouponCode(coupon.code) === couponCode) || null;
+}
+
+function dateHasPassed(value, nowTime, direction) {
+  const time = Date.parse(value || "");
+  if (Number.isNaN(time)) return false;
+  return direction === "start" ? nowTime < time : nowTime > time;
+}
+
+function couponIsActiveNow(coupon, now = new Date()) {
+  if (!coupon || coupon.active === false) return false;
+  if (Number(coupon.usageLimit || 0) > 0 && Number(coupon.usedCount || 0) >= Number(coupon.usageLimit || 0)) return false;
+  const nowTime = now.getTime();
+  if (dateHasPassed(coupon.startsAt, nowTime, "start")) return false;
+  if (dateHasPassed(coupon.endsAt, nowTime, "end")) return false;
+  return true;
+}
+
+function calculateCouponDiscount(coupon, subtotal) {
+  const amount = Math.max(0, Number(subtotal || 0));
+  if (!coupon || amount < Number(coupon.minSubtotal || 0)) {
+    return { discount: 0, freeDelivery: false };
+  }
+  if (coupon.type === "free-delivery") return { discount: 0, freeDelivery: true };
+  const rawDiscount = coupon.type === "fixed" ? Number(coupon.value || 0) : Math.round((amount * Number(coupon.value || 0)) / 100);
+  const cappedDiscount = Number(coupon.maxDiscount || 0) > 0 ? Math.min(rawDiscount, Number(coupon.maxDiscount || 0)) : rawDiscount;
+  return { discount: Math.max(0, Math.min(amount, Math.round(cappedDiscount))), freeDelivery: false };
+}
+
+function couponValidationPayload(coupon, subtotal, delivery = DEFAULT_DELIVERY_FEE) {
+  const cleanSubtotal = Math.max(0, Number(subtotal || 0));
+  const currentDelivery = Math.max(0, Number(delivery || 0));
+  if (!coupon) {
+    return { valid: false, message: "Coupon code was not found.", discount: 0, freeDelivery: false };
+  }
+  if (!couponIsActiveNow(coupon)) {
+    return { valid: false, message: "This coupon is not active right now.", discount: 0, freeDelivery: false, coupon: publicCoupon(coupon) };
+  }
+  const minimum = Number(coupon.minSubtotal || 0);
+  if (cleanSubtotal < minimum) {
+    return {
+      valid: false,
+      message: `${money(Math.max(0, minimum - cleanSubtotal))} more needed for this coupon.`,
+      discount: 0,
+      freeDelivery: false,
+      coupon: publicCoupon(coupon)
+    };
+  }
+
+  const couponValue = calculateCouponDiscount(coupon, cleanSubtotal);
+  const deliveryAfterCoupon = couponValue.freeDelivery || cleanSubtotal - couponValue.discount >= FREE_DELIVERY_AT ? 0 : currentDelivery;
+  const total = Math.max(0, cleanSubtotal - couponValue.discount + deliveryAfterCoupon);
+  return {
+    valid: true,
+    message: couponValue.freeDelivery ? `${coupon.code} gives free delivery.` : `${coupon.code} applied.`,
+    coupon: publicCoupon(coupon),
+    discount: couponValue.discount,
+    freeDelivery: couponValue.freeDelivery,
+    delivery: deliveryAfterCoupon,
+    total
+  };
+}
+
+function applyManagedCouponToOrder(db, order) {
+  const subtotal = (order.items || []).reduce((sum, item) => {
+    const quantity = Math.max(0, Number(item.quantity || 0));
+    const lineTotal = Number(item.lineTotal || 0);
+    const fallbackLineTotal = Number(item.offerPrice || item.price || 0) * quantity;
+    return sum + Math.max(0, lineTotal || fallbackLineTotal);
+  }, 0);
+  const requestedCode = cleanCouponCode(order.coupon?.code || order.totals?.couponCode || "");
+  const coupon = requestedCode ? findCoupon(db, requestedCode) : null;
+  const validation = requestedCode ? couponValidationPayload(coupon, subtotal, DEFAULT_DELIVERY_FEE) : null;
+  const discount = validation?.valid ? Number(validation.discount || 0) : 0;
+  const delivery = validation?.valid && validation.freeDelivery ? 0 : subtotal === 0 || subtotal - discount >= FREE_DELIVERY_AT ? 0 : DEFAULT_DELIVERY_FEE;
+
+  order.totals = {
+    subtotal,
+    discount,
+    delivery,
+    total: Math.max(0, subtotal - discount + delivery)
+  };
+  order.coupon =
+    validation?.valid && coupon
+      ? {
+          code: coupon.code,
+          label: coupon.label,
+          type: coupon.type,
+          value: Number(coupon.value || 0),
+          discount,
+          freeDelivery: validation.freeDelivery,
+          appliedAt: new Date().toISOString()
+        }
+      : null;
+
+  return validation?.valid ? coupon : null;
+}
+
 function productIsOrderable(product, quantity = 1) {
   if (!product || product.active === false) return false;
   if (product.stockStatus === "out-of-stock") return false;
@@ -647,6 +844,7 @@ function buildAdminSummary(db) {
   const notifications = db.notifications || [];
   const supportRequests = db.supportRequests || [];
   const products = db.products || [];
+  const coupons = db.coupons || [];
   const activeOrders = orders.filter((order) => !isClosedOrder(order));
   const openWholesale = enquiries.filter((item) => !["converted", "closed"].includes(item.status || "new"));
   const pendingNotifications = notifications.filter((item) => ["queued", "ready", "failed"].includes(item.status || "")).length;
@@ -667,6 +865,9 @@ function buildAdminSummary(db) {
     featuredProducts: products.filter((product) => product.featured === true).length,
     missingImageProducts: products.filter((product) => !product.image).length,
     lowStockProducts: products.filter((product) => ["low-stock", "out-of-stock"].includes(product.stockStatus || "")).length,
+    coupons: coupons.length,
+    activeCoupons: coupons.filter((coupon) => couponIsActiveNow(coupon)).length,
+    visibleCoupons: coupons.filter((coupon) => coupon.autoShow === true && couponIsActiveNow(coupon)).length,
     notifications: notifications.length,
     pendingNotifications,
     openWholesale: openWholesale.length,
@@ -1024,7 +1225,12 @@ function orderExportRows(db) {
     phone: order.customer?.phone || "",
     email: order.customer?.email || "",
     location: order.countryCity || order.customer?.location || "",
+    subtotal: order.totals?.subtotal || 0,
+    discount: order.totals?.discount || 0,
+    delivery: order.totals?.delivery || 0,
     total: order.totals?.total || 0,
+    couponCode: order.coupon?.code || "",
+    couponDiscount: order.coupon?.discount || 0,
     payment: order.payment || "",
     paymentState: order.paymentState || "",
     courier: order.courier || "",
@@ -1130,12 +1336,32 @@ function productExportRows(db) {
   }));
 }
 
+function couponExportRows(db) {
+  return (db.coupons || []).map((coupon) => ({
+    code: coupon.code,
+    label: coupon.label || "",
+    type: coupon.type || "",
+    value: coupon.value || 0,
+    minSubtotal: coupon.minSubtotal || 0,
+    maxDiscount: coupon.maxDiscount || 0,
+    active: coupon.active !== false,
+    autoShow: coupon.autoShow === true,
+    usageLimit: coupon.usageLimit || 0,
+    usedCount: coupon.usedCount || 0,
+    startsAt: coupon.startsAt || "",
+    endsAt: coupon.endsAt || "",
+    adminNote: coupon.adminNote || "",
+    updatedAt: coupon.updatedAt || ""
+  }));
+}
+
 function exportRows(type, db) {
   if (type === "customers") return customerExportRows(db);
   if (type === "wholesale") return wholesaleExportRows(db);
   if (type === "notifications") return notificationExportRows(db);
   if (type === "support") return supportExportRows(db);
   if (type === "products") return productExportRows(db);
+  if (type === "coupons") return couponExportRows(db);
   return orderExportRows(db);
 }
 
@@ -1327,6 +1553,16 @@ function normalizeOrder(input) {
     dispatchDate: text(input.dispatchDate, 80),
     eta: text(input.eta, 80),
     adminNote: text(input.adminNote, 400),
+    coupon: input.coupon
+      ? {
+          code: cleanCouponCode(input.coupon.code),
+          label: text(input.coupon.label, 120),
+          type: text(input.coupon.type, 40),
+          value: Number(input.coupon.value || 0),
+          discount: Number(input.coupon.discount || 0),
+          freeDelivery: input.coupon.freeDelivery === true
+        }
+      : null,
     totals: {
       subtotal: Number(totals.subtotal || 0),
       discount: Number(totals.discount || 0),
@@ -1385,6 +1621,31 @@ async function handleApi(req, res, url) {
     const products = await ensureManagedProducts(db);
     if (shouldPersist) await writeDb(db);
     jsonResponse(res, 200, { products: products.filter((product) => product.active !== false).map(publicProduct) });
+    return true;
+  }
+
+  if (url.pathname === "/api/coupons" && req.method === "GET") {
+    const db = await readDb();
+    const shouldPersist = !Array.isArray(db.coupons) || !db.coupons.length;
+    const coupons = ensureManagedCoupons(db);
+    if (shouldPersist) await writeDb(db);
+    jsonResponse(res, 200, {
+      coupons: coupons.filter((coupon) => coupon.autoShow === true && couponIsActiveNow(coupon)).map(publicCoupon)
+    });
+    return true;
+  }
+
+  if (url.pathname === "/api/coupons/validate" && req.method === "POST") {
+    const payload = await readBody(req);
+    const db = await readDb();
+    const shouldPersist = !Array.isArray(db.coupons) || !db.coupons.length;
+    const coupon = findCoupon(db, payload.code);
+    if (shouldPersist) await writeDb(db);
+    jsonResponse(
+      res,
+      200,
+      couponValidationPayload(coupon, Number(payload.subtotal || 0), Number(payload.delivery || DEFAULT_DELIVERY_FEE))
+    );
     return true;
   }
 
@@ -1457,12 +1718,17 @@ async function handleApi(req, res, url) {
     }
 
     const products = await ensureManagedProducts(db);
+    const appliedCoupon = applyManagedCouponToOrder(db, order);
     const stockError = validateOrderStock(order, products);
     if (stockError) {
       jsonResponse(res, 409, { error: stockError });
       return true;
     }
     reserveOrderStock(order, products);
+    if (appliedCoupon) {
+      appliedCoupon.usedCount = Number(appliedCoupon.usedCount || 0) + 1;
+      appliedCoupon.updatedAt = new Date().toISOString();
+    }
     db.orders = [order, ...(db.orders || []).filter((item) => item.id !== order.id)].slice(0, 1000);
     upsertCustomer(db, order.customer);
     const notifications = createOrderNotifications(order, "order_created");
@@ -1673,8 +1939,9 @@ async function handleApi(req, res, url) {
   if (url.pathname === "/api/admin/summary" && req.method === "GET") {
     if (!requireAdmin(req, res)) return true;
     const db = await readDb();
-    const shouldPersist = !Array.isArray(db.products) || !db.products.length;
+    const shouldPersist = !Array.isArray(db.products) || !db.products.length || !Array.isArray(db.coupons) || !db.coupons.length;
     await ensureManagedProducts(db);
+    ensureManagedCoupons(db);
     if (shouldPersist) await writeDb(db);
     jsonResponse(res, 200, { summary: buildAdminSummary(db) });
     return true;
@@ -1700,6 +1967,7 @@ async function handleApi(req, res, url) {
     const format = text(url.searchParams.get("format") || "csv", 20);
     const db = await readDb();
     if (type === "products") await ensureManagedProducts(db);
+    if (type === "coupons") ensureManagedCoupons(db);
     const rows = exportRows(type, db);
     if (format === "json") {
       jsonResponse(res, 200, { type, exportedAt: new Date().toISOString(), rows });
@@ -1733,6 +2001,38 @@ async function handleApi(req, res, url) {
     const products = await ensureManagedProducts(db);
     if (shouldPersist) await writeDb(db);
     jsonResponse(res, 200, { products: products.map(adminProduct) });
+    return true;
+  }
+
+  if (url.pathname === "/api/admin/coupons" && req.method === "GET") {
+    if (!requireAdmin(req, res)) return true;
+    const db = await readDb();
+    const shouldPersist = !Array.isArray(db.coupons) || !db.coupons.length;
+    const coupons = ensureManagedCoupons(db);
+    if (shouldPersist) await writeDb(db);
+    jsonResponse(res, 200, { coupons: coupons.map(adminCoupon) });
+    return true;
+  }
+
+  if (url.pathname === "/api/admin/coupons" && req.method === "POST") {
+    if (!requireAdmin(req, res)) return true;
+    const payload = await readBody(req);
+    const db = await readDb();
+    const coupons = ensureManagedCoupons(db);
+    const code = cleanCouponCode(payload.code || payload.label);
+    if (!code) {
+      jsonResponse(res, 400, { error: "Coupon code is required." });
+      return true;
+    }
+    if (coupons.some((coupon) => cleanCouponCode(coupon.code) === code)) {
+      jsonResponse(res, 409, { error: "Use a unique coupon code." });
+      return true;
+    }
+
+    const coupon = normalizeCoupon({ ...payload, code });
+    db.coupons = [coupon, ...coupons].slice(0, 200);
+    await writeDb(db);
+    jsonResponse(res, 201, { coupon: adminCoupon(coupon) });
     return true;
   }
 
@@ -1771,6 +2071,26 @@ async function handleApi(req, res, url) {
     db.products = products.map((item, itemIndex) => (itemIndex === index ? product : item));
     await writeDb(db);
     jsonResponse(res, 200, { product: adminProduct(product) });
+    return true;
+  }
+
+  const couponMatch = url.pathname.match(/^\/api\/admin\/coupons\/([^/]+)$/);
+  if (couponMatch && req.method === "PATCH") {
+    if (!requireAdmin(req, res)) return true;
+    const couponCode = cleanCouponCode(decodeURIComponent(couponMatch[1]));
+    const payload = await readBody(req);
+    const db = await readDb();
+    const coupons = ensureManagedCoupons(db);
+    const index = coupons.findIndex((coupon) => cleanCouponCode(coupon.code) === couponCode);
+    if (index < 0) {
+      jsonResponse(res, 404, { error: "Coupon not found." });
+      return true;
+    }
+
+    const coupon = normalizeCoupon({ ...coupons[index], ...payload, code: couponCode }, coupons[index]);
+    db.coupons = coupons.map((item, itemIndex) => (itemIndex === index ? coupon : item));
+    await writeDb(db);
+    jsonResponse(res, 200, { coupon: adminCoupon(coupon) });
     return true;
   }
 
