@@ -680,96 +680,29 @@
         </div>
       </section>
 
-      <section class="shop-shell" id="products" aria-labelledby="products-title">
+      <section class="home-range-tabs" id="products" aria-labelledby="home-products-title">
         <div class="section-head">
           <div>
-            <p class="eyebrow">Online store</p>
-            <h2 id="products-title">Shop makhana, masala, and poha</h2>
+            <p class="eyebrow">Shop by range</p>
+            <h2 id="home-products-title">Choose one product line at a time.</h2>
           </div>
-          <div class="search-wrap">
-            <i data-lucide="search"></i>
-            <input id="searchInput" type="search" placeholder="Search products" aria-label="Search products" />
-          </div>
+          <a class="category-link" href="./products.html">Open full store</a>
         </div>
 
-        <div class="shop-controls" aria-label="Product controls">
-          <div class="tabs" role="tablist" aria-label="Product categories">
-            <button class="tab is-active" type="button" data-filter="all">All</button>
-            <button class="tab" type="button" data-filter="makhana">Makhana</button>
-            <button class="tab" type="button" data-filter="masala">Masala</button>
-            <button class="tab" type="button" data-filter="nonveg-masala">Non-veg Masala</button>
-            <button class="tab" type="button" data-filter="poha">Poha</button>
-            <button class="tab" type="button" data-filter="combo">Combos</button>
-            <button class="tab" type="button" data-filter="bulk">Bulk Packs</button>
-          </div>
-          <label class="sort-control">
-            <span>Sort</span>
-            <select id="sortSelect" aria-label="Sort products">
-              <option value="featured">Featured</option>
-              <option value="low">Price low to high</option>
-              <option value="high">Price high to low</option>
-              <option value="rating">Top rated</option>
-            </select>
-          </label>
+        <div class="home-range-tablist" role="tablist" aria-label="Homepage product ranges">
+          <button class="home-range-tab is-active" type="button" data-home-range-tab="makhana">Makhana</button>
+          <button class="home-range-tab" type="button" data-home-range-tab="masala">Masala</button>
+          <button class="home-range-tab" type="button" data-home-range-tab="nonveg-masala">Non-veg masala</button>
+          <button class="home-range-tab" type="button" data-home-range-tab="poha">Poha</button>
+          <button class="home-range-tab" type="button" data-home-range-tab="combo">Bundles</button>
+          <button class="home-range-tab" type="button" data-home-range-tab="bulk">Bulk packs</button>
         </div>
 
-        <div class="product-grid" id="productGrid" aria-live="polite"></div>
-      </section>
-
-      <section class="category-lanes" aria-label="Separate product categories">
-        <div class="category-section" id="makhana-products">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Makhana</p>
-              <h2>Makhana products</h2>
-            </div>
-            <a class="category-link" href="#products" data-category-jump="makhana">View makhana</a>
+        <div class="home-range-panel" data-home-range-panel aria-live="polite">
+          <div class="home-range-loading">
+            <strong>Makhana range</strong>
+            <span>Fresh product preview is loading.</span>
           </div>
-          <div class="category-grid" id="makhanaProductGrid"></div>
-        </div>
-
-        <div class="category-section" id="masala-products">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Masala</p>
-              <h2>Daily, veg, and spice masala products</h2>
-            </div>
-            <a class="category-link" href="#products" data-category-jump="masala">View masala</a>
-          </div>
-          <div class="category-grid" id="masalaProductGrid"></div>
-        </div>
-
-        <div class="category-section" id="nonveg-masala-products">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Non-veg masala</p>
-              <h2>Chicken, mutton, seafood, egg, and kebab masalas</h2>
-            </div>
-            <a class="category-link" href="#products" data-category-jump="nonveg-masala">View non-veg masala</a>
-          </div>
-          <div class="category-grid" id="nonVegMasalaProductGrid"></div>
-        </div>
-
-        <div class="category-section" id="poha-products">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Poha</p>
-              <h2>Poha products</h2>
-            </div>
-            <a class="category-link" href="#products" data-category-jump="poha">View poha</a>
-          </div>
-          <div class="category-grid" id="pohaProductGrid"></div>
-        </div>
-
-        <div class="category-section" id="bulk-products">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Bulk and refills</p>
-              <h2>Large packs and repeat-buyer bundles</h2>
-            </div>
-            <a class="category-link" href="#products" data-category-jump="bulk">View bulk packs</a>
-          </div>
-          <div class="category-grid" id="bulkProductGrid"></div>
         </div>
       </section>
 

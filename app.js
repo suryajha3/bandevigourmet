@@ -67,6 +67,17 @@ const BULK_PACK_IDS = new Set([
   "snack-combo"
 ]);
 
+const PRODUCT_IMAGE_OVERRIDES = {
+  "premium-poha": "/assets/product-poha-optimized.jpg"
+};
+
+const CATEGORY_IMAGE_FALLBACKS = {
+  makhana: "/assets/product-classic-makhana-optimized.jpg",
+  masala: "/assets/product-garam-masala-optimized.jpg",
+  poha: "/assets/product-poha-optimized.jpg",
+  combo: "/assets/product-snack-combo-optimized.jpg"
+};
+
 const STORAGE_KEYS = {
   customer: "bandevi-gourmet-customer",
   customerPin: "bandevi-gourmet-customer-pin",
@@ -112,6 +123,7 @@ function buildCatalog(productList) {
 
 const state = {
   filter: "all",
+  homeRange: "makhana",
   search: "",
   sort: "featured",
   couponApplied: false,
@@ -142,6 +154,8 @@ const rupee = new Intl.NumberFormat("en-IN", {
 });
 
 const productGrid = document.querySelector("#productGrid");
+const homeRangePanel = document.querySelector("[data-home-range-panel]");
+const homeRangeTabs = Array.from(document.querySelectorAll("[data-home-range-tab]"));
 const makhanaProductGrid = document.querySelector("#makhanaProductGrid");
 const masalaProductGrid = document.querySelector("#masalaProductGrid");
 const nonVegMasalaProductGrid = document.querySelector("#nonVegMasalaProductGrid");
@@ -183,6 +197,63 @@ const promoSlides = promoSlider ? [...promoSlider.querySelectorAll("[data-promo-
 const promoDots = promoSlider ? [...promoSlider.querySelectorAll("[data-promo-dot]")] : [];
 let promoIndex = 0;
 let promoTimer = null;
+
+const HOME_RANGE_CONFIG = {
+  makhana: {
+    eyebrow: "Makhana range",
+    title: "Roasted makhana for daily snacking and gifting.",
+    copy:
+      "Light, crunchy fox nuts packed for retail shelves, family snacks, and premium hampers without artificial color direction.",
+    href: "./makhana.html",
+    cta: "Open makhana page",
+    points: ["Roasted snack packs", "Sweet and spicy flavors", "Gift-ready buying path"]
+  },
+  masala: {
+    eyebrow: "Masala range",
+    title: "Daily cooking masalas and pure spice refills.",
+    copy:
+      "Garam masala, kitchen king, turmeric, chilli, sabji, paneer, and everyday spice blends presented as a clean pantry line.",
+    href: "./masala.html",
+    cta: "Open masala page",
+    points: ["No artificial color direction", "Ingredient-led blends", "Home and retail packs"]
+  },
+  "nonveg-masala": {
+    eyebrow: "Non-veg masala range",
+    title: "Chicken, mutton, seafood, egg, and grill masalas.",
+    copy:
+      "A separate non-veg cooking range for rich gravies, marinades, restaurant-style recipes, and repeat kitchen use.",
+    href: "./products.html#products",
+    cta: "View full catalog",
+    points: ["Chicken and mutton blends", "Seafood and egg masalas", "Grill and kebab direction"]
+  },
+  poha: {
+    eyebrow: "Poha range",
+    title: "Clean poha packs for breakfast, retail, and bulk buyers.",
+    copy:
+      "Separate poha packs for home kitchens, stores, and monthly pantry refills with simple, trusted positioning.",
+    href: "./poha.html",
+    cta: "Open poha page",
+    points: ["Breakfast staple", "Multiple pack sizes", "Pantry refill format"]
+  },
+  combo: {
+    eyebrow: "Bundles",
+    title: "Curated carts for families, gifting, and repeat buyers.",
+    copy:
+      "Ready-made bundle ideas combine makhana, masala, poha, and spice refills so customers can order faster.",
+    href: "./bundles.html",
+    cta: "Open bundles page",
+    points: ["Monthly refill ideas", "Gift-ready combos", "Higher cart value"]
+  },
+  bulk: {
+    eyebrow: "Bulk packs",
+    title: "Wholesale-ready packs for retailers and distributors.",
+    copy:
+      "Large packs and business buying paths for retail counters, distributors, institutional kitchens, and export enquiries.",
+    href: "./wholesale.html",
+    cta: "Open wholesale enquiry",
+    points: ["Bulk pack direction", "Distributor enquiry", "Export-ready conversation"]
+  }
+};
 
 function ensureStoreShell() {
   if (!document.querySelector(".product-detail-drawer")) {
@@ -472,6 +543,7 @@ function renderCheckoutAssurance() {
 
 function ensureTrustInfrastructure() {
   ensureHeaderSliderLink();
+  ensurePremiumHeader();
   ensureHeaderTrustRow();
   ensureFooterTrust();
   ensureCheckoutAssurance();
@@ -481,6 +553,45 @@ function ensureTrustInfrastructure() {
 
 function ensureHeaderSliderLink() {
   document.querySelector('.main-nav a[href="./slider.html"]')?.remove();
+}
+
+function ensurePremiumHeader() {
+  const header = document.querySelector(".site-header");
+  if (!header) return;
+
+  header.classList.add("premium-header");
+
+  if (!header.querySelector(".header-announcement")) {
+    header.insertAdjacentHTML(
+      "afterbegin",
+      `
+        <div class="header-announcement" aria-label="Brand trust bar">
+          <span><i data-lucide="shield-check"></i>Pure ingredient promise</span>
+          <span><i data-lucide="truck"></i>India delivery and order tracking</span>
+          <a href="./wholesale.html"><i data-lucide="handshake"></i>Wholesale enquiry</a>
+          <a href="./policies.html"><i data-lucide="file-text"></i>Policies</a>
+        </div>
+      `
+    );
+  }
+
+  const brandCopy = header.querySelector(".brand > span:not(.brand-mark)");
+  if (brandCopy && !brandCopy.querySelector(".brand-proof-line")) {
+    brandCopy.insertAdjacentHTML("beforeend", `<em class="brand-proof-line">Makhana | Masala | Poha</em>`);
+  }
+
+  const actions = header.querySelector(".header-actions");
+  if (actions && !actions.querySelector(".header-shop-now")) {
+    actions.insertAdjacentHTML(
+      "afterbegin",
+      `
+        <a class="portal-shortcut header-shop-now" href="./products.html">
+          <i data-lucide="store"></i>
+          <span>Shop now</span>
+        </a>
+      `
+    );
+  }
 }
 
 function ensureHeaderTrustRow() {
@@ -494,9 +605,26 @@ function ensureHeaderTrustRow() {
   }
 
   row.innerHTML = `
-    ${renderTrustBadges()}
-    <a href="./about.html#trust">Trust center</a>
-    <a href="./policies.html">Policies</a>
+    <a class="header-range-card" href="./makhana.html">
+      <i data-lucide="leaf"></i>
+      <span><strong>Makhana</strong><small>Roasted snack packs</small></span>
+    </a>
+    <a class="header-range-card" href="./masala.html">
+      <i data-lucide="package-check"></i>
+      <span><strong>Masala</strong><small>Daily spice blends</small></span>
+    </a>
+    <a class="header-range-card" href="./poha.html">
+      <i data-lucide="wheat"></i>
+      <span><strong>Poha</strong><small>Breakfast staples</small></span>
+    </a>
+    <a class="header-range-card" href="./bundles.html">
+      <i data-lucide="package-open"></i>
+      <span><strong>Bundles</strong><small>Family refill carts</small></span>
+    </a>
+    <a class="header-range-card is-highlight" href="./products.html">
+      <i data-lucide="store"></i>
+      <span><strong>All products</strong><small>MRP, offer, discounts</small></span>
+    </a>
   `;
 }
 
@@ -832,6 +960,7 @@ async function syncCatalogFromBackend() {
     sanitizeCartForCatalog();
     renderProducts();
     renderCategoryProducts();
+    renderHomeRange();
     renderSingleProductPage();
     renderCart();
   } catch {
@@ -853,7 +982,15 @@ function isClosedOrder(order) {
 }
 
 function productImage(product) {
-  return product.image || "/assets/makhana-masala-hero.png";
+  const configuredImage = String(product?.image || "").trim();
+  if (configuredImage) return configuredImage;
+  if (PRODUCT_IMAGE_OVERRIDES[product?.id]) return PRODUCT_IMAGE_OVERRIDES[product.id];
+  if (product?.id) return `/assets/product-${product.id}-optimized.jpg`;
+  return fallbackProductImage(product);
+}
+
+function fallbackProductImage(product) {
+  return CATEGORY_IMAGE_FALLBACKS[product?.category] || "/assets/makhana-masala-hero.png";
 }
 
 function getStockStatus(product) {
@@ -894,12 +1031,12 @@ function getCartStockIssue() {
 }
 
 function hasProductImage(product) {
-  return Boolean(product.image && product.image.trim());
+  return Boolean(product?.image?.trim() || product?.id || product?.category);
 }
 
 function renderProductVisual(product) {
   if (hasProductImage(product)) {
-    return `<img src="${productImage(product)}" alt="${escapeHtml(product.name)}" style="--position: ${imagePosition(product)}; --fit: ${imageFit(product)}; --scale: ${imageScale(product)}" />`;
+    return `<img src="${escapeHtml(productImage(product))}" alt="${escapeHtml(product.name)}" decoding="async" onerror="this.onerror=null;this.src='${escapeHtml(fallbackProductImage(product))}';" style="--position: ${imagePosition(product)}; --fit: ${imageFit(product)}; --scale: ${imageScale(product)}" />`;
   }
 
   return `
@@ -1036,6 +1173,53 @@ function renderProducts() {
 
   bindAddButtons(productGrid);
 
+  refreshIcons();
+}
+
+function getHomeRangeProducts(range) {
+  if (range === "nonveg-masala") return catalog.filter((product) => NON_VEG_MASALA_IDS.has(product.id));
+  if (range === "bulk") return catalog.filter((product) => BULK_PACK_IDS.has(product.id));
+  if (range === "masala") {
+    return catalog.filter((product) => product.category === "masala" && !NON_VEG_MASALA_IDS.has(product.id));
+  }
+  return catalog.filter((product) => product.category === range);
+}
+
+function renderHomeRange(range = state.homeRange) {
+  if (!homeRangePanel) return;
+  const selectedRange = HOME_RANGE_CONFIG[range] ? range : "makhana";
+  const config = HOME_RANGE_CONFIG[selectedRange];
+  const products = getHomeRangeProducts(selectedRange).slice(0, 4);
+
+  state.homeRange = selectedRange;
+  homeRangePanel.setAttribute("role", "tabpanel");
+  homeRangeTabs.forEach((button) => {
+    const active = button.dataset.homeRangeTab === selectedRange;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-selected", String(active));
+  });
+
+  homeRangePanel.innerHTML = `
+    <div class="home-range-copy">
+      <p class="eyebrow">${escapeHtml(config.eyebrow)}</p>
+      <h3>${escapeHtml(config.title)}</h3>
+      <p>${escapeHtml(config.copy)}</p>
+      <div class="home-range-points">
+        ${config.points.map((point) => `<span><i data-lucide="check-circle-2"></i>${escapeHtml(point)}</span>`).join("")}
+      </div>
+      <a class="primary-link" href="${escapeHtml(config.href)}">${escapeHtml(config.cta)}</a>
+    </div>
+    <div class="home-range-products" aria-label="${escapeHtml(config.eyebrow)} preview products">
+      ${
+        products.length
+          ? products.map(renderCategoryCard).join("")
+          : `<article class="admin-empty">Products coming soon in this range.</article>`
+      }
+    </div>
+  `;
+
+  bindAddButtons(homeRangePanel);
   refreshIcons();
 }
 
@@ -3378,6 +3562,12 @@ document.querySelectorAll(".tab").forEach((button) => {
   });
 });
 
+homeRangeTabs.forEach((button) => {
+  button.addEventListener("click", () => {
+    renderHomeRange(button.dataset.homeRangeTab);
+  });
+});
+
 document.querySelectorAll("[data-category-jump]").forEach((link) => {
   link.addEventListener("click", () => {
     setProductFilter(link.dataset.categoryJump);
@@ -3808,6 +3998,7 @@ document.querySelectorAll(".faq-item button").forEach((button) => {
 
 renderProducts();
 renderCategoryProducts();
+renderHomeRange();
 renderSingleProductPage();
 renderCart();
 syncCatalogFromBackend();
