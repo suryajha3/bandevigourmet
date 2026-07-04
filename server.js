@@ -88,6 +88,11 @@ function text(value, max = 500) {
   return String(value ?? "").trim().slice(0, max);
 }
 
+function booleanFlag(value, fallback = false) {
+  if (value === undefined || value === null || value === "") return Boolean(fallback);
+  return value === true || value === "true" || value === "on" || value === "1" || value === 1;
+}
+
 function cleanPhone(value) {
   return text(value, 40).replace(/\D/g, "");
 }
@@ -302,6 +307,7 @@ function publicProduct(product) {
     position: product.position || "center",
     fit: product.fit || "contain",
     scale: product.scale || "1",
+    featured: product.featured === true,
     active: product.active !== false,
     stock: Number(product.stock ?? 100),
     stockStatus: product.stockStatus || "in-stock",
@@ -503,7 +509,8 @@ function normalizeProduct(input = {}, existing = {}) {
     position: text(input.position ?? existing.position ?? "center", 80),
     fit: text(input.fit ?? existing.fit ?? "contain", 40),
     scale: text(input.scale ?? existing.scale ?? "1", 20),
-    active: input.active === undefined ? existing.active !== false : input.active !== false && input.active !== "false",
+    featured: booleanFlag(input.featured, existing.featured === true),
+    active: input.active === undefined ? existing.active !== false : booleanFlag(input.active, false),
     stock: Number.isFinite(stock) ? Math.max(0, stock) : 0,
     stockStatus,
     lowStockThreshold: Number.isFinite(lowStockThreshold) ? Math.max(0, lowStockThreshold) : 10,
@@ -657,6 +664,8 @@ function buildAdminSummary(db) {
     openSupportRequests,
     products: products.length,
     activeProducts: products.filter((product) => product.active !== false).length,
+    featuredProducts: products.filter((product) => product.featured === true).length,
+    missingImageProducts: products.filter((product) => !product.image).length,
     lowStockProducts: products.filter((product) => ["low-stock", "out-of-stock"].includes(product.stockStatus || "")).length,
     notifications: notifications.length,
     pendingNotifications,
@@ -1106,6 +1115,7 @@ function productExportRows(db) {
     price: product.price || 0,
     size: product.size || "",
     badge: product.badge || "",
+    featured: product.featured === true,
     active: product.active !== false,
     stock: product.stock ?? 0,
     stockStatus: product.stockStatus || "",

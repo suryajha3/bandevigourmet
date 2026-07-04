@@ -112,6 +112,7 @@ function buildCatalog(productList) {
         ...pricing,
         category,
         price: pricing.offerPrice,
+        featured: product.featured === true,
         rating: Number(product.rating || 4.8),
         stock: Number(product.stock ?? 100),
         stockStatus: product.stockStatus || "in-stock",
@@ -1077,12 +1078,24 @@ function productSearchText(product) {
   return `${product.name} ${product.category} ${product.description} ${group} ${pack} ${(product.details.ingredients || []).join(" ")}`.toLowerCase();
 }
 
+function sortFeaturedProducts(products) {
+  return products.toSorted((a, b) => {
+    if (a.featured !== b.featured) return a.featured ? -1 : 1;
+    const aAvailable = isProductAvailable(a) ? 1 : 0;
+    const bAvailable = isProductAvailable(b) ? 1 : 0;
+    if (aAvailable !== bAvailable) return bAvailable - aAvailable;
+    if (Number(a.rating || 0) !== Number(b.rating || 0)) return Number(b.rating || 0) - Number(a.rating || 0);
+    return String(a.name || "").localeCompare(String(b.name || ""));
+  });
+}
+
 function getFilteredProducts() {
   const search = state.search.trim().toLowerCase();
   let visible = catalog.filter((product) => {
     return productFilterMatch(product, state.filter) && (!search || productSearchText(product).includes(search));
   });
 
+  if (state.sort === "featured") visible = sortFeaturedProducts(visible);
   if (state.sort === "low") visible = visible.toSorted((a, b) => a.price - b.price);
   if (state.sort === "high") visible = visible.toSorted((a, b) => b.price - a.price);
   if (state.sort === "rating") visible = visible.toSorted((a, b) => b.rating - a.rating);
@@ -1177,12 +1190,12 @@ function renderProducts() {
 }
 
 function getHomeRangeProducts(range) {
-  if (range === "nonveg-masala") return catalog.filter((product) => NON_VEG_MASALA_IDS.has(product.id));
-  if (range === "bulk") return catalog.filter((product) => BULK_PACK_IDS.has(product.id));
+  if (range === "nonveg-masala") return sortFeaturedProducts(catalog.filter((product) => NON_VEG_MASALA_IDS.has(product.id)));
+  if (range === "bulk") return sortFeaturedProducts(catalog.filter((product) => BULK_PACK_IDS.has(product.id)));
   if (range === "masala") {
-    return catalog.filter((product) => product.category === "masala" && !NON_VEG_MASALA_IDS.has(product.id));
+    return sortFeaturedProducts(catalog.filter((product) => product.category === "masala" && !NON_VEG_MASALA_IDS.has(product.id)));
   }
-  return catalog.filter((product) => product.category === range);
+  return sortFeaturedProducts(catalog.filter((product) => product.category === range));
 }
 
 function renderHomeRange(range = state.homeRange) {

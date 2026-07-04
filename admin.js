@@ -78,6 +78,80 @@ function pricingSummary(product = {}) {
   return `MRP ${money(pricing.mrp)} | Offer ${money(pricing.offerPrice)} | ${discount}`;
 }
 
+function productReadinessChecks(product = {}) {
+  const details = product.details || {};
+  const pricing = getProductPricing(product);
+  return [
+    { label: "Packet photo", ok: Boolean(product.image), fix: "Add a real product image" },
+    { label: "MRP and offer", ok: pricing.mrp > 0 && pricing.offerPrice > 0 && pricing.mrp >= pricing.offerPrice, fix: "Add MRP and offer price" },
+    { label: "Stock ready", ok: product.stockStatus !== "out-of-stock" && Number(product.stock || 0) > 0, fix: "Add stock or mark preorder" },
+    {
+      label: "Ingredients",
+      ok: Array.isArray(details.ingredients) && details.ingredients.length > 0,
+      fix: "Add ingredients"
+    },
+    {
+      label: "Label proof",
+      ok: Boolean(details.shelfLife && details.storage && details.allergen),
+      fix: "Add shelf life, storage, and allergen notes"
+    },
+    { label: "Storefront live", ok: product.active !== false, fix: "Turn on storefront visibility" }
+  ];
+}
+
+function getProductReadiness(product = {}) {
+  const checks = productReadinessChecks(product);
+  const passed = checks.filter((check) => check.ok).length;
+  const score = Math.round((passed / checks.length) * 100);
+  return {
+    checks,
+    score,
+    ready: checks.every((check) => check.ok),
+    missing: checks.filter((check) => !check.ok)
+  };
+}
+
+function renderProductReadiness(product = {}) {
+  const readiness = getProductReadiness(product);
+  const nextFix = readiness.missing[0]?.fix || "Ready for buyers";
+  return `
+    <div class="admin-product-readiness ${readiness.ready ? "is-ready" : "needs-work"}">
+      <div>
+        <strong>${readiness.score}% catalog ready</strong>
+        <small>${escapeHtml(nextFix)}</small>
+      </div>
+      <div class="admin-readiness-chips">
+        ${readiness.checks
+          .map(
+            (check) => `
+              <span class="${check.ok ? "is-ok" : "is-missing"}">${escapeHtml(check.label)}</span>
+            `
+          )
+          .join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderProductManagerBoard(products = [], visibleCount = products.length) {
+  const activeProducts = products.filter((product) => product.active !== false);
+  const featuredProducts = products.filter((product) => product.featured === true);
+  const missingImages = products.filter((product) => !product.image);
+  const lowStock = products.filter((product) => ["low-stock", "out-of-stock"].includes(product.stockStatus || ""));
+  const readyProducts = products.filter((product) => getProductReadiness(product).ready);
+  return `
+    <div class="admin-product-board" aria-label="Catalog readiness summary">
+      <article><strong>${products.length}</strong><span>Total products</span></article>
+      <article><strong>${activeProducts.length}</strong><span>Live on storefront</span></article>
+      <article><strong>${featuredProducts.length}</strong><span>Homepage featured</span></article>
+      <article><strong>${readyProducts.length}</strong><span>Buyer-ready labels</span></article>
+      <article><strong>${missingImages.length}</strong><span>Missing packet photo</span></article>
+      <article><strong>${lowStock.length}</strong><span>Stock warnings</span></article>
+      <article><strong>${visibleCount}</strong><span>Showing after search</span></article>
+    </div>
+  `;
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -337,6 +411,7 @@ function productMatchesSearch(product) {
     product.size,
     product.badge,
     product.description,
+    product.featured ? "featured homepage" : "",
     product.stock,
     product.stockStatus,
     product.tags,
@@ -378,6 +453,9 @@ function renderStats() {
     wholesaleEnquiries: state.enquiries.length,
     openSupportRequests: state.supportRequests.filter((item) => !["resolved", "closed"].includes(item.status)).length,
     products: state.products.length,
+    activeProducts: state.products.filter((item) => item.active !== false).length,
+    featuredProducts: state.products.filter((item) => item.featured === true).length,
+    missingImageProducts: state.products.filter((item) => !item.image).length,
     lowStockProducts: state.products.filter((item) => ["low-stock", "out-of-stock"].includes(item.stockStatus)).length,
     pendingNotifications: state.notifications.filter((item) => ["queued", "ready", "failed"].includes(item.status)).length
   };
@@ -389,6 +467,9 @@ function renderStats() {
     <article><strong>${summary.customers}</strong><span>Customers</span></article>
     <article><strong>${summary.wholesaleEnquiries}</strong><span>Wholesale leads</span></article>
     <article><strong>${summary.products || 0}</strong><span>Products</span></article>
+    <article><strong>${summary.activeProducts || 0}</strong><span>Live products</span></article>
+    <article><strong>${summary.featuredProducts || 0}</strong><span>Featured</span></article>
+    <article><strong>${summary.missingImageProducts || 0}</strong><span>Missing photos</span></article>
     <article><strong>${summary.lowStockProducts || 0}</strong><span>Low stock</span></article>
     <article><strong>${summary.openSupportRequests || 0}</strong><span>Open support</span></article>
     <article><strong>${summary.pendingNotifications || 0}</strong><span>Open alerts</span></article>
@@ -878,11 +959,12 @@ function renderProductsAdmin() {
   const visibleProducts = state.products.filter(productMatchesSearch);
 
   productList.innerHTML = `
+    ${renderProductManagerBoard(state.products, visibleProducts.length)}
     <article class="admin-product-card admin-new-product">
       <header>
         <div>
           <h3>Add new product</h3>
-          <p>Create a product without editing website code.</p>
+          <p>Create a live product with pricing, stock, packet image, and trust details.</p>
         </div>
       </header>
       <form class="admin-product-form" data-new-product-form>
@@ -897,8 +979,17 @@ function renderProductsAdmin() {
         <input name="lowStockThreshold" type="number" min="0" step="1" placeholder="Low stock limit" value="10" />
         <select name="stockStatus" aria-label="Stock status">${productStockOptions()}</select>
         ${renderProductImageControls()}
+        <input name="tags" type="text" placeholder="Tags: bestseller, export-ready" />
         <textarea name="description" rows="2" placeholder="Short product description"></textarea>
         ${renderProductDetailsEditor({}, true)}
+        <label class="admin-checkbox">
+          <input name="featured" type="checkbox" checked />
+          <span>Feature on homepage category preview</span>
+        </label>
+        <label class="admin-checkbox">
+          <input name="active" type="checkbox" checked />
+          <span>Active on storefront</span>
+        </label>
         <button type="submit">Add product</button>
       </form>
     </article>
@@ -923,15 +1014,25 @@ function renderProductAdminCard(product) {
   const details = product.details || {};
   const ingredientCount = Array.isArray(details.ingredients) ? details.ingredients.length : 0;
   const pricing = getProductPricing(product);
+  const productStatus = product.active === false ? "inactive" : product.stockStatus || "in-stock";
   return `
-    <article class="admin-product-card" data-status="${escapeHtml(product.stockStatus || "in-stock")}">
+    <article class="admin-product-card" data-status="${escapeHtml(productStatus)}">
       <header>
         <div>
           <h3>${escapeHtml(product.name || product.id)}</h3>
           <p>${escapeHtml(product.id)} | ${escapeHtml(product.category || "product")} | ${escapeHtml(pricingSummary(product))}</p>
         </div>
-        <span class="status-pill">${product.active === false ? "inactive" : escapeHtml(product.stockStatus || "in-stock")}</span>
+        <div class="admin-product-status-stack">
+          <span class="status-pill">${product.active === false ? "inactive" : escapeHtml(product.stockStatus || "in-stock")}</span>
+          ${product.featured ? `<span class="status-pill featured">Homepage</span>` : ""}
+        </div>
       </header>
+      <div class="admin-product-kpi-grid">
+        <span><strong>MRP</strong>${money(pricing.mrp)}</span>
+        <span><strong>Offer</strong>${money(pricing.offerPrice)}</span>
+        <span><strong>Discount</strong>${pricing.discountPercent ? `${pricing.discountPercent}% / ${money(pricing.discountPrice)}` : "No offer"}</span>
+        <span><strong>Homepage</strong>${product.featured ? "Featured" : "Not featured"}</span>
+      </div>
       <div class="admin-product-preview">
         ${productImagePreviewMarkup(product.image, product.name)}
         <div>
@@ -945,6 +1046,7 @@ function renderProductAdminCard(product) {
           </div>
         </div>
       </div>
+      ${renderProductReadiness(product)}
       <form class="admin-product-form" data-product-form="${escapeHtml(product.id)}">
         <input name="name" type="text" placeholder="Product name" value="${escapeHtml(product.name || "")}" required />
         <select name="category" aria-label="Product category">${productCategoryOptions(product.category)}</select>
@@ -961,6 +1063,10 @@ function renderProductAdminCard(product) {
         <input name="adminNote" type="text" placeholder="Admin note" value="${escapeHtml(product.adminNote || "")}" />
         <textarea name="description" rows="2" placeholder="Short product description">${escapeHtml(product.description || "")}</textarea>
         ${renderProductDetailsEditor(details)}
+        <label class="admin-checkbox">
+          <input name="featured" type="checkbox" ${product.featured ? "checked" : ""} />
+          <span>Feature on homepage category preview</span>
+        </label>
         <label class="admin-checkbox">
           <input name="active" type="checkbox" ${product.active === false ? "" : "checked"} />
           <span>Active on storefront</span>
@@ -1419,7 +1525,8 @@ function productPayloadFromForm(form) {
       allergen: data.get("detailsAllergen"),
       disclaimer: data.get("detailsDisclaimer")
     },
-    active: data.get("active") === "on" || form.hasAttribute("data-new-product-form")
+    featured: form.elements.featured ? data.get("featured") === "on" : false,
+    active: form.elements.active ? data.get("active") === "on" : form.hasAttribute("data-new-product-form")
   };
 }
 
