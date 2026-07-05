@@ -20,6 +20,7 @@ export default defineConfig({
         track: resolve(__dirname, "track.html"),
         wholesale: resolve(__dirname, "wholesale.html"),
         companyStrength: resolve(__dirname, "company-strength.html"),
+        officeNetwork: resolve(__dirname, "office-network.html"),
         about: resolve(__dirname, "about.html"),
         updates: resolve(__dirname, "updates.html"),
         dubai: resolve(__dirname, "dubai.html"),
