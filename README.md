@@ -1,6 +1,6 @@
-# Makhana & Masala Online Store
+# Premium Makhana Agro Export
 
-A standalone storefront project for selling roasted makhana, Indian masala powders, whole spices, and combo packs.
+Restored and continued storefront project for premium roasted makhana, retail packs, wholesale enquiries, sample support, and export buyer conversations.
 
 ## Run Locally
 

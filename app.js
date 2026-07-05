@@ -562,6 +562,7 @@ function ensureTrustInfrastructure() {
   ensureCheckoutAssurance();
   ensurePolicyBusinessPanel();
   ensureAboutComplianceCards();
+  ensureSeoAutoTime();
 }
 
 function ensureHeaderSliderLink() {
@@ -590,7 +591,7 @@ function ensurePremiumHeader() {
 
   const brandCopy = header.querySelector(".brand > span:not(.brand-mark)");
   if (brandCopy && !brandCopy.querySelector(".brand-proof-line")) {
-    brandCopy.insertAdjacentHTML("beforeend", `<em class="brand-proof-line">Makhana | Masala | Poha</em>`);
+    brandCopy.insertAdjacentHTML("beforeend", `<em class="brand-proof-line">Makhana export | Wholesale | Retail</em>`);
   }
 
   const actions = header.querySelector(".header-actions");
@@ -684,9 +685,17 @@ function ensureFooterTrust() {
       <a href="./about.html">About BandEvi</a>
       <a href="./about.html#trust">Trust center</a>
       <a href="./about.html#business-verification">Business verification</a>
-      <a href="./slider.html">Brand slider</a>
       <a href="./wholesale.html">Wholesale enquiry</a>
+      <a href="./updates.html">Daily SEO updates</a>
       <a href="./policies.html#faq">FAQ</a>
+    </nav>
+    <nav class="footer-links" aria-label="Market links">
+      <strong>Markets</strong>
+      <a href="./india.html">India</a>
+      <a href="./dubai.html">Dubai / UAE</a>
+      <a href="./uk.html">UK</a>
+      <a href="./us.html">USA</a>
+      <a href="./slider.html">Brand slider</a>
     </nav>
     <div class="footer-note footer-assurance">
       <strong>Verified details</strong>
@@ -731,6 +740,33 @@ function ensureAboutComplianceCards() {
   if (certSection && !document.querySelector(".business-verification-panel")) {
     certSection.insertAdjacentHTML("afterend", renderBusinessVerificationPanel());
   }
+}
+
+function ensureSeoAutoTime() {
+  const timeNodes = document.querySelectorAll("[data-seo-auto-time]");
+  if (!timeNodes.length) return;
+
+  const formatter = new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true
+  });
+
+  const updateTime = () => {
+    const now = new Date();
+    timeNodes.forEach((node) => {
+      node.textContent = `${formatter.format(now)} IST`;
+      node.setAttribute("datetime", now.toISOString());
+    });
+  };
+
+  updateTime();
+  window.setInterval(updateTime, 60000);
 }
 
 function money(value) {

@@ -1,5 +1,5 @@
 {
-  "name": "makhana-masala-store",
+  "name": "premium-makhana-agro-export",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -17,7 +17,7 @@
     "nodemailer": "^9.0.3",
     "pg": "^8.22.0"
   },
-  "description": "A standalone storefront project for selling roasted makhana, Indian masala powders, whole spices, and combo packs.",
+  "description": "A premium makhana agro export storefront with retail catalog, wholesale enquiry, export buyer pages, and admin flow.",
   "main": "admin.js",
   "repository": {
     "type": "git",

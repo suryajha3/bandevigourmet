@@ -1,10 +1,10 @@
 export const STORE_CONFIG = {
-  shopName: "BandEvi Gourmet",
+  shopName: "BandEvi Gourmet Export",
   domain: "bandevigourmet.com",
-  deliveryArea: "India delivery",
+  deliveryArea: "India retail and export buyer enquiries",
   whatsappNumber: "",
   upiId: "",
-  upiPayeeName: "BandEvi Gourmet",
+  upiPayeeName: "BandEvi Gourmet Export",
   supportHours: "Mon-Sat, 10:00 AM-6:00 PM IST",
   business: {
     legalName: "Legal entity name verification pending",
@@ -19,15 +19,16 @@ export const STORE_CONFIG = {
     labReports: "COA / lab report files to be linked after verification"
   },
   trustBadges: [
-    "No artificial colors",
-    "Ingredient-led recipes",
-    "Order ID tracking",
-    "Policy-backed checkout"
+    "Premium makhana focus",
+    "Retail and bulk packs",
+    "Export enquiry desk",
+    "Policy-backed quote flow"
   ],
   complianceChecklist: [
     "FSSAI and GST details to be added only after verification",
-    "Batch number, packed date, net weight, and MRP ready for final labels",
-    "Allergen and storage notes shown before commercial launch",
+    "IEC, shipping documents, COA, and lab reports to be linked only after verification",
+    "Batch number, packed date, net weight, and buyer label details ready for final packs",
+    "Allergen, storage, and destination-market label notes shown before commercial launch",
     "Wholesale and export terms confirmed by written quote"
   ],
   defaultAllergenNotice:

@@ -19,7 +19,13 @@ export default defineConfig({
         confirmation: resolve(__dirname, "confirmation.html"),
         track: resolve(__dirname, "track.html"),
         wholesale: resolve(__dirname, "wholesale.html"),
-        about: resolve(__dirname, "about.html")
+        companyStrength: resolve(__dirname, "company-strength.html"),
+        about: resolve(__dirname, "about.html"),
+        updates: resolve(__dirname, "updates.html"),
+        dubai: resolve(__dirname, "dubai.html"),
+        india: resolve(__dirname, "india.html"),
+        uk: resolve(__dirname, "uk.html"),
+        us: resolve(__dirname, "us.html")
       }
     }
   }
