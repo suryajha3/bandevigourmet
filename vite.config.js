@@ -27,6 +27,7 @@ export default defineConfig({
         companyStrength: resolve(__dirname, "company-strength.html"),
         officeNetwork: resolve(__dirname, "office-network.html"),
         companyProfile: resolve(__dirname, "company-profile.html"),
+        proofCenter: resolve(__dirname, "proof-center.html"),
         about: resolve(__dirname, "about.html"),
         updates: resolve(__dirname, "updates.html"),
         dubai: resolve(__dirname, "dubai.html"),
