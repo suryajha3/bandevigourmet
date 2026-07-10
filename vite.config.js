@@ -25,6 +25,7 @@ export default defineConfig({
         makhanaWholesaleUsa: resolve(__dirname, "makhana-wholesale-usa.html"),
         makhanaDistributorUk: resolve(__dirname, "makhana-distributor-uk.html"),
         companyStrength: resolve(__dirname, "company-strength.html"),
+        makhanaExportCompanyProof: resolve(__dirname, "makhana-export-company-net-worth-staff-offices.html"),
         officeNetwork: resolve(__dirname, "office-network.html"),
         companyProfile: resolve(__dirname, "company-profile.html"),
         proofCenter: resolve(__dirname, "proof-center.html"),
