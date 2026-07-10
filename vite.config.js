@@ -20,6 +20,7 @@ export default defineConfig({
         track: resolve(__dirname, "track.html"),
         wholesale: resolve(__dirname, "wholesale.html"),
         bulkMakhana: resolve(__dirname, "bulk-makhana.html"),
+        premiumRoastedMakhanaWholesale: resolve(__dirname, "premium-roasted-makhana-snack-packs-wholesale.html"),
         makhanaExporterIndia: resolve(__dirname, "makhana-exporter-india.html"),
         makhanaSupplierDubai: resolve(__dirname, "makhana-supplier-dubai.html"),
         makhanaWholesaleUsa: resolve(__dirname, "makhana-wholesale-usa.html"),
