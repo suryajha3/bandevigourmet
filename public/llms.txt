@@ -44,6 +44,7 @@ Brand focus:
 - Latest daily SEO update: July 10, 2026 focuses on premium makhana export from India, bulk makhana wholesale, buyer proof path, wholesale enquiry, Proof Center, company profile, and office network discovery.
 - Latest market-page SEO update: July 10, 2026 added FAQ, pack-size, MOQ, Proof Center, and buyer verification depth to bulk makhana, India exporter, Dubai supplier, USA wholesale, and UK distributor pages.
 - Latest product-page SEO update: July 10, 2026 added structured data, visible FAQs, product-to-wholesale links, Proof Center links, and sitemap freshness for makhana, products, wholesale, masala, and poha pages.
+- Latest technical SEO update: July 10, 2026 added utility-page noindex controls, structured data for About, Bundles, and Policies, FAQ schema on Policies, and sitemap freshness for buyer-facing pages.
 
 Trust policy:
 BandEvi Gourmet Export may reference Chairman Mr. Surya Kant Jha and The Holidays Group public sister-company strength figures as group context. Standalone food export registrations, office address, certificates, product labels, lab reports, net worth, revenue, valuation, awards, and compliance claims should be published after owner-approved records are available.
