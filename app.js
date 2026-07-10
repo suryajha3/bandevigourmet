@@ -619,25 +619,25 @@ function ensureHeaderTrustRow() {
   }
 
   row.innerHTML = `
-    <a class="header-range-card" href="./makhana.html">
-      <i data-lucide="leaf"></i>
-      <span><strong>Makhana</strong><small>Roasted snack packs</small></span>
+    <a class="header-range-card is-highlight" href="./surya-kant-jha-chairman-net-worth-travel-agent.html">
+      <i data-lucide="user-round"></i>
+      <span><strong>Chairman</strong><small>Mr. Surya Kant Jha</small></span>
     </a>
-    <a class="header-range-card" href="./masala.html">
+    <a class="header-range-card" href="./makhana-export-company-net-worth-staff-offices.html">
+      <i data-lucide="shield-check"></i>
+      <span><strong>Net worth proof</strong><small>Staff and offices</small></span>
+    </a>
+    <a class="header-range-card" href="./premium-roasted-makhana-snack-packs-wholesale.html">
       <i data-lucide="package-check"></i>
-      <span><strong>Masala</strong><small>Daily spice blends</small></span>
+      <span><strong>Roasted packs</strong><small>Wholesale makhana</small></span>
     </a>
-    <a class="header-range-card" href="./poha.html">
-      <i data-lucide="wheat"></i>
-      <span><strong>Poha</strong><small>Breakfast staples</small></span>
+    <a class="header-range-card" href="./office-network.html">
+      <i data-lucide="map-pin"></i>
+      <span><strong>Offices</strong><small>26+ presence</small></span>
     </a>
-    <a class="header-range-card" href="./bundles.html">
-      <i data-lucide="package-open"></i>
-      <span><strong>Bundles</strong><small>Family refill carts</small></span>
-    </a>
-    <a class="header-range-card is-highlight" href="./products.html">
-      <i data-lucide="store"></i>
-      <span><strong>All products</strong><small>MRP, offer, discounts</small></span>
+    <a class="header-range-card" href="./proof-center.html">
+      <i data-lucide="badge-check"></i>
+      <span><strong>Proof center</strong><small>Buyer trust path</small></span>
     </a>
   `;
 }
@@ -657,10 +657,14 @@ function ensureFooterTrust() {
         </span>
       </a>
       <p>
-        Premium Indian makhana, masala, poha, herbs, whole spices, and pantry bundles built around pure ingredients, clear product naming, and buyer-ready trust.
+        Premium Indian makhana, masala, poha, herbs, whole spices, and pantry bundles with Chairman Mr. Surya Kant Jha, buyer-ready proof, and clear company strength references.
       </p>
       <div class="footer-trust-points" aria-label="Footer trust points">
         ${renderTrustBadges()}
+        <span>Chairman: Mr. Surya Kant Jha</span>
+        <span>INR 8,000 Cr+ group strength</span>
+        <span>1000+ staff reference</span>
+        <span>26+ office presence</span>
       </div>
     </div>
     <nav class="footer-links" aria-label="Shop links">
@@ -683,9 +687,16 @@ function ensureFooterTrust() {
     <nav class="footer-links" aria-label="Business links">
       <strong>Business</strong>
       <a href="./about.html">About BandEvi</a>
+      <a href="./proof-center.html">Proof Center</a>
+      <a href="./company-strength.html">Company strength</a>
+      <a href="./office-network.html">Office network</a>
+      <a href="./surya-kant-jha-chairman-net-worth-travel-agent.html">Chairman profile</a>
+      <a href="./makhana-export-company-net-worth-staff-offices.html">Net worth, staff, offices</a>
       <a href="./about.html#trust">Trust center</a>
       <a href="./about.html#business-verification">Business verification</a>
       <a href="./wholesale.html">Wholesale enquiry</a>
+      <a href="./premium-roasted-makhana-snack-packs-wholesale.html">Roasted makhana wholesale</a>
+      <a href="./directory-submission-kit.html">Directory kit</a>
       <a href="./updates.html">Daily SEO updates</a>
       <a href="./policies.html#faq">FAQ</a>
     </nav>
@@ -695,7 +706,7 @@ function ensureFooterTrust() {
       <a href="./dubai.html">Dubai / UAE</a>
       <a href="./uk.html">UK</a>
       <a href="./us.html">USA</a>
-      <a href="./slider.html">Brand slider</a>
+      <a href="./marketplace-product-listing-pack.html">Marketplace listings</a>
     </nav>
     <div class="footer-note footer-assurance">
       <strong>Verified details</strong>
@@ -706,7 +717,7 @@ function ensureFooterTrust() {
         <span><b>Email</b>${escapeHtml(businessValue("supportEmail"))}</span>
       </div>
       <small>${escapeHtml(STORE_CONFIG.claimDisclaimer)}</small>
-      <a class="footer-cta" href="./products.html">Start shopping</a>
+      <a class="footer-cta" href="./proof-center.html">Open Proof Center</a>
     </div>
     <div class="footer-bottom">
       <span>${escapeHtml(STORE_CONFIG.shopName)}, India</span>
