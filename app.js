@@ -701,6 +701,7 @@ function ensureFooterTrust() {
       <a href="./about.html#business-verification">Business verification</a>
       <a href="./wholesale.html">Wholesale enquiry</a>
       <a href="./international-buyer-desk.html">International buyer desk</a>
+      <a href="./international-buyer-catalog.html">International buyer catalog</a>
       <a href="./premium-roasted-makhana-snack-packs-wholesale.html">Roasted makhana wholesale</a>
       <a href="./directory-submission-kit.html">Directory kit</a>
       <a href="./updates.html">Daily SEO updates</a>
@@ -713,6 +714,7 @@ function ensureFooterTrust() {
       <a href="./uk.html">UK</a>
       <a href="./us.html">USA</a>
       <a href="./international-buyer-desk.html">International buyers</a>
+      <a href="./international-buyer-catalog.html">Buyer catalog</a>
       <a href="./marketplace-product-listing-pack.html">Marketplace listings</a>
     </nav>
     <div class="footer-note footer-assurance">
