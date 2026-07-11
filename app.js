@@ -563,6 +563,7 @@ function ensureTrustInfrastructure() {
   ensurePolicyBusinessPanel();
   ensureAboutComplianceCards();
   ensureSeoAutoTime();
+  ensureSubmissionCopyButtons();
 }
 
 function ensureHeaderSliderLink() {
@@ -1054,6 +1055,32 @@ async function apiWriteOnly(path, payload) {
       "Content-Type": "text/plain;charset=UTF-8"
     },
     body: JSON.stringify(payload)
+  });
+}
+
+function ensureSubmissionCopyButtons() {
+  document.querySelectorAll("[data-copy-target]").forEach((button) => {
+    if (button.dataset.copyBound === "true") return;
+    button.dataset.copyBound = "true";
+
+    button.addEventListener("click", async () => {
+      const target = document.querySelector(button.dataset.copyTarget || "");
+      if (!target) return;
+
+      const value = "value" in target ? target.value : target.textContent;
+      await copyText(String(value || "").trim());
+
+      const originalLabel = button.dataset.copyLabel || button.textContent;
+      button.dataset.copyLabel = originalLabel;
+      button.textContent = "Copied";
+      button.classList.add("is-copied");
+      showToast("Submission text copied");
+
+      window.setTimeout(() => {
+        button.textContent = button.dataset.copyLabel || "Copy";
+        button.classList.remove("is-copied");
+      }, 1600);
+    });
   });
 }
 

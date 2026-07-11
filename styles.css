@@ -2252,6 +2252,130 @@ a {
   margin: 12px 0 0;
 }
 
+.submission-copy-pack {
+  width: min(1180px, calc(100% - 36px));
+  margin: 74px auto;
+}
+
+.submission-copy-pack .section-head p:not(.eyebrow) {
+  max-width: 780px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.submission-copy-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.copy-card {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.copy-card-wide {
+  grid-column: 1 / -1;
+}
+
+.copy-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.copy-card-head span {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #edf6f0;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.copy-card-head h3 {
+  flex: 1;
+  margin: 0;
+  font-size: 20px;
+}
+
+.copy-card-head button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(30, 89, 75, 0.18);
+  border-radius: 8px;
+  background: #fffdf8;
+  color: var(--green);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.copy-card-head button.is-copied {
+  border-color: var(--green);
+  background: var(--green);
+  color: #fff;
+}
+
+.copy-field {
+  width: 100%;
+  min-height: 96px;
+  padding: 12px;
+  border: 1px solid rgba(30, 89, 75, 0.14);
+  border-radius: 8px;
+  background: #fbfaf5;
+  color: var(--ink);
+  font: 800 13px/1.6 inherit;
+  resize: vertical;
+}
+
+.copy-field-tall {
+  min-height: 150px;
+}
+
+.anchor-text-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 18px;
+  border: 1px dashed rgba(30, 89, 75, 0.24);
+  border-radius: 8px;
+  background: #fbfaf5;
+}
+
+.anchor-text-panel strong {
+  color: var(--green);
+  font-size: 20px;
+}
+
+.anchor-text-panel div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.anchor-text-panel span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(30, 89, 75, 0.12);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .section-head {
   display: flex;
   align-items: flex-end;
@@ -8631,6 +8755,19 @@ body.customer-authed .portal-dashboard {
 
   .premium-header .header-trust-row {
     display: none;
+  }
+
+  .submission-copy-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .copy-card-head {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .copy-card-head button {
+    width: 100%;
   }
 
   .mobile-category-nav {
