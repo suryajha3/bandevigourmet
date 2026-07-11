@@ -1058,7 +1058,7 @@ a {
 .premium-header .header-trust-row {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 7px;
   padding: 0;
   overflow: visible;
@@ -2377,6 +2377,11 @@ a {
 }
 
 .submission-batch {
+  width: min(1180px, calc(100% - 36px));
+  margin: 74px auto;
+}
+
+.international-sales-grid {
   width: min(1180px, calc(100% - 36px));
   margin: 74px auto;
 }

@@ -632,6 +632,10 @@ function ensureHeaderTrustRow() {
       <i data-lucide="package-check"></i>
       <span><strong>Roasted packs</strong><small>Wholesale makhana</small></span>
     </a>
+    <a class="header-range-card" href="./international-buyer-desk.html">
+      <i data-lucide="globe-2"></i>
+      <span><strong>International</strong><small>Buyer desk</small></span>
+    </a>
     <a class="header-range-card" href="./office-network.html">
       <i data-lucide="map-pin"></i>
       <span><strong>Offices</strong><small>26+ presence</small></span>
@@ -696,6 +700,7 @@ function ensureFooterTrust() {
       <a href="./about.html#trust">Trust center</a>
       <a href="./about.html#business-verification">Business verification</a>
       <a href="./wholesale.html">Wholesale enquiry</a>
+      <a href="./international-buyer-desk.html">International buyer desk</a>
       <a href="./premium-roasted-makhana-snack-packs-wholesale.html">Roasted makhana wholesale</a>
       <a href="./directory-submission-kit.html">Directory kit</a>
       <a href="./updates.html">Daily SEO updates</a>
@@ -707,6 +712,7 @@ function ensureFooterTrust() {
       <a href="./dubai.html">Dubai / UAE</a>
       <a href="./uk.html">UK</a>
       <a href="./us.html">USA</a>
+      <a href="./international-buyer-desk.html">International buyers</a>
       <a href="./marketplace-product-listing-pack.html">Marketplace listings</a>
     </nav>
     <div class="footer-note footer-assurance">
@@ -3422,7 +3428,13 @@ function buildWholesaleMessage(form) {
     `Phone: ${data.get("phone") || "Not added"}`,
     `Email: ${data.get("email") || "Not added"}`,
     `Country / City: ${data.get("country")}`,
+    `Target Market: ${data.get("targetMarket") || "Not specified"}`,
+    `Buyer Type: ${data.get("buyerType") || "Not specified"}`,
     `Monthly Volume: ${data.get("volume")}`,
+    `Pack Format: ${data.get("packFormat") || "Not specified"}`,
+    `Destination Port / City: ${data.get("destinationPort") || "Not specified"}`,
+    `Timeline: ${data.get("timeline") || "Not specified"}`,
+    `Document Need: ${data.get("documentNeed") || "Not specified"}`,
     "",
     "Product Interest:",
     data.get("message") || "Not specified"
@@ -3437,7 +3449,13 @@ async function syncWholesaleEnquiry(form) {
     phone: data.get("phone"),
     email: data.get("email"),
     country: data.get("country"),
+    targetMarket: data.get("targetMarket"),
+    buyerType: data.get("buyerType"),
     volume: data.get("volume"),
+    packFormat: data.get("packFormat"),
+    destinationPort: data.get("destinationPort"),
+    timeline: data.get("timeline"),
+    documentNeed: data.get("documentNeed"),
     message: data.get("message")
   };
 

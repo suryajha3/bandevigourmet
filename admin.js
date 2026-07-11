@@ -809,6 +809,9 @@ function renderEnquiry(enquiry) {
         <span><strong>Contact</strong>${escapeHtml(enquiry.contactName || "Not added")}<small>${escapeHtml(enquiry.phone || "")}</small></span>
         <span><strong>Email</strong>${escapeHtml(enquiry.email || "Not added")}<small>${escapeHtml(enquiry.country || "")}</small></span>
         <span><strong>Volume</strong>${escapeHtml(enquiry.volume || "Pending")}<small>${escapeHtml(enquiry.id || "")}</small></span>
+        <span><strong>Buyer type</strong>${escapeHtml(enquiry.buyerType || "Not added")}<small>${escapeHtml(enquiry.targetMarket || "")}</small></span>
+        <span><strong>Pack format</strong>${escapeHtml(enquiry.packFormat || "Not added")}<small>${escapeHtml(enquiry.destinationPort || "")}</small></span>
+        <span><strong>Documents</strong>${escapeHtml(enquiry.documentNeed || "Not added")}<small>${escapeHtml(enquiry.timeline || "")}</small></span>
         <span><strong>Updated</strong>${formatDate(enquiry.updatedAt || enquiry.placedAt)}<small>${escapeHtml(enquiry.note || "No admin note")}</small></span>
       </div>
       <p class="admin-items">${escapeHtml(enquiry.message || "No product interest added")}</p>
