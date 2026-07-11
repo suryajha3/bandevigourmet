@@ -24,6 +24,7 @@ export default defineConfig({
         premiumRoastedMakhanaWholesale: resolve(__dirname, "premium-roasted-makhana-snack-packs-wholesale.html"),
         makhanaExporterIndia: resolve(__dirname, "makhana-exporter-india.html"),
         makhanaSupplierDubai: resolve(__dirname, "makhana-supplier-dubai.html"),
+        makhanaDistributorDubaiUae: resolve(__dirname, "makhana-distributor-dubai-uae.html"),
         makhanaWholesaleUsa: resolve(__dirname, "makhana-wholesale-usa.html"),
         makhanaDistributorUk: resolve(__dirname, "makhana-distributor-uk.html"),
         companyStrength: resolve(__dirname, "company-strength.html"),
