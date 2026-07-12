@@ -601,10 +601,10 @@ function ensurePremiumHeader() {
       "afterbegin",
       `
         <div class="header-announcement" aria-label="Brand trust bar">
-          <span><i data-lucide="shield-check"></i>Pure ingredient promise</span>
-          <span><i data-lucide="truck"></i>India delivery and order tracking</span>
-          <a href="./wholesale.html"><i data-lucide="handshake"></i>Wholesale enquiry</a>
-          <a href="./policies.html"><i data-lucide="file-text"></i>Policies</a>
+          <span><i data-lucide="sparkles"></i>Premium makhana and Indian pantry goods</span>
+          <span><i data-lucide="globe-2"></i>Wholesale, private-label and export desk</span>
+          <a href="./wholesale.html"><i data-lucide="message-square"></i>Request a quote</a>
+          <a href="./track.html"><i data-lucide="map-pin-check"></i>Track an order</a>
         </div>
       `
     );
@@ -612,7 +612,7 @@ function ensurePremiumHeader() {
 
   const brandCopy = header.querySelector(".brand > span:not(.brand-mark)");
   if (brandCopy && !brandCopy.querySelector(".brand-proof-line")) {
-    brandCopy.insertAdjacentHTML("beforeend", `<em class="brand-proof-line">Makhana export | Wholesale | Retail</em>`);
+    brandCopy.insertAdjacentHTML("beforeend", `<em class="brand-proof-line">Indian Makhana Export House</em>`);
   }
 
   const actions = header.querySelector(".header-actions");
@@ -640,17 +640,17 @@ function ensureHeaderTrustRow() {
   }
 
   row.innerHTML = `
-    <a class="header-range-card" href="./premium-roasted-makhana-snack-packs-wholesale.html">
+    <a class="header-range-card is-highlight" href="./premium-roasted-makhana-snack-packs-wholesale.html">
       <i data-lucide="package-check"></i>
-      <span><strong>Roasted packs</strong><small>Wholesale makhana</small></span>
+      <span><strong>Wholesale range</strong><small>Roasted makhana packs</small></span>
     </a>
     <a class="header-range-card" href="./international-buyer-desk.html">
       <i data-lucide="globe-2"></i>
-      <span><strong>International</strong><small>Buyer desk</small></span>
+      <span><strong>Export buyer desk</strong><small>Share your requirements</small></span>
     </a>
     <a class="header-range-card" href="./international-buyer-catalog.html">
       <i data-lucide="book-open-check"></i>
-      <span><strong>Buyer catalog</strong><small>Export-ready range</small></span>
+      <span><strong>Buyer catalog</strong><small>Formats, packs and enquiry</small></span>
     </a>
   `;
 }
