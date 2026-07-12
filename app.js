@@ -157,6 +157,9 @@ const googleAuth = {
   loading: null
 };
 
+const HEADER_RELEASE = "premium-header-20260712";
+document.documentElement.dataset.headerRelease = HEADER_RELEASE;
+
 ensureStoreShell();
 ensureMobileCategoryNav();
 ensureTrustInfrastructure();
