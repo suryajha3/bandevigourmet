@@ -28,6 +28,7 @@ export default defineConfig({
         makhanaDistributorDubaiUae: resolve(__dirname, "makhana-distributor-dubai-uae.html"),
         makhanaWholesaleUsa: resolve(__dirname, "makhana-wholesale-usa.html"),
         makhanaDistributorUk: resolve(__dirname, "makhana-distributor-uk.html"),
+        makhanaWholesaleCanada: resolve(__dirname, "makhana-wholesale-canada.html"),
         companyStrength: resolve(__dirname, "company-strength.html"),
         suryaKantJhaChairmanProfile: resolve(__dirname, "surya-kant-jha-chairman-net-worth-travel-agent.html"),
         makhanaExportCompanyProof: resolve(__dirname, "makhana-export-company-net-worth-staff-offices.html"),

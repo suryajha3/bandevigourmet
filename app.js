@@ -725,6 +725,7 @@ function ensureFooterTrust() {
       <a href="./dubai.html">Dubai / UAE</a>
       <a href="./uk.html">UK</a>
       <a href="./us.html">USA</a>
+      <a href="./makhana-wholesale-canada.html">Canada</a>
       <a href="./international-buyer-desk.html">International buyers</a>
       <a href="./international-buyer-catalog.html">Buyer catalog</a>
       <a href="./marketplace-product-listing-pack.html">Marketplace listings</a>
