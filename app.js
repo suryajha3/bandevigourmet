@@ -557,6 +557,7 @@ function renderCheckoutAssurance() {
 function ensureTrustInfrastructure() {
   ensureHeaderSliderLink();
   ensurePremiumHeader();
+  moveProofLinksToFooter();
   ensureHeaderTrustRow();
   ensureFooterTrust();
   ensureCheckoutAssurance();
@@ -568,6 +569,25 @@ function ensureTrustInfrastructure() {
 
 function ensureHeaderSliderLink() {
   document.querySelector('.main-nav a[href="./slider.html"]')?.remove();
+}
+
+function moveProofLinksToFooter() {
+  const header = document.querySelector(".site-header");
+  if (!header) return;
+
+  const proofPages = new Set([
+    "proof-center.html",
+    "company-profile.html",
+    "company-strength.html",
+    "office-network.html",
+    "makhana-export-company-net-worth-staff-offices.html",
+    "surya-kant-jha-chairman-net-worth-travel-agent.html"
+  ]);
+
+  header.querySelectorAll("a[href]").forEach((link) => {
+    const target = new URL(link.getAttribute("href"), window.location.href).pathname.split("/").pop();
+    if (proofPages.has(target)) link.remove();
+  });
 }
 
 function ensurePremiumHeader() {
@@ -620,14 +640,6 @@ function ensureHeaderTrustRow() {
   }
 
   row.innerHTML = `
-    <a class="header-range-card is-highlight" href="./surya-kant-jha-chairman-net-worth-travel-agent.html">
-      <i data-lucide="user-round"></i>
-      <span><strong>Chairman</strong><small>Mr. Surya Kant Jha</small></span>
-    </a>
-    <a class="header-range-card" href="./makhana-export-company-net-worth-staff-offices.html">
-      <i data-lucide="shield-check"></i>
-      <span><strong>Net worth proof</strong><small>Staff and offices</small></span>
-    </a>
     <a class="header-range-card" href="./premium-roasted-makhana-snack-packs-wholesale.html">
       <i data-lucide="package-check"></i>
       <span><strong>Roasted packs</strong><small>Wholesale makhana</small></span>
@@ -636,13 +648,9 @@ function ensureHeaderTrustRow() {
       <i data-lucide="globe-2"></i>
       <span><strong>International</strong><small>Buyer desk</small></span>
     </a>
-    <a class="header-range-card" href="./office-network.html">
-      <i data-lucide="map-pin"></i>
-      <span><strong>Offices</strong><small>26+ presence</small></span>
-    </a>
-    <a class="header-range-card" href="./proof-center.html">
-      <i data-lucide="badge-check"></i>
-      <span><strong>Proof center</strong><small>Buyer trust path</small></span>
+    <a class="header-range-card" href="./international-buyer-catalog.html">
+      <i data-lucide="book-open-check"></i>
+      <span><strong>Buyer catalog</strong><small>Export-ready range</small></span>
     </a>
   `;
 }
@@ -690,12 +698,13 @@ function ensureFooterTrust() {
       <a href="./policies.html#refund">Refunds</a>
     </nav>
     <nav class="footer-links" aria-label="Business links">
-      <strong>Business</strong>
+      <strong>Proof &amp; company</strong>
       <a href="./about.html">About BandEvi</a>
       <a href="./proof-center.html">Proof Center</a>
       <a href="./company-strength.html">Company strength</a>
       <a href="./office-network.html">Office network</a>
       <a href="./surya-kant-jha-chairman-net-worth-travel-agent.html">Chairman profile</a>
+      <a href="./surya-kant-jha-chairman-net-worth-travel-agent.html#chairman-gallery-title">Chairman gallery</a>
       <a href="./makhana-export-company-net-worth-staff-offices.html">Net worth, staff, offices</a>
       <a href="./about.html#trust">Trust center</a>
       <a href="./about.html#business-verification">Business verification</a>
