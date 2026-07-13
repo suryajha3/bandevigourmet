@@ -736,7 +736,7 @@ function ensureFooterTrust() {
         <span><b>FSSAI</b>${escapeHtml(businessValue("fssai"))}</span>
         <span><b>GST</b>${escapeHtml(businessValue("gst"))}</span>
         <span><b>Support</b>${escapeHtml(businessValue("supportPhone"))}</span>
-        <span><b>Email</b>${escapeHtml(businessValue("supportEmail"))}</span>
+        <span><b>Email</b><a href="mailto:${encodeURIComponent(businessValue("supportEmail"))}">${escapeHtml(businessValue("supportEmail"))}</a></span>
       </div>
       <small>${escapeHtml(STORE_CONFIG.claimDisclaimer)}</small>
       <a class="footer-cta" href="./proof-center.html">Open Proof Center</a>
@@ -4238,7 +4238,7 @@ wholesaleForm?.addEventListener("submit", (event) => {
   const message = buildWholesaleMessage(event.currentTarget);
   syncWholesaleEnquiry(event.currentTarget);
   window.open(getWhatsAppUrl(message), "_blank", "noopener,noreferrer");
-  showToast("Wholesale enquiry ready in WhatsApp");
+  showToast("Enquiry opened in WhatsApp. You can also email bandevigourment@gmail.com");
 });
 
 document.querySelectorAll(".faq-item button").forEach((button) => {

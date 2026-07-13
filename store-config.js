@@ -11,7 +11,7 @@ export const STORE_CONFIG = {
     registeredAddress: "Registered business address verification pending",
     manufacturer: "Manufacturer / packer details verification pending",
     packerAddress: "Packing address verification pending",
-    supportEmail: "Official support email verification pending",
+    supportEmail: "bandevigourment@gmail.com",
     supportPhone: "Official support phone verification pending",
     fssai: "FSSAI license verification pending",
     gst: "GST registration verification pending",
