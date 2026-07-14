@@ -712,6 +712,7 @@ function ensureFooterTrust() {
       <a href="./wholesale.html">Wholesale enquiry</a>
       <a href="./international-buyer-desk.html">International buyer desk</a>
       <a href="./international-buyer-catalog.html">International buyer catalog</a>
+      <a href="./makhana-export-price-moq-packaging-guide.html">Export price and MOQ guide</a>
       <a href="./premium-roasted-makhana-snack-packs-wholesale.html">Roasted makhana wholesale</a>
       <a href="./directory-submission-kit.html">Directory kit</a>
       <a href="./updates.html">Daily SEO updates</a>
