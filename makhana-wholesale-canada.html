@@ -16,13 +16,25 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebPage",
-        "name": "Makhana Wholesale Canada | BandEvi Gourmet Export",
-        "url": "https://bandevigourmet.com/makhana-wholesale-canada.html",
-        "datePublished": "2026-07-12",
-        "dateModified": "2026-07-12",
-        "description": "Canadian buyer route for premium Indian makhana, roasted fox nuts, bulk cartons, retail packs, distributors, importers, and sample enquiries.",
-        "about": { "@type": "Product", "name": "Premium Indian makhana and roasted fox nuts" }
+        "@graph": [
+          {
+            "@type": "WebPage",
+            "name": "Makhana Wholesale Canada | BandEvi Gourmet Export",
+            "url": "https://bandevigourmet.com/makhana-wholesale-canada.html",
+            "datePublished": "2026-07-12",
+            "dateModified": "2026-07-14",
+            "description": "Canadian buyer route for premium Indian makhana, roasted fox nuts, bulk cartons, retail packs, distributors, importers, and sample enquiries.",
+            "about": { "@type": "Thing", "name": "Premium Indian makhana and roasted fox nuts" }
+          },
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bandevigourmet.com/" },
+              { "@type": "ListItem", "position": 2, "name": "International Buyer Desk", "item": "https://bandevigourmet.com/international-buyer-desk.html" },
+              { "@type": "ListItem", "position": 3, "name": "Makhana Wholesale Canada", "item": "https://bandevigourmet.com/makhana-wholesale-canada.html" }
+            ]
+          }
+        ]
       }
     </script>
     <link rel="stylesheet" href="./styles.css" />
@@ -74,14 +86,15 @@
         <div class="wholesale-copy"><p class="eyebrow">Canada quote request</p><h2 id="canada-quote-title">Tell us what your Canadian buyer needs.</h2><p>This structured request is saved for follow-up and opens the enquiry path for wholesale, distributor, retail, sample, or private-label conversations.</p><div class="wholesale-points"><span>Canada buyer</span><span>Retail or bulk</span><span>Sample cartons</span><span>Written quote</span></div></div>
         <form class="wholesale-form" id="wholesaleForm">
           <label><span>Business name</span><input name="businessName" type="text" required /></label>
-          <label><span>Contact name</span><input name="name" type="text" required /></label>
+          <input name="country" type="hidden" value="Canada" />
+          <label><span>Contact name</span><input name="contactName" type="text" required /></label>
           <label><span>Business email</span><input name="email" type="email" required /></label>
           <label><span>Phone / WhatsApp</span><input name="phone" type="tel" required /></label>
           <label><span>Buyer type</span><select name="buyerType"><option>Distributor / importer</option><option>Retail store / supermarket</option><option>Online marketplace seller</option><option>Hotel / restaurant / caterer</option><option>Private-label buyer</option></select></label>
           <label><span>Target market</span><select name="targetMarket"><option>Canada</option><option>Canada - Toronto / GTA</option><option>Canada - Vancouver</option><option>Canada - Calgary</option><option>Canada - Montreal</option><option>Other Canadian city</option></select></label>
           <label><span>Product interest</span><select name="product"><option>Roasted makhana snack packs</option><option>Bulk makhana / fox nuts</option><option>Sample cartons</option><option>Mixed Indian pantry range</option><option>Private-label discussion</option></select></label>
           <label><span>Pack format</span><select name="packFormat"><option>Retail pouches</option><option>Bulk cartons</option><option>Sample carton</option><option>Mixed range</option><option>Private-label format</option></select></label>
-          <label><span>Expected volume</span><input name="quantity" type="text" placeholder="Example: cartons per month" /></label>
+          <label><span>Expected volume</span><input name="volume" type="text" placeholder="Example: cartons per month" /></label>
           <label><span>Destination city / port</span><input name="destinationPort" type="text" placeholder="Example: Toronto" /></label>
           <label><span>Timeline</span><select name="timeline"><option>Exploring options</option><option>Need samples first</option><option>Within 30 days</option><option>Within 60 to 90 days</option><option>Planned future launch</option></select></label>
           <label><span>Document needs</span><input name="documentNeed" type="text" placeholder="Share only verified requirements" /></label>
