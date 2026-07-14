@@ -848,6 +848,7 @@ function getFreeDeliveryPriceText(amount) {
 }
 
 function normalizeCouponForClient(coupon = {}) {
+  coupon = coupon || {};
   const code = String(coupon.code || "").trim().toUpperCase().replace(/[^A-Z0-9-]/g, "");
   if (!code) return null;
   const type = ["percent", "fixed", "free-delivery"].includes(coupon.type) ? coupon.type : "percent";
