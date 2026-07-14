@@ -1380,10 +1380,8 @@ function renderCategoryCard(product) {
   `;
 }
 
-function bindAddButtons(root) {
-  root.querySelectorAll("[data-add]").forEach((button) => {
-    button.addEventListener("click", () => addToCart(button.dataset.add));
-  });
+function bindAddButtons() {
+  // Cart actions use one delegated listener so newly rendered product cards stay interactive.
 }
 
 function bindDetailButtons(root) {
@@ -3863,6 +3861,12 @@ orderTypeSelect?.addEventListener("change", () => {
 
 document.querySelectorAll(".cart-trigger").forEach((button) => {
   button.addEventListener("click", openCart);
+});
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-add]");
+  if (!button || button.disabled) return;
+  event.preventDefault();
+  addToCart(button.dataset.add);
 });
 cartStepper?.querySelectorAll("[data-cart-step]").forEach((button) => {
   button.addEventListener("click", () => setCheckoutStep(button.dataset.cartStep));
