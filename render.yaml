@@ -21,6 +21,10 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
       - key: ADMIN_TOKEN_SECRET
         generateValue: true
       - key: DATABASE_URL

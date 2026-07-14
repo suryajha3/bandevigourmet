@@ -350,6 +350,7 @@ function ensureStoreShell() {
               <span>Payment</span>
               <select name="payment" id="paymentMethod">
                 <option>Cash on delivery</option>
+                <option>Razorpay online</option>
                 <option>UPI prepaid</option>
                 <option>UPI on delivery</option>
                 <option>Card on delivery</option>
@@ -2266,6 +2267,10 @@ function getUpiPayUrl(amount, orderId) {
 }
 
 function getPaymentNote(payment, total) {
+  if (payment === "Razorpay online") {
+    return `Pay ${money(total)} securely by UPI, card, netbanking, or wallet through Razorpay.`;
+  }
+
   if (payment === "UPI prepaid") {
     return STORE_CONFIG.upiId
       ? `Pay ${money(total)} to UPI ID ${STORE_CONFIG.upiId} before delivery.`
@@ -3501,6 +3506,11 @@ function renderPaymentDetails() {
   const upiReady = Boolean(STORE_CONFIG.upiId.trim());
   const pendingMessage = "UPI ID is not added yet. Add it in store-config.js to accept direct UPI payment.";
 
+  if (payment === "Razorpay online") {
+    paymentDetails.innerHTML = `<p>Secure online payment is processed by Razorpay. Your order is confirmed only after payment verification.</p>`;
+    return;
+  }
+
   if (payment !== "UPI prepaid") {
     paymentDetails.innerHTML = `
       <p>${getPaymentNote(payment, totals.total)}</p>
@@ -3874,6 +3884,97 @@ document.querySelector("#applyCoupon")?.addEventListener("click", () => {
   applyCouponCode(couponInput?.value || getDisplayCoupon().code);
 });
 
+function loadRazorpayCheckout() {
+  if (window.Razorpay) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-razorpay-checkout]');
+    if (existing) {
+      existing.addEventListener("load", resolve, { once: true });
+      existing.addEventListener("error", () => reject(new Error("Razorpay checkout could not be loaded.")), { once: true });
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.dataset.razorpayCheckout = "true";
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Razorpay checkout could not be loaded."));
+    document.head.appendChild(script);
+  });
+}
+
+function resetAfterPaidOrder(form, order) {
+  const shouldSaveDetails = saveDetailsInput?.checked ?? true;
+  if (shouldSaveDetails) {
+    saveCustomer(order.customer);
+    syncCustomerProfile(order.customer);
+  }
+  upsertOrderRecords(order, order);
+  state.cart.clear();
+  saveCart();
+  state.couponApplied = false;
+  state.activeCoupon = null;
+  if (couponInput) couponInput.value = "";
+  if (couponMessage) couponMessage.textContent = "";
+  form.reset();
+  if (saveDetailsInput) saveDetailsInput.checked = true;
+  state.checkoutStep = "cart";
+  renderCart();
+  closeCart();
+  showToast(`Payment received for order ${order.id}`);
+  redirectToConfirmation(order);
+}
+
+async function startRazorpayCheckout(form, submitButton, originalButtonHtml) {
+  const localOrder = createOrderRecord(form, createOrderId(), "Razorpay Checkout");
+  const payload = await apiRequest("/api/payments/razorpay/create-order", {
+    method: "POST",
+    body: JSON.stringify({ order: localOrder })
+  });
+  await loadRazorpayCheckout();
+  if (!window.Razorpay) throw new Error("Razorpay checkout is unavailable.");
+
+  const checkout = new window.Razorpay({
+    key: payload.keyId,
+    amount: payload.paymentOrder.amount,
+    currency: payload.paymentOrder.currency,
+    name: STORE_CONFIG.shopName,
+    description: `Order ${payload.order.id}`,
+    order_id: payload.paymentOrder.id,
+    prefill: {
+      name: payload.order.customer.name,
+      email: payload.order.customer.email,
+      contact: payload.order.customer.phone
+    },
+    theme: { color: "#0f5c48" },
+    handler: async (response) => {
+      try {
+        const verified = await apiRequest("/api/payments/razorpay/verify", {
+          method: "POST",
+          body: JSON.stringify(response)
+        });
+        resetAfterPaidOrder(form, verified.order);
+      } catch (error) {
+        showToast(error.message || "Payment needs support verification. Please keep your payment ID.");
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.innerHTML = originalButtonHtml;
+          refreshIcons();
+        }
+      }
+    },
+    modal: {
+      ondismiss: () => {
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.innerHTML = originalButtonHtml;
+          refreshIcons();
+        }
+      }
+    }
+  });
+  checkout.open();
+}
+
 function submitWhatsAppOrder() {
   if (!state.cart.size) {
     showToast("Add at least one product first");
@@ -3924,6 +4025,10 @@ checkoutForm?.addEventListener("submit", async (event) => {
   }
 
   try {
+    if (form.elements.payment?.value === "Razorpay online") {
+      await startRazorpayCheckout(form, submitButton, originalButtonHtml);
+      return;
+    }
     const orderId = createOrderId();
     const order = createOrderRecord(form, orderId, "Website cart booking");
     const shouldSaveDetails = saveDetailsInput?.checked ?? true;

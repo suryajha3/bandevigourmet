@@ -31,6 +31,8 @@ const SMTP_SECURE = process.env.SMTP_SECURE === "true" || SMTP_PORT === 465;
 const ORDER_WEBHOOK_URL = process.env.ORDER_WEBHOOK_URL || "";
 const ORDER_WEBHOOK_SECRET = process.env.ORDER_WEBHOOK_SECRET || "";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || "";
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "";
 const TOKEN_TTL_MS = 1000 * 60 * 60 * 12;
 const CLOSED_ORDER_STATUSES = new Set(["delivered", "cancelled"]);
 const ORDER_STATUSES = new Set(["booked", "confirmed", "packed", "dispatched", "delivered", "cancelled"]);
@@ -485,7 +487,7 @@ function isClosedOrder(order) {
 }
 
 function emptyDb() {
-  return { orders: [], wholesale: [], customers: [], notifications: [], supportRequests: [], products: [], coupons: [], events: [] };
+  return { orders: [], wholesale: [], customers: [], notifications: [], supportRequests: [], products: [], coupons: [], paymentSessions: [], events: [] };
 }
 
 function normalizeDb(db) {
@@ -500,6 +502,7 @@ function normalizeDb(db) {
     supportRequests: Array.isArray(safeDb.supportRequests) ? safeDb.supportRequests : [],
     products: Array.isArray(safeDb.products) ? safeDb.products : [],
     coupons: Array.isArray(safeDb.coupons) ? safeDb.coupons : [],
+    paymentSessions: Array.isArray(safeDb.paymentSessions) ? safeDb.paymentSessions : [],
     events: Array.isArray(safeDb.events) ? safeDb.events : []
   };
 }
@@ -732,6 +735,53 @@ function applyManagedCouponToOrder(db, order) {
       : null;
 
   return validation?.valid ? coupon : null;
+}
+
+function priceOrderFromCatalog(order, products) {
+  order.items = (order.items || []).map((item) => {
+    const product = products.find((candidate) => candidate.id === item.id && candidate.active !== false);
+    const quantity = Math.max(1, Math.min(100, Math.floor(Number(item.quantity || 0))));
+    if (!product || !quantity) return null;
+    const price = Math.max(0, Number(product.offerPrice ?? product.price ?? 0));
+    return {
+      id: product.id,
+      name: product.name,
+      size: product.size,
+      quantity,
+      price,
+      offerPrice: price,
+      mrp: Number(product.mrp || price),
+      discountPrice: Number(product.discountPrice || 0),
+      discountPercent: Number(product.discountPercent || 0),
+      lineTotal: price * quantity
+    };
+  }).filter(Boolean);
+  return order;
+}
+
+function razorpayIsConfigured() {
+  return Boolean(RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET);
+}
+
+async function razorpayRequest(path, payload) {
+  const response = await fetch(`https://api.razorpay.com/v1${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString("base64")}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body?.error?.description || "Razorpay could not create the payment order.");
+  return body;
+}
+
+function verifyRazorpaySignature(orderId, paymentId, signature) {
+  const expected = createHmac("sha256", RAZORPAY_KEY_SECRET).update(`${orderId}|${paymentId}`).digest("hex");
+  const actualBuffer = Buffer.from(String(signature || ""));
+  const expectedBuffer = Buffer.from(expected);
+  return actualBuffer.length === expectedBuffer.length && timingSafeEqual(actualBuffer, expectedBuffer);
 }
 
 function productIsOrderable(product, quantity = 1) {
@@ -1663,6 +1713,98 @@ async function handleApi(req, res, url) {
 
   if (url.pathname === "/api/auth/config" && req.method === "GET") {
     jsonResponse(res, 200, { googleClientId: GOOGLE_CLIENT_ID });
+    return true;
+  }
+
+  if (url.pathname === "/api/payments/razorpay/config" && req.method === "GET") {
+    jsonResponse(res, 200, { configured: razorpayIsConfigured(), keyId: razorpayIsConfigured() ? RAZORPAY_KEY_ID : "" });
+    return true;
+  }
+
+  if (url.pathname === "/api/payments/razorpay/create-order" && req.method === "POST") {
+    if (!razorpayIsConfigured()) {
+      jsonResponse(res, 503, { error: "Razorpay is not configured yet." });
+      return true;
+    }
+
+    const payload = await readBody(req);
+    const db = await readDb();
+    const products = await ensureManagedProducts(db);
+    const order = priceOrderFromCatalog(normalizeOrder(payload.order || {}), products);
+    order.source = "Razorpay Checkout";
+    order.payment = "Razorpay online";
+    order.paymentState = "Payment pending";
+    order.paymentNote = "Secure Razorpay payment initiated.";
+    const stockError = validateOrderStock(order, products);
+    if (!order.customer.phone || !order.items.length || stockError) {
+      jsonResponse(res, 400, { error: stockError || "Phone and at least one valid item are required." });
+      return true;
+    }
+    applyManagedCouponToOrder(db, order);
+    const paymentOrder = await razorpayRequest("/orders", {
+      amount: Math.round(order.totals.total * 100),
+      currency: "INR",
+      receipt: order.id,
+      notes: { website_order_id: order.id }
+    });
+    db.paymentSessions = [
+      { razorpayOrderId: paymentOrder.id, order, createdAt: new Date().toISOString() },
+      ...(db.paymentSessions || []).filter((item) => Date.now() - Date.parse(item.createdAt || 0) < 24 * 60 * 60 * 1000)
+    ].slice(0, 200);
+    await writeDb(db);
+    jsonResponse(res, 201, { keyId: RAZORPAY_KEY_ID, paymentOrder: { id: paymentOrder.id, amount: paymentOrder.amount, currency: paymentOrder.currency }, order });
+    return true;
+  }
+
+  if (url.pathname === "/api/payments/razorpay/verify" && req.method === "POST") {
+    if (!razorpayIsConfigured()) {
+      jsonResponse(res, 503, { error: "Razorpay is not configured yet." });
+      return true;
+    }
+    const payload = await readBody(req);
+    const razorpayOrderId = text(payload.razorpay_order_id, 120);
+    const paymentId = text(payload.razorpay_payment_id, 120);
+    const signature = text(payload.razorpay_signature, 200);
+    if (!verifyRazorpaySignature(razorpayOrderId, paymentId, signature)) {
+      jsonResponse(res, 400, { error: "Razorpay payment verification failed." });
+      return true;
+    }
+    const db = await readDb();
+    const session = (db.paymentSessions || []).find((item) => item.razorpayOrderId === razorpayOrderId);
+    if (!session?.order) {
+      jsonResponse(res, 404, { error: "The payment session has expired. Please contact support with your payment ID." });
+      return true;
+    }
+    const existingOrder = (db.orders || []).find((item) => cleanOrderId(item.id) === cleanOrderId(session.order.id));
+    if (existingOrder) {
+      jsonResponse(res, 200, { order: publicOrder(existingOrder), duplicate: true });
+      return true;
+    }
+    const products = await ensureManagedProducts(db);
+    const order = priceOrderFromCatalog(normalizeOrder(session.order), products);
+    applyManagedCouponToOrder(db, order);
+    const stockError = validateOrderStock(order, products);
+    if (stockError) {
+      jsonResponse(res, 409, { error: `${stockError} Payment is received; please contact support with payment ID ${paymentId}.` });
+      return true;
+    }
+    order.payment = "Razorpay online";
+    order.paymentState = "Payment received";
+    order.paymentNote = `Verified Razorpay payment: ${paymentId}`;
+    reserveOrderStock(order, products);
+    if (order.coupon?.code) {
+      const coupon = findCoupon(db, order.coupon.code);
+      if (coupon) coupon.usedCount = Number(coupon.usedCount || 0) + 1;
+    }
+    db.orders = [order, ...(db.orders || [])].slice(0, 1000);
+    upsertCustomer(db, order.customer);
+    const notifications = createOrderNotifications(order, "order_created");
+    await dispatchNotifications(notifications, order);
+    db.notifications = [...notifications, ...(db.notifications || [])].slice(0, 2000);
+    db.paymentSessions = (db.paymentSessions || []).filter((item) => item.razorpayOrderId !== razorpayOrderId);
+    db.events = [{ id: randomUUID(), type: "razorpay_payment_verified", ref: order.id, at: order.updatedAt }, ...(db.events || [])].slice(0, 1000);
+    await writeDb(db);
+    jsonResponse(res, 201, { order: publicOrder(order) });
     return true;
   }
 
