@@ -351,9 +351,6 @@ function ensureStoreShell() {
               <select name="payment" id="paymentMethod">
                 <option>Cash on delivery</option>
                 <option>Razorpay online</option>
-                <option>UPI prepaid</option>
-                <option>UPI on delivery</option>
-                <option>Card on delivery</option>
               </select>
             </label>
             <div class="payment-details" id="paymentDetails"></div>
@@ -1995,7 +1992,8 @@ function getFreeDeliverySummary(totals) {
 function renderCheckoutFlowCards(activeStep = state.checkoutStep) {
   const flow = [
     { id: "cart", icon: "shopping-bag", title: "Cart", text: "Pack sizes and quantity checked" },
-    { id: "details", icon: "badge-check", title: "Checkout", text: "Delivery details and booking confirmation" }
+    { id: "details", icon: "package-check", title: "Details", text: "Delivery and payment choice" },
+    { id: "review", icon: "badge-check", title: "Review", text: "Confirm COD or pay online" }
   ];
   const activeIndex = Math.max(0, flow.findIndex((item) => item.id === activeStep));
 
@@ -2060,11 +2058,12 @@ function renderCartDeliveryPlan(lines) {
     <div class="cart-delivery-plan">
       <div>
         <strong>${hasItems ? "Next step: add delivery details" : "Build a booking-ready cart"}</strong>
-        <span>${hasItems ? "Customer phone, address, payment mode, and order type will unlock the review screen." : "Add products first, then the checkout will collect delivery and tracking details."}</span>
+        <span>${hasItems ? "Customer phone, address, and payment mode unlock the final review screen." : "Add products first, then the checkout will collect delivery and tracking details."}</span>
       </div>
       <div>
         <span><b>1</b>Review products</span>
-        <span><b>2</b>Add details and place booking</span>
+        <span><b>2</b>Add delivery details</span>
+        <span><b>3</b>Review, then confirm COD or pay online</span>
       </div>
     </div>
   `;
@@ -2171,8 +2170,8 @@ function renderOrderReview() {
           WhatsApp order
         </button>
         <button class="checkout-button" type="button" data-place-order>
-          <i data-lucide="badge-check"></i>
-          Place booking
+          <i data-lucide="${payment === "Razorpay online" ? "credit-card" : "badge-check"}"></i>
+          ${payment === "Razorpay online" ? "Pay securely with Razorpay" : "Confirm cash on delivery order"}
         </button>
       </div>
     </div>
@@ -2180,12 +2179,12 @@ function renderOrderReview() {
 }
 
 function setCheckoutStep(step, options = {}) {
-  const nextStep = step === "review" ? "details" : ["cart", "details"].includes(step) ? step : "cart";
+  const nextStep = ["cart", "details", "review"].includes(step) ? step : "cart";
   if (nextStep === "details" && !state.cart.size) {
     showToast("Add at least one product first");
     return;
   }
-  if (nextStep === "details" && options.validate) {
+  if (nextStep === "review" && options.validate) {
     if (!state.cart.size) {
       showToast("Add at least one product first");
       return;
@@ -2232,14 +2231,14 @@ function renderCheckoutStep() {
   if (checkoutForm) checkoutForm.hidden = state.checkoutStep !== "details";
   if (cartReviewPanel) {
     cartReviewPanel.hidden = state.checkoutStep === "details";
-    cartReviewPanel.innerHTML = renderCartStepPanel(lines, totals);
+    cartReviewPanel.innerHTML = state.checkoutStep === "review" ? renderOrderReview() : renderCartStepPanel(lines, totals);
     cartReviewPanel.scrollTop = 0;
     bindCheckoutReviewActions();
   }
 
   const checkoutButton = checkoutForm?.querySelector(".checkout-button");
   if (checkoutButton) {
-    checkoutButton.innerHTML = `<i data-lucide="badge-check"></i> Place booking`;
+    checkoutButton.innerHTML = `<i data-lucide="badge-check"></i> Review order`;
   }
 
   updateCheckoutExtraFields();
@@ -2338,6 +2337,7 @@ function createOrderRecord(form, orderId, source) {
   const orderType = String(data.get("orderType") || "Retail home order").trim();
   const address = String(data.get("address") || "").trim();
   const placedAt = new Date().toISOString();
+  const isCashOnDelivery = payment === "Cash on delivery";
 
   return {
     id: orderId,
@@ -2356,7 +2356,7 @@ function createOrderRecord(form, orderId, source) {
     postalCode,
     address,
     payment,
-    paymentState: "Payment pending",
+    paymentState: isCashOnDelivery ? "Cash on delivery" : "Payment pending",
     paymentNote: getPaymentNote(payment, totals.total),
     courier: "",
     trackingCode: "",
@@ -3986,9 +3986,9 @@ function submitWhatsAppOrder() {
     return;
   }
 
-  if (state.checkoutStep !== "details") {
-    setCheckoutStep("details");
-    showToast("Add delivery details before WhatsApp");
+  if (state.checkoutStep !== "review") {
+    setCheckoutStep("review", { validate: true });
+    showToast("Review delivery and payment details before WhatsApp");
     return;
   }
   if (!checkoutForm.reportValidity()) return;
@@ -4011,7 +4011,7 @@ checkoutForm?.addEventListener("submit", async (event) => {
     showToast("Add at least one product first");
     return;
   }
-  if (state.checkoutStep !== "details") {
+  if (!["details", "review"].includes(state.checkoutStep)) {
     setCheckoutStep("details");
     showToast("Add delivery details before placing order");
     return;
@@ -4019,6 +4019,11 @@ checkoutForm?.addEventListener("submit", async (event) => {
   const stockIssue = getCartStockIssue();
   if (stockIssue) {
     showToast(stockIssue);
+    return;
+  }
+
+  if (state.checkoutStep === "details") {
+    setCheckoutStep("review", { validate: true });
     return;
   }
 
