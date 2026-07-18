@@ -164,6 +164,7 @@ ensureStoreShell();
 ensureMobileCategoryNav();
 ensureTrustInfrastructure();
 ensureCartCheckoutEnhancements();
+optimizeImageLoading();
 
 const rupee = new Intl.NumberFormat("en-IN", {
   maximumFractionDigits: 0
@@ -1252,7 +1253,7 @@ function hasProductImage(product) {
 
 function renderProductVisual(product) {
   if (hasProductImage(product)) {
-    return `<img src="${escapeHtml(productImage(product))}" alt="${escapeHtml(product.name)}" decoding="async" onerror="this.onerror=null;this.src='${escapeHtml(fallbackProductImage(product))}';" style="--position: ${imagePosition(product)}; --fit: ${imageFit(product)}; --scale: ${imageScale(product)}" />`;
+    return `<img src="${escapeHtml(productImage(product))}" alt="${escapeHtml(product.name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${escapeHtml(fallbackProductImage(product))}';" style="--position: ${imagePosition(product)}; --fit: ${imageFit(product)}; --scale: ${imageScale(product)}" />`;
   }
 
   return `
@@ -1262,6 +1263,21 @@ function renderProductVisual(product) {
       <small>Real packet photo pending</small>
     </div>
   `;
+}
+
+function optimizeImageLoading() {
+  const heroImage = document.querySelector(".page-hero img, .hero-panel img, .landing-hero img");
+  if (heroImage) {
+    heroImage.loading = "eager";
+    heroImage.decoding = "async";
+    heroImage.fetchPriority = "high";
+  }
+
+  document.querySelectorAll("img").forEach((image) => {
+    if (image === heroImage || image.loading === "eager") return;
+    image.loading = "lazy";
+    image.decoding = "async";
+  });
 }
 
 function productUrl(product) {
