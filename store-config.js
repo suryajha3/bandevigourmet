@@ -8,7 +8,7 @@ export const STORE_CONFIG = {
   supportHours: "Mon-Sat, 10:00 AM-6:00 PM IST",
   business: {
     legalName: "Bandevi Global Group",
-    registeredAddress: "H-30, Laxmi Nagar, New Delhi 110090, India",
+    registeredAddress: "H-30, Laxmi Nagar, New Delhi 110092, India",
     manufacturer: "Manufacturer / packer details verification pending",
     packerAddress: "Packing address verification pending",
     supportEmail: "sales@bandeviglobalgroup.com",
