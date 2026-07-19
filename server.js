@@ -33,6 +33,7 @@ const ORDER_WEBHOOK_SECRET = process.env.ORDER_WEBHOOK_SECRET || "";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || "";
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "";
+const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || "";
 const TOKEN_TTL_MS = 1000 * 60 * 60 * 12;
 const CLOSED_ORDER_STATUSES = new Set(["delivered", "cancelled"]);
 const ORDER_STATUSES = new Set(["booked", "confirmed", "packed", "dispatched", "delivered", "cancelled"]);
@@ -784,6 +785,55 @@ function verifyRazorpaySignature(orderId, paymentId, signature) {
   return actualBuffer.length === expectedBuffer.length && timingSafeEqual(actualBuffer, expectedBuffer);
 }
 
+function verifyRazorpayWebhookSignature(rawBody, signature) {
+  if (!RAZORPAY_WEBHOOK_SECRET || !signature) return false;
+  const expected = createHmac("sha256", RAZORPAY_WEBHOOK_SECRET).update(rawBody).digest("hex");
+  const actualBuffer = Buffer.from(String(signature));
+  const expectedBuffer = Buffer.from(expected);
+  return actualBuffer.length === expectedBuffer.length && timingSafeEqual(actualBuffer, expectedBuffer);
+}
+
+async function completeRazorpayPayment(razorpayOrderId, paymentId, source = "checkout") {
+  const db = await readDb();
+  const existingOrder = (db.orders || []).find(
+    (item) => item.paymentGatewayOrderId === razorpayOrderId || item.paymentGatewayPaymentId === paymentId
+  );
+  if (existingOrder) return { status: 200, order: publicOrder(existingOrder), duplicate: true };
+
+  const session = (db.paymentSessions || []).find((item) => item.razorpayOrderId === razorpayOrderId);
+  if (!session?.order) {
+    return { status: 404, error: "The payment session has expired. Please contact support with your payment ID." };
+  }
+
+  const products = await ensureManagedProducts(db);
+  const order = priceOrderFromCatalog(normalizeOrder(session.order), products);
+  applyManagedCouponToOrder(db, order);
+  const stockError = validateOrderStock(order, products);
+  if (stockError) {
+    return { status: 409, error: `${stockError} Payment is received; please contact support with payment ID ${paymentId}.` };
+  }
+
+  order.payment = "Razorpay online";
+  order.paymentState = "Payment received";
+  order.paymentNote = `Verified Razorpay payment: ${paymentId}`;
+  order.paymentGatewayOrderId = razorpayOrderId;
+  order.paymentGatewayPaymentId = paymentId;
+  reserveOrderStock(order, products);
+  if (order.coupon?.code) {
+    const coupon = findCoupon(db, order.coupon.code);
+    if (coupon) coupon.usedCount = Number(coupon.usedCount || 0) + 1;
+  }
+  db.orders = [order, ...(db.orders || [])].slice(0, 1000);
+  upsertCustomer(db, order.customer);
+  const notifications = createOrderNotifications(order, "order_created");
+  await dispatchNotifications(notifications, order);
+  db.notifications = [...notifications, ...(db.notifications || [])].slice(0, 2000);
+  db.paymentSessions = (db.paymentSessions || []).filter((item) => item.razorpayOrderId !== razorpayOrderId);
+  db.events = [{ id: randomUUID(), type: `razorpay_payment_${source}`, ref: order.id, at: order.updatedAt }, ...(db.events || [])].slice(0, 1000);
+  await writeDb(db);
+  return { status: 201, order: publicOrder(order) };
+}
+
 function productIsOrderable(product, quantity = 1) {
   if (!product || product.active === false) return false;
   if (product.stockStatus === "out-of-stock") return false;
@@ -1524,6 +1574,15 @@ async function writeDb(db) {
 }
 
 async function readBody(req) {
+  const rawBody = await readRawBody(req);
+  try {
+    return rawBody ? JSON.parse(rawBody) : {};
+  } catch {
+    throw new Error("Invalid JSON");
+  }
+}
+
+async function readRawBody(req) {
   return new Promise((resolveBody, rejectBody) => {
     let body = "";
     req.on("data", (chunk) => {
@@ -1533,13 +1592,7 @@ async function readBody(req) {
         req.destroy();
       }
     });
-    req.on("end", () => {
-      try {
-        resolveBody(body ? JSON.parse(body) : {});
-      } catch {
-        rejectBody(new Error("Invalid JSON"));
-      }
-    });
+    req.on("end", () => resolveBody(body));
     req.on("error", rejectBody);
   });
 }
@@ -1721,6 +1774,37 @@ async function handleApi(req, res, url) {
     return true;
   }
 
+  if (url.pathname === "/api/payments/razorpay/webhook" && req.method === "POST") {
+    const rawBody = await readRawBody(req);
+    const signature = req.headers["x-razorpay-signature"];
+    if (!verifyRazorpayWebhookSignature(rawBody, signature)) {
+      jsonResponse(res, 400, { error: "Invalid Razorpay webhook signature." });
+      return true;
+    }
+
+    let event;
+    try {
+      event = JSON.parse(rawBody);
+    } catch {
+      jsonResponse(res, 400, { error: "Invalid Razorpay webhook payload." });
+      return true;
+    }
+
+    if (event?.event !== "payment.captured") {
+      jsonResponse(res, 200, { received: true, ignored: true });
+      return true;
+    }
+
+    const payment = event?.payload?.payment?.entity || {};
+    const result = await completeRazorpayPayment(text(payment.order_id, 120), text(payment.id, 120), "webhook_captured");
+    if (result.status === 404) {
+      jsonResponse(res, 200, { received: true, ignored: true, reason: "No matching checkout session." });
+      return true;
+    }
+    jsonResponse(res, result.status, { received: true, ...result });
+    return true;
+  }
+
   if (url.pathname === "/api/payments/razorpay/create-order" && req.method === "POST") {
     if (!razorpayIsConfigured()) {
       jsonResponse(res, 503, { error: "Razorpay is not configured yet." });
@@ -1769,42 +1853,8 @@ async function handleApi(req, res, url) {
       jsonResponse(res, 400, { error: "Razorpay payment verification failed." });
       return true;
     }
-    const db = await readDb();
-    const session = (db.paymentSessions || []).find((item) => item.razorpayOrderId === razorpayOrderId);
-    if (!session?.order) {
-      jsonResponse(res, 404, { error: "The payment session has expired. Please contact support with your payment ID." });
-      return true;
-    }
-    const existingOrder = (db.orders || []).find((item) => cleanOrderId(item.id) === cleanOrderId(session.order.id));
-    if (existingOrder) {
-      jsonResponse(res, 200, { order: publicOrder(existingOrder), duplicate: true });
-      return true;
-    }
-    const products = await ensureManagedProducts(db);
-    const order = priceOrderFromCatalog(normalizeOrder(session.order), products);
-    applyManagedCouponToOrder(db, order);
-    const stockError = validateOrderStock(order, products);
-    if (stockError) {
-      jsonResponse(res, 409, { error: `${stockError} Payment is received; please contact support with payment ID ${paymentId}.` });
-      return true;
-    }
-    order.payment = "Razorpay online";
-    order.paymentState = "Payment received";
-    order.paymentNote = `Verified Razorpay payment: ${paymentId}`;
-    reserveOrderStock(order, products);
-    if (order.coupon?.code) {
-      const coupon = findCoupon(db, order.coupon.code);
-      if (coupon) coupon.usedCount = Number(coupon.usedCount || 0) + 1;
-    }
-    db.orders = [order, ...(db.orders || [])].slice(0, 1000);
-    upsertCustomer(db, order.customer);
-    const notifications = createOrderNotifications(order, "order_created");
-    await dispatchNotifications(notifications, order);
-    db.notifications = [...notifications, ...(db.notifications || [])].slice(0, 2000);
-    db.paymentSessions = (db.paymentSessions || []).filter((item) => item.razorpayOrderId !== razorpayOrderId);
-    db.events = [{ id: randomUUID(), type: "razorpay_payment_verified", ref: order.id, at: order.updatedAt }, ...(db.events || [])].slice(0, 1000);
-    await writeDb(db);
-    jsonResponse(res, 201, { order: publicOrder(order) });
+    const result = await completeRazorpayPayment(razorpayOrderId, paymentId, "verified");
+    jsonResponse(res, result.status, result);
     return true;
   }
 
