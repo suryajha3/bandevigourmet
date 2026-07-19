@@ -733,6 +733,8 @@ function ensureFooterTrust() {
     <div class="footer-note footer-assurance">
       <strong>Verified details</strong>
       <div class="footer-business-list">
+        <span><b>Business</b>${escapeHtml(businessValue("legalName"))}</span>
+        <span><b>Office</b>${escapeHtml(businessValue("registeredAddress"))}</span>
         <span><b>FSSAI</b>${escapeHtml(businessValue("fssai"))}</span>
         <span><b>GST</b>${escapeHtml(businessValue("gst"))}</span>
         <span><b>Support</b>${escapeHtml(businessValue("supportPhone"))}</span>
