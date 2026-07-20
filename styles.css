@@ -9035,6 +9035,55 @@ body.customer-authed .portal-dashboard {
   font-weight: 800;
 }
 
+.site-footer.upgraded-footer.is-simple-footer {
+  grid-template-columns: minmax(260px, 1.3fr) repeat(2, minmax(130px, 0.52fr)) minmax(230px, 0.9fr);
+  gap: clamp(24px, 5vw, 54px);
+  background: #123d34;
+}
+
+.is-simple-footer .footer-intro p {
+  max-width: 430px;
+  margin: 14px 0 0;
+}
+
+.footer-contact-panel {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.footer-contact-panel strong {
+  margin-bottom: 4px;
+  font-size: 18px;
+}
+
+.footer-contact-panel a,
+.footer-contact-panel span {
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.is-simple-footer .footer-bottom a {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.is-simple-footer .footer-bottom a:hover {
+  color: #fff;
+}
+
+@media (max-width: 860px) {
+  .site-footer.upgraded-footer.is-simple-footer {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .site-footer.upgraded-footer.is-simple-footer {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media print {
   body {
     background: #fff;

@@ -574,6 +574,28 @@ function prioritizeHomeShopping() {
   buyingLanes.after(collection);
   collection.after(productPreview);
   productPreview.after(international);
+
+  [
+    ".readiness-board",
+    ".about-brand#company-strength",
+    ".trust-strip",
+    ".purity-promise",
+    ".promo-showcase",
+    ".home-trust-wall",
+    ".global-brand",
+    ".quality-grid",
+    ".about-brand#about",
+    ".trust-center",
+    ".operations-section",
+    ".cert-section",
+    ".export-desk",
+    ".bundle-band",
+    ".wholesale-section",
+    ".policy-section",
+    ".journey-section",
+    ".faq-section",
+    ".reviews"
+  ].forEach((selector) => document.querySelector(selector)?.remove());
 }
 
 function ensureHeaderSliderLink() {
@@ -666,7 +688,7 @@ function ensureFooterTrust() {
   const footer = document.querySelector(".site-footer");
   if (!footer) return;
 
-  footer.classList.add("upgraded-footer");
+  footer.classList.add("upgraded-footer", "is-simple-footer");
   footer.innerHTML = `
     <div class="footer-intro">
       <a class="brand footer-brand" href="./index.html" aria-label="${escapeHtml(STORE_CONFIG.shopName)} home">
@@ -677,15 +699,9 @@ function ensureFooterTrust() {
         </span>
       </a>
       <p>
-        Premium Indian makhana, masala, poha, herbs, whole spices, and pantry bundles with Chairman Mr. Surya Kant Jha, buyer-ready proof, and clear company strength references.
+        Premium Indian makhana, masala, poha, and pantry products for everyday orders, gifting, wholesale, and international enquiries.
       </p>
-      <div class="footer-trust-points" aria-label="Footer trust points">
-        ${renderTrustBadges()}
-        <span>Chairman: Mr. Surya Kant Jha</span>
-        <span>INR 8,000 Cr+ group strength</span>
-        <span>1000+ staff reference</span>
-        <span>26+ office presence</span>
-      </div>
+      <a class="footer-cta" href="./products.html">Shop products</a>
     </div>
     <nav class="footer-links" aria-label="Shop links">
       <strong>Shop</strong>
@@ -695,64 +711,23 @@ function ensureFooterTrust() {
       <a href="./poha.html">Poha</a>
       <a href="./bundles.html">Bundles</a>
     </nav>
-    <nav class="footer-links" aria-label="Support links">
-      <strong>Customer care</strong>
-      <a href="./account.html">Customer account</a>
-      <a href="./track.html">Track order</a>
-      <a href="./policies.html#terms">Terms</a>
-      <a href="./policies.html#privacy">Privacy</a>
-      <a href="./policies.html#cancellation">Cancellation</a>
-      <a href="./policies.html#refund">Refunds</a>
-    </nav>
     <nav class="footer-links" aria-label="Business links">
-      <strong>Proof &amp; company</strong>
-      <a href="./about.html">About BandEvi</a>
-      <a href="./proof-center.html">Proof Center</a>
-      <a href="./company-strength.html">Company strength</a>
-      <a href="./office-network.html">Office network</a>
-      <a href="./surya-kant-jha-chairman-net-worth-travel-agent.html">Chairman profile</a>
-      <a href="./surya-kant-jha-chairman-net-worth-travel-agent.html#chairman-gallery-title">Chairman gallery</a>
-      <a href="./makhana-export-company-net-worth-staff-offices.html">Net worth, staff, offices</a>
-      <a href="./about.html#trust">Trust center</a>
-      <a href="./about.html#business-verification">Business verification</a>
-      <a href="./contact.html">Contact and sales</a>
+      <strong>Business</strong>
       <a href="./wholesale.html">Wholesale enquiry</a>
-      <a href="./international-buyer-desk.html">International buyer desk</a>
-      <a href="./international-buyer-catalog.html">International buyer catalog</a>
-      <a href="./makhana-export-price-moq-packaging-guide.html">Export price and MOQ guide</a>
-      <a href="./premium-roasted-makhana-snack-packs-wholesale.html">Roasted makhana wholesale</a>
-      <a href="./directory-submission-kit.html">Directory kit</a>
-      <a href="./updates.html">Daily SEO updates</a>
-      <a href="./policies.html#faq">FAQ</a>
-    </nav>
-    <nav class="footer-links" aria-label="Market links">
-      <strong>Markets</strong>
-      <a href="./india.html">India</a>
-      <a href="./dubai.html">Dubai / UAE</a>
-      <a href="./uk.html">UK</a>
-      <a href="./us.html">USA</a>
-      <a href="./makhana-wholesale-canada.html">Canada</a>
       <a href="./international-buyer-desk.html">International buyers</a>
-      <a href="./international-buyer-catalog.html">Buyer catalog</a>
-      <a href="./marketplace-product-listing-pack.html">Marketplace listings</a>
+      <a href="./contact.html">Contact sales</a>
+      <a href="./proof-center.html">Proof Center</a>
+      <a href="./about.html">About us</a>
     </nav>
-    <div class="footer-note footer-assurance">
-      <strong>Verified details</strong>
-      <div class="footer-business-list">
-        <span><b>Business</b>${escapeHtml(businessValue("legalName"))}</span>
-        <span><b>Office</b>${escapeHtml(businessValue("registeredAddress"))}</span>
-        <span><b>FSSAI</b>${escapeHtml(businessValue("fssai"))}</span>
-        <span><b>GST</b>${escapeHtml(businessValue("gst"))}</span>
-        <span><b>Support</b>${escapeHtml(businessValue("supportPhone"))}</span>
-        <span><b>Email</b><a href="mailto:${encodeURIComponent(businessValue("supportEmail"))}">${escapeHtml(businessValue("supportEmail"))}</a></span>
-      </div>
-      <small>${escapeHtml(STORE_CONFIG.claimDisclaimer)}</small>
-      <a class="footer-cta" href="./proof-center.html">Open Proof Center</a>
+    <div class="footer-contact-panel">
+      <strong>Contact</strong>
+      <a href="tel:+918287669022">${escapeHtml(businessValue("supportPhone"))}</a>
+      <a href="mailto:${encodeURIComponent(businessValue("supportEmail"))}">${escapeHtml(businessValue("supportEmail"))}</a>
+      <span>${escapeHtml(businessValue("registeredAddress"))}</span>
     </div>
     <div class="footer-bottom">
       <span>${escapeHtml(STORE_CONFIG.shopName)}, India</span>
-      <span>${escapeHtml(STORE_CONFIG.domain)}</span>
-      <span>${escapeHtml(STORE_CONFIG.supportHours)}</span>
+      <span><a href="./track.html">Track order</a> · <a href="./policies.html#terms">Terms</a> · <a href="./policies.html#privacy">Privacy</a></span>
     </div>
   `;
 }
