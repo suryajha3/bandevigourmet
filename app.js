@@ -601,46 +601,45 @@ function ensurePremiumHeader() {
   const header = document.querySelector(".site-header");
   if (!header) return;
 
-  header.classList.add("premium-header");
-
-  if (!header.querySelector(".header-announcement")) {
-    header.insertAdjacentHTML(
-      "afterbegin",
-      `
-        <div class="header-announcement" aria-label="Brand trust bar">
-          <div class="header-announcement-copy">
-            <span><i data-lucide="sparkles"></i>Premium makhana and Indian pantry goods</span>
-            <span><i data-lucide="globe-2"></i>Wholesale, private-label and export desk</span>
-          </div>
-          <div class="header-utility-actions">
-            <a href="./contact.html"><i data-lucide="message-circle"></i>Sales desk</a>
-            <a href="./track.html"><i data-lucide="map-pin-check"></i>Track order</a>
-          </div>
-        </div>
-      `
-    );
-  }
+  header.classList.add("premium-header", "is-simple");
+  header.querySelector(".header-announcement")?.remove();
+  header.querySelector(".header-trust-row")?.remove();
 
   const brandCopy = header.querySelector(".brand > span:not(.brand-mark)");
-  if (brandCopy && !brandCopy.querySelector(".brand-proof-line")) {
-    brandCopy.insertAdjacentHTML("beforeend", `<em class="brand-proof-line">Indian Makhana Export House</em>`);
+  brandCopy?.querySelector(".brand-proof-line")?.remove();
+
+  const nav = header.querySelector(".main-nav");
+  if (nav && !nav.dataset.simpleNavigation) {
+    const currentPage = window.location.pathname.split("/").pop() || "index.html";
+    const links = [
+      ["./index.html", "Home"],
+      ["./products.html", "Shop"],
+      ["./wholesale.html", "Wholesale"],
+      ["./international-buyer-desk.html", "International"],
+      ["./track.html", "Track"]
+    ];
+    nav.innerHTML = links
+      .map(([href, label]) => `<a href="${href}" ${href.endsWith(currentPage) ? 'aria-current="page"' : ""}>${label}</a>`)
+      .join("");
+    nav.dataset.simpleNavigation = "true";
   }
 
   const actions = header.querySelector(".header-actions");
-  if (actions && !actions.querySelector(".header-shop-now")) {
-    actions.insertAdjacentHTML(
-      "afterbegin",
-      `
-        <a class="portal-shortcut header-shop-now" href="./products.html#productGrid">
-          <i data-lucide="store"></i>
-          <span>Shop all</span>
-        </a>
-        <a class="portal-shortcut header-sales-shortcut" href="./contact.html">
-          <i data-lucide="message-circle"></i>
-          <span>Sales</span>
-        </a>
-      `
-    );
+  if (actions && !actions.dataset.simpleActions) {
+    const cart = actions.querySelector(".cart-trigger")?.outerHTML || `
+      <button class="icon-button cart-trigger" type="button" aria-label="Open cart" title="Cart">
+        <i data-lucide="shopping-bag"></i><span class="cart-count" data-cart-count>0</span>
+      </button>`;
+    actions.innerHTML = `
+      <a class="portal-shortcut header-sales-shortcut" href="./contact.html">
+        <i data-lucide="message-circle"></i><span>Sales</span>
+      </a>
+      <a class="icon-button header-account-shortcut" href="./account.html" aria-label="Customer account" title="Customer account">
+        <i data-lucide="user-round"></i>
+      </a>
+      ${cart}
+    `;
+    actions.dataset.simpleActions = "true";
   }
 
   initPremiumHeaderBehavior(header);
@@ -658,27 +657,7 @@ function initPremiumHeaderBehavior(header) {
 function ensureHeaderTrustRow() {
   const header = document.querySelector(".site-header");
   if (!header) return;
-
-  let row = header.querySelector(".header-trust-row");
-  if (!row) {
-    header.insertAdjacentHTML("beforeend", `<div class="header-trust-row" aria-label="Trust highlights"></div>`);
-    row = header.querySelector(".header-trust-row");
-  }
-
-  row.innerHTML = `
-    <a class="header-range-card is-highlight" href="./premium-roasted-makhana-snack-packs-wholesale.html">
-      <i data-lucide="package-check"></i>
-      <span><strong>Signature makhana</strong><small>Premium roasted snack packs</small></span>
-    </a>
-    <a class="header-range-card" href="./international-buyer-desk.html">
-      <i data-lucide="globe-2"></i>
-      <span><strong>Export buyer desk</strong><small>Wholesale and private-label enquiries</small></span>
-    </a>
-    <a class="header-range-card" href="./products.html#productGrid">
-      <i data-lucide="shopping-bag"></i>
-      <span><strong>Secure online order</strong><small>Razorpay online payment or COD</small></span>
-    </a>
-  `;
+  header.querySelector(".header-trust-row")?.remove();
 }
 
 function ensureFooterTrust() {

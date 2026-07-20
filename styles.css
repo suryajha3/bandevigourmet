@@ -1436,6 +1436,121 @@ a {
   display: none;
 }
 
+/* Quiet shared header for fast shopping and sales navigation. */
+.premium-header.is-simple {
+  grid-template-columns: minmax(250px, 0.7fr) minmax(330px, 1fr) auto;
+  min-height: 72px;
+  padding: 10px clamp(18px, 4vw, 56px);
+  gap: 14px;
+  background: rgba(255, 254, 250, 0.97);
+}
+
+.premium-header.is-simple .brand {
+  min-width: 250px;
+  padding: 0;
+}
+
+.premium-header.is-simple .brand-mark {
+  width: 42px;
+  height: 42px;
+  font-size: 18px;
+}
+
+.premium-header.is-simple .brand strong {
+  font-size: 17px;
+}
+
+.premium-header.is-simple .main-nav {
+  justify-content: center;
+  min-height: 42px;
+  padding: 3px;
+  box-shadow: none;
+}
+
+.premium-header.is-simple .main-nav a {
+  min-height: 34px;
+  padding-inline: 12px;
+}
+
+.premium-header.is-simple .header-actions {
+  gap: 7px;
+}
+
+.premium-header.is-simple .header-sales-shortcut {
+  min-height: 42px;
+  border-color: var(--green);
+  background: var(--green);
+  color: #fff;
+}
+
+.premium-header.is-simple .header-sales-shortcut:hover {
+  background: var(--green-dark);
+}
+
+.premium-header.is-simple .header-account-shortcut {
+  min-height: 42px;
+  background: #fff;
+}
+
+.premium-header.is-simple.is-scrolled {
+  min-height: 64px;
+  box-shadow: 0 10px 24px rgba(24, 47, 40, 0.13);
+}
+
+@media (max-width: 900px) {
+  .premium-header.is-simple {
+    grid-template-columns: minmax(210px, auto) minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .premium-header.is-simple .main-nav {
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .premium-header.is-simple .main-nav::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .premium-header.is-simple {
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-height: auto;
+    padding: 8px 14px;
+  }
+
+  .premium-header.is-simple .brand {
+    min-width: 0;
+  }
+
+  .premium-header.is-simple .brand small {
+    display: none;
+  }
+
+  .premium-header.is-simple .main-nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+  }
+
+  .premium-header.is-simple .header-actions {
+    gap: 5px;
+  }
+
+  .premium-header.is-simple .header-sales-shortcut,
+  .premium-header.is-simple .header-account-shortcut,
+  .premium-header.is-simple .cart-trigger {
+    width: 40px;
+    padding: 0;
+  }
+
+  .premium-header.is-simple .header-sales-shortcut span {
+    display: none;
+  }
+}
+
 .cart-count {
   position: absolute;
   top: -7px;
