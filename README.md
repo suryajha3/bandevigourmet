@@ -77,7 +77,15 @@ Set these private environment variables on Render when running as a Web Service:
 ADMIN_PASSWORD=your-private-admin-password
 ADMIN_TOKEN_SECRET=random-private-secret
 DATABASE_URL=postgresql://... optional but recommended for permanent storage
+SALES_NOTIFICATION_EMAIL=sales@bandeviglobalgroup.com
+NOTIFICATION_FROM_EMAIL=your-sending-email-address
+SMTP_HOST=your-smtp-host
+SMTP_PORT=587
+SMTP_USER=your-smtp-username
+SMTP_PASS=your-smtp-password-or-app-password
 ```
+
+Wholesale enquiries are always saved in the admin panel. To also deliver a sales email, add the SMTP variables above in Render. The notification is sent to `SALES_NOTIFICATION_EMAIL` and includes the buyer contact details, product, pack format, volume, destination, timeline, and message.
 
 The server stores order data in `server-data/` by default. For a serious production launch, add a managed PostgreSQL database and set `DATABASE_URL` on Render. When `DATABASE_URL` is present, the backend stores the order/customer/wholesale database in PostgreSQL. Without it, the site continues working with the JSON fallback.
 

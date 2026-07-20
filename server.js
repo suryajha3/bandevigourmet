@@ -21,6 +21,7 @@ const DATABASE_URL = process.env.DATABASE_URL || "";
 const STORAGE_DRIVER = DATABASE_URL ? "postgres" : "json";
 const PUBLIC_SITE_URL = (process.env.PUBLIC_SITE_URL || "https://bandevigourmet.com").replace(/\/+$/, "");
 const ADMIN_NOTIFICATION_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || process.env.ADMIN_EMAIL || "";
+const SALES_NOTIFICATION_EMAIL = process.env.SALES_NOTIFICATION_EMAIL || ADMIN_NOTIFICATION_EMAIL || "sales@bandeviglobalgroup.com";
 const ADMIN_WHATSAPP_NUMBER = process.env.ADMIN_WHATSAPP_NUMBER || process.env.STORE_WHATSAPP_NUMBER || STORE_CONFIG.whatsappNumber || "";
 const NOTIFICATION_FROM_EMAIL = process.env.NOTIFICATION_FROM_EMAIL || ADMIN_NOTIFICATION_EMAIL || "";
 const SMTP_HOST = process.env.SMTP_HOST || "";
@@ -991,6 +992,7 @@ function notificationConfig() {
   return {
     smtpConfigured: Boolean(SMTP_HOST && NOTIFICATION_FROM_EMAIL),
     adminEmailConfigured: Boolean(ADMIN_NOTIFICATION_EMAIL),
+    salesEmailConfigured: Boolean(SALES_NOTIFICATION_EMAIL),
     adminWhatsAppConfigured: Boolean(cleanPhone(ADMIN_WHATSAPP_NUMBER)),
     webhookConfigured: Boolean(ORDER_WEBHOOK_URL)
   };
@@ -1142,6 +1144,52 @@ function createSupportNotifications(request, order = null) {
   }
 
   return notifications;
+}
+
+function buildWholesaleNotificationMessage(enquiry) {
+  return [
+    `International buyer enquiry: ${enquiry.id}`,
+    "",
+    `Business: ${enquiry.businessName || "Not provided"}`,
+    `Contact: ${enquiry.contactName || "Not provided"}`,
+    `Phone / WhatsApp: ${enquiry.phone || "Not provided"}`,
+    `Email: ${enquiry.email || "Not provided"}`,
+    `Country: ${enquiry.country || "Not provided"}`,
+    `Target market: ${enquiry.targetMarket || "Not provided"}`,
+    `Buyer type: ${enquiry.buyerType || "Not provided"}`,
+    "",
+    `Product interest: ${enquiry.productRange || "Not provided"}`,
+    `Pack format: ${enquiry.packFormat || "Not provided"}`,
+    `Expected volume: ${enquiry.volume || "Not provided"}`,
+    `Destination: ${enquiry.destinationPort || "Not provided"}`,
+    `Timeline: ${enquiry.timeline || "Not provided"}`,
+    `Document need: ${enquiry.documentNeed || "Not provided"}`,
+    "",
+    "Buyer message:",
+    enquiry.message || "No additional message.",
+    "",
+    `Review enquiry in admin: ${siteLink("/admin.html")}`
+  ].join("\n");
+}
+
+function createWholesaleNotifications(enquiry) {
+  const pseudoOrder = { id: enquiry.id, customer: { phone: enquiry.phone } };
+  const subject = `New international buyer enquiry ${enquiry.id}${enquiry.country ? ` - ${enquiry.country}` : ""}`;
+  const message = buildWholesaleNotificationMessage(enquiry);
+
+  return [
+    createNotification({
+      order: pseudoOrder,
+      eventType: "wholesale_enquiry",
+      audience: "sales",
+      channel: "email",
+      recipient: SALES_NOTIFICATION_EMAIL,
+      subject,
+      message,
+      url: mailtoUrl(SALES_NOTIFICATION_EMAIL, subject, message),
+      status: SMTP_HOST && NOTIFICATION_FROM_EMAIL ? "queued" : "ready"
+    })
+  ];
 }
 
 function createOrderNotifications(order, eventType = "order_created") {
@@ -2130,8 +2178,12 @@ async function handleApi(req, res, url) {
     };
     const db = await readDb();
     db.wholesale = [enquiry, ...(db.wholesale || [])].slice(0, 500);
+    db.events = [{ id: randomUUID(), type: "wholesale_enquiry", ref: enquiry.id, at: now }, ...(db.events || [])].slice(0, 1000);
+    const notifications = createWholesaleNotifications(enquiry);
+    await dispatchNotifications(notifications, { id: enquiry.id, customer: { phone: enquiry.phone } });
+    db.notifications = [...notifications, ...(db.notifications || [])].slice(0, 2000);
     await writeDb(db);
-    jsonResponse(res, 201, { enquiry: publicEnquiry(enquiry) });
+    jsonResponse(res, 201, { enquiry: publicEnquiry(enquiry), notifications: notifications.map(publicNotification) });
     return true;
   }
 
