@@ -1,10 +1,12 @@
 import {
   BadgeCheck,
+  Circle,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
   Clipboard,
+  CreditCard,
   FileText,
   Factory,
   FlaskConical,
@@ -2159,6 +2161,42 @@ function renderReviewChecklist(payment, totals) {
   `;
 }
 
+function renderReviewPaymentChoices(payment, totals) {
+  const choices = [
+    {
+      value: "Razorpay online",
+      icon: "credit-card",
+      title: "Pay online",
+      detail: `Pay ${money(totals.total)} by UPI, card, netbanking, or wallet through Razorpay.`
+    },
+    {
+      value: "Cash on delivery",
+      icon: "badge-check",
+      title: "Cash on delivery",
+      detail: "Pay cash when the order is delivered."
+    }
+  ];
+
+  return `
+    <div class="review-payment-options" role="radiogroup" aria-label="Choose payment method">
+      <strong>Choose payment method</strong>
+      <div>
+        ${choices
+          .map(
+            (choice) => `
+              <button class="review-payment-option ${payment === choice.value ? "is-selected" : ""}" type="button" data-review-payment="${choice.value}" role="radio" aria-checked="${String(payment === choice.value)}">
+                <i data-lucide="${choice.icon}"></i>
+                <span><b>${choice.title}</b><small>${choice.detail}</small></span>
+                <i class="review-payment-check" data-lucide="${payment === choice.value ? "check-circle-2" : "circle"}"></i>
+              </button>
+            `
+          )
+          .join("")}
+      </div>
+    </div>
+  `;
+}
+
 function renderOrderReview() {
   const lines = getCartLines();
   const totals = getTotals();
@@ -2192,9 +2230,8 @@ function renderOrderReview() {
       <div class="review-block">
         <strong>Booking terms</strong>
         <div class="review-line"><span>Order type</span><strong>${escapeHtml(orderType)}</strong></div>
-        <div class="review-line"><span>Payment</span><strong>${escapeHtml(payment)}</strong></div>
-        <p>${escapeHtml(getPaymentNote(payment, totals.total))}</p>
       </div>
+      ${renderReviewPaymentChoices(payment, totals)}
       ${renderReviewChecklist(payment, totals)}
       <div class="review-total-card">
         <div><span>Subtotal</span><span>${money(totals.subtotal)}</span></div>
@@ -2251,6 +2288,14 @@ function bindCheckoutReviewActions() {
   cartReviewPanel?.querySelector("[data-whatsapp-review]")?.addEventListener("click", () => {
     state.checkoutStep = "review";
     submitWhatsAppOrder();
+  });
+  cartReviewPanel?.querySelectorAll("[data-review-payment]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!checkoutForm?.elements.payment) return;
+      checkoutForm.elements.payment.value = button.dataset.reviewPayment;
+      renderPaymentDetails();
+      renderCheckoutStep();
+    });
   });
 }
 
@@ -3707,11 +3752,13 @@ function refreshIcons() {
   createIcons({
     icons: {
       BadgeCheck,
+      Circle,
       ChevronDown,
       ChevronLeft,
       ChevronRight,
       CheckCircle2,
       Clipboard,
+      CreditCard,
       FileText,
       Factory,
       FlaskConical,
