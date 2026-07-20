@@ -1,4 +1,5 @@
 import {
+  ArrowRight,
   BadgeCheck,
   Circle,
   ChevronDown,
@@ -551,12 +552,28 @@ function ensureTrustInfrastructure() {
   ensurePremiumHeader();
   moveProofLinksToFooter();
   ensureHeaderTrustRow();
+  prioritizeHomeShopping();
   ensureFooterTrust();
   ensureCheckoutAssurance();
   ensurePolicyBusinessPanel();
   ensureAboutComplianceCards();
   ensureSeoAutoTime();
   ensureSubmissionCopyButtons();
+}
+
+function prioritizeHomeShopping() {
+  if (!document.body.classList.contains("home-page")) return;
+
+  const proofDock = document.querySelector(".home-proof-dock");
+  const buyingLanes = document.querySelector(".home-buying-lanes");
+  const collection = document.querySelector(".shop-collection-strip");
+  const productPreview = document.querySelector(".home-range-tabs");
+  const international = document.querySelector(".international-collection");
+  if (!proofDock || !buyingLanes || !collection || !productPreview || !international) return;
+
+  buyingLanes.after(collection);
+  collection.after(productPreview);
+  productPreview.after(international);
 }
 
 function ensureHeaderSliderLink() {
@@ -3737,6 +3754,7 @@ function showToast(message) {
 function refreshIcons() {
   createIcons({
     icons: {
+      ArrowRight,
       BadgeCheck,
       Circle,
       ChevronDown,

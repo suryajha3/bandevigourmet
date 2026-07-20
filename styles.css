@@ -240,6 +240,86 @@ body.home-page {
   line-height: 1.5;
 }
 
+.home-buying-lanes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(1180px, calc(100% - 36px));
+  margin: 0 auto 44px;
+  border: 1px solid rgba(30, 89, 75, 0.15);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fffdf8;
+  box-shadow: 0 18px 42px rgba(28, 37, 33, 0.08);
+}
+
+.home-buying-lanes a {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 22px;
+  gap: 14px;
+  align-items: center;
+  min-height: 148px;
+  padding: 22px;
+  color: var(--ink);
+  transition: background 180ms ease, box-shadow 180ms ease;
+}
+
+.home-buying-lanes a + a {
+  border-left: 1px solid rgba(30, 89, 75, 0.15);
+  background: #eef6f0;
+}
+
+.home-buying-lanes a:hover {
+  background: #fff7df;
+}
+
+.home-buying-lanes > a > svg:first-child {
+  width: 44px;
+  height: 44px;
+  padding: 11px;
+  border-radius: 8px;
+  background: #eaf4ee;
+  color: var(--green);
+}
+
+.home-buying-lanes a + a > svg:first-child {
+  background: var(--green);
+  color: #fff;
+}
+
+.home-buying-lanes span,
+.home-buying-lanes strong,
+.home-buying-lanes p {
+  display: block;
+}
+
+.home-buying-lanes span {
+  margin-bottom: 5px;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.home-buying-lanes strong {
+  color: var(--ink);
+  font-size: clamp(20px, 2.2vw, 28px);
+  line-height: 1.15;
+}
+
+.home-buying-lanes p {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.home-buying-lanes .home-lane-arrow {
+  width: 22px;
+  height: 22px;
+  color: var(--saffron);
+}
+
 .home-page .international-collection {
   align-items: stretch;
   margin-top: 0;
@@ -618,6 +698,22 @@ body.home-page {
 
   .home-proof-dock article {
     min-height: auto;
+  }
+
+  .home-buying-lanes {
+    grid-template-columns: 1fr;
+    width: min(100% - 36px, 640px);
+    margin-bottom: 34px;
+  }
+
+  .home-buying-lanes a {
+    min-height: 0;
+    padding: 18px;
+  }
+
+  .home-buying-lanes a + a {
+    border-top: 1px solid rgba(30, 89, 75, 0.15);
+    border-left: 0;
   }
 
   .home-page .international-collection > div:first-child {
