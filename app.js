@@ -1210,7 +1210,7 @@ function productImage(product) {
 }
 
 function fallbackProductImage(product) {
-  return CATEGORY_IMAGE_FALLBACKS[product?.category] || "/assets/makhana-masala-hero.png";
+  return CATEGORY_IMAGE_FALLBACKS[product?.category] || "/assets/makhana-masala-hero.webp";
 }
 
 function getStockStatus(product) {
