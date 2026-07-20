@@ -3471,9 +3471,13 @@ function buildWholesaleMessage(form) {
     `Buyer Type: ${data.get("buyerType") || "Not specified"}`,
     `Monthly Volume: ${data.get("volume")}`,
     `Pack Format: ${data.get("packFormat") || "Not specified"}`,
+    `Product Range: ${data.get("productRange") || "Not specified"}`,
+    `Pack Request: ${data.get("packRequest") || "Not specified"}`,
     `Destination Port / City: ${data.get("destinationPort") || "Not specified"}`,
     `Timeline: ${data.get("timeline") || "Not specified"}`,
     `Document Need: ${data.get("documentNeed") || "Not specified"}`,
+    `Label Requirement: ${data.get("labelRequirement") || "Not specified"}`,
+    `Quote Basis: ${data.get("quoteBasis") || "Not specified"}`,
     "",
     "Product Interest:",
     data.get("message") || "Not specified"
@@ -3492,9 +3496,13 @@ async function syncWholesaleEnquiry(form) {
     buyerType: data.get("buyerType"),
     volume: data.get("volume"),
     packFormat: data.get("packFormat"),
+    productRange: data.get("productRange"),
+    packRequest: data.get("packRequest"),
     destinationPort: data.get("destinationPort"),
     timeline: data.get("timeline"),
     documentNeed: data.get("documentNeed"),
+    labelRequirement: data.get("labelRequirement"),
+    quoteBasis: data.get("quoteBasis"),
     message: data.get("message")
   };
 
