@@ -14,7 +14,9 @@ import {
   Handshake,
   Leaf,
   LogOut,
+  MapPinCheck,
   MessageCircle,
+  MessageSquare,
   PackageCheck,
   PackageOpen,
   Printer,
@@ -24,6 +26,7 @@ import {
   Send,
   ShoppingBag,
   Store,
+  Sparkles,
   ShieldCheck,
   Truck,
   UserRound,
@@ -605,10 +608,14 @@ function ensurePremiumHeader() {
       "afterbegin",
       `
         <div class="header-announcement" aria-label="Brand trust bar">
-          <span><i data-lucide="sparkles"></i>Premium makhana and Indian pantry goods</span>
-          <span><i data-lucide="globe-2"></i>Wholesale, private-label and export desk</span>
-          <a href="./wholesale.html"><i data-lucide="message-square"></i>Request a quote</a>
-          <a href="./track.html"><i data-lucide="map-pin-check"></i>Track an order</a>
+          <div class="header-announcement-copy">
+            <span><i data-lucide="sparkles"></i>Premium makhana and Indian pantry goods</span>
+            <span><i data-lucide="globe-2"></i>Wholesale, private-label and export desk</span>
+          </div>
+          <div class="header-utility-actions">
+            <a href="./contact.html"><i data-lucide="message-circle"></i>Sales desk</a>
+            <a href="./track.html"><i data-lucide="map-pin-check"></i>Track order</a>
+          </div>
         </div>
       `
     );
@@ -624,13 +631,28 @@ function ensurePremiumHeader() {
     actions.insertAdjacentHTML(
       "afterbegin",
       `
-        <a class="portal-shortcut header-shop-now" href="./products.html">
+        <a class="portal-shortcut header-shop-now" href="./products.html#productGrid">
           <i data-lucide="store"></i>
-          <span>Shop now</span>
+          <span>Shop all</span>
+        </a>
+        <a class="portal-shortcut header-sales-shortcut" href="./contact.html">
+          <i data-lucide="message-circle"></i>
+          <span>Sales</span>
         </a>
       `
     );
   }
+
+  initPremiumHeaderBehavior(header);
+}
+
+function initPremiumHeaderBehavior(header) {
+  if (header.dataset.enhancedHeader === "true") return;
+  header.dataset.enhancedHeader = "true";
+
+  const updateHeaderState = () => header.classList.toggle("is-scrolled", window.scrollY > 12);
+  updateHeaderState();
+  window.addEventListener("scroll", updateHeaderState, { passive: true });
 }
 
 function ensureHeaderTrustRow() {
@@ -646,15 +668,15 @@ function ensureHeaderTrustRow() {
   row.innerHTML = `
     <a class="header-range-card is-highlight" href="./premium-roasted-makhana-snack-packs-wholesale.html">
       <i data-lucide="package-check"></i>
-      <span><strong>Wholesale range</strong><small>Roasted makhana packs</small></span>
+      <span><strong>Signature makhana</strong><small>Premium roasted snack packs</small></span>
     </a>
     <a class="header-range-card" href="./international-buyer-desk.html">
       <i data-lucide="globe-2"></i>
-      <span><strong>Export buyer desk</strong><small>Share your requirements</small></span>
+      <span><strong>Export buyer desk</strong><small>Wholesale and private-label enquiries</small></span>
     </a>
-    <a class="header-range-card" href="./international-buyer-catalog.html">
-      <i data-lucide="book-open-check"></i>
-      <span><strong>Buyer catalog</strong><small>Formats, packs and enquiry</small></span>
+    <a class="header-range-card" href="./products.html#productGrid">
+      <i data-lucide="shopping-bag"></i>
+      <span><strong>Secure online order</strong><small>Razorpay online payment or COD</small></span>
     </a>
   `;
 }
@@ -3766,7 +3788,9 @@ function refreshIcons() {
       Handshake,
       Leaf,
       LogOut,
+      MapPinCheck,
       MessageCircle,
+      MessageSquare,
       PackageCheck,
       PackageOpen,
       Printer,
@@ -3776,6 +3800,7 @@ function refreshIcons() {
       Send,
       ShoppingBag,
       Store,
+      Sparkles,
       ShieldCheck,
       Truck,
       UserRound,
