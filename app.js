@@ -467,22 +467,7 @@ function ensureCartCheckoutEnhancements() {
 }
 
 function ensureMobileCategoryNav() {
-  const header = document.querySelector(".site-header");
-  if (!header || document.querySelector(".mobile-category-nav")) return;
-
-  header.insertAdjacentHTML(
-    "afterend",
-    `
-      <nav class="mobile-category-nav" aria-label="Mobile category shortcuts">
-        <a href="./products.html">All</a>
-        <a href="./makhana.html">Makhana</a>
-        <a href="./masala.html">Masala</a>
-        <a href="./poha.html">Poha</a>
-        <a href="./about.html#trust">Trust</a>
-        <a href="./track.html">Track</a>
-      </nav>
-    `
-  );
+  document.querySelector(".mobile-category-nav")?.remove();
 }
 
 function businessValue(key) {
