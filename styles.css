@@ -1911,6 +1911,59 @@ a {
   object-fit: cover;
 }
 
+.buyer-action-strip {
+  width: min(1180px, calc(100% - 36px));
+  margin: 0 auto clamp(24px, 5vw, 54px);
+  padding: clamp(18px, 3vw, 26px);
+  display: grid;
+  grid-template-columns: minmax(240px, 0.85fr) minmax(260px, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  border: 1px solid rgba(30, 89, 75, 0.16);
+  border-radius: 8px;
+  background: #fffdf8;
+}
+
+.buyer-action-strip h2 {
+  margin: 0;
+  color: var(--green-dark);
+  font-size: clamp(22px, 2.2vw, 30px);
+  line-height: 1.18;
+}
+
+.buyer-action-points {
+  display: grid;
+  gap: 8px;
+}
+
+.buyer-action-points span {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.buyer-action-points span::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 9px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+.buyer-action-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.buyer-action-links .primary-link,
+.buyer-action-links .secondary-link {
+  white-space: nowrap;
+}
+
 .office-card {
   min-height: 212px;
   padding: 20px;
@@ -10192,7 +10245,8 @@ body.customer-authed .portal-dashboard {
 
   .profile-hero,
   .profile-two-column,
-  .office-video-proof {
+  .office-video-proof,
+  .buyer-action-strip {
     grid-template-columns: 1fr;
   }
 }
@@ -10201,6 +10255,7 @@ body.customer-authed .portal-dashboard {
   .office-priority-strip,
   .office-network-grid,
   .office-video-proof,
+  .buyer-action-strip,
   .profile-hero,
   .profile-metrics,
   .profile-section {
