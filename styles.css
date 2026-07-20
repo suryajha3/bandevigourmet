@@ -6944,6 +6944,63 @@ body.customer-authed .portal-dashboard {
   line-height: 1.55;
 }
 
+.product-export-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid rgba(180, 124, 18, 0.28);
+  border-radius: 8px;
+  background: #fff7df;
+}
+
+.product-export-cta span {
+  display: block;
+  margin-bottom: 5px;
+  color: #8a5b08;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.product-export-cta strong {
+  display: block;
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.product-export-cta p {
+  max-width: 680px;
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.product-export-cta a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 8px;
+  background: var(--green);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.product-export-cta svg {
+  width: 16px;
+  height: 16px;
+}
+
 .detail-disclaimer {
   margin: 12px 0 0;
   padding: 12px;

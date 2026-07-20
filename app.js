@@ -1578,6 +1578,23 @@ function renderProductTrust(details, product) {
   `;
 }
 
+function renderExportBuyerCta(product) {
+  const params = new URLSearchParams({ product: product.name, range: product.category });
+  return `
+    <aside class="product-export-cta" aria-label="Export buyer enquiry">
+      <div>
+        <span>For distributors and importers</span>
+        <strong>Request an export quote for ${escapeHtml(product.name)}.</strong>
+        <p>Share your market, pack format, volume, label requirement, and preferred quote basis. Final MOQ, price, freight, and documents are confirmed in writing.</p>
+      </div>
+      <a href="./wholesale.html?${params.toString()}">
+        <i data-lucide="send"></i>
+        Request export quote
+      </a>
+    </aside>
+  `;
+}
+
 function renderSingleProductPage() {
   if (!singleProductPage) return;
 
@@ -1633,6 +1650,7 @@ function renderSingleProductPage() {
       ${renderProductFacts(details)}
       ${renderUsagePanel(details)}
       ${renderProductTrust(details, product)}
+      ${renderExportBuyerCta(product)}
       <p class="detail-disclaimer">${details.disclaimer || "Replace display values with verified packaging details before final commercial launch."}</p>
     </section>
 
@@ -1684,6 +1702,7 @@ function openProductDetail(id) {
     ${renderProductFacts(details)}
     ${renderUsagePanel(details)}
     ${renderProductTrust(details, product)}
+    ${renderExportBuyerCta(product)}
 
     <p class="detail-disclaimer">${details.disclaimer || "Replace display values with verified packaging details before final commercial launch."}</p>
   `;
@@ -4376,6 +4395,28 @@ async function hydrateTrackingFromUrl() {
   orderLookupForm.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
 }
 
+function prefillWholesaleProductFromUrl() {
+  if (!wholesaleForm) return;
+  const params = new URLSearchParams(window.location.search);
+  const product = params.get("product");
+  if (!product) return;
+
+  const productRange = params.get("range");
+  const messageField = wholesaleForm.elements.message;
+  const rangeField = wholesaleForm.elements.productRange;
+  if (messageField && !messageField.value) messageField.value = `Interested in: ${product}. Please share export pack options and quote details.`;
+  if (rangeField && productRange) {
+    const rangeLabels = {
+      makhana: "Makhana / fox nuts",
+      masala: "Indian masala blends",
+      poha: "Poha / breakfast range",
+      combo: "Mixed product range"
+    };
+    rangeField.value = rangeLabels[productRange] || "Mixed product range";
+  }
+}
+
+prefillWholesaleProductFromUrl();
 wholesaleForm?.addEventListener("submit", (event) => {
   event.preventDefault();
   const message = buildWholesaleMessage(event.currentTarget);
