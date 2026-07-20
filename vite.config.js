@@ -16,6 +16,7 @@ export default defineConfig({
         slider: resolve(__dirname, "slider.html"),
         product: resolve(__dirname, "product.html"),
         account: resolve(__dirname, "account.html"),
+        contact: resolve(__dirname, "contact.html"),
         confirmation: resolve(__dirname, "confirmation.html"),
         track: resolve(__dirname, "track.html"),
         wholesale: resolve(__dirname, "wholesale.html"),

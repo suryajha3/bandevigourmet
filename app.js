@@ -710,6 +710,7 @@ function ensureFooterTrust() {
       <a href="./makhana-export-company-net-worth-staff-offices.html">Net worth, staff, offices</a>
       <a href="./about.html#trust">Trust center</a>
       <a href="./about.html#business-verification">Business verification</a>
+      <a href="./contact.html">Contact and sales</a>
       <a href="./wholesale.html">Wholesale enquiry</a>
       <a href="./international-buyer-desk.html">International buyer desk</a>
       <a href="./international-buyer-catalog.html">International buyer catalog</a>
