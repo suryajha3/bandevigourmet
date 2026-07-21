@@ -702,6 +702,17 @@ function ensureFooterTrust() {
         Premium Indian makhana, masala, poha, and pantry products for everyday orders, gifting, wholesale, and international enquiries.
       </p>
       <a class="footer-cta" href="./products.html">Shop products</a>
+      <div class="footer-social-links" aria-label="Official social profiles">
+        <a href="https://www.instagram.com/bandevigourment/" target="_blank" rel="noopener noreferrer" aria-label="BandEvi Gourmet on Instagram">
+          <i data-lucide="instagram"></i><span>Instagram</span>
+        </a>
+        <a href="https://www.facebook.com/profile.php?id=61592298776392" target="_blank" rel="noopener noreferrer" aria-label="BandEvi Gourmet on Facebook">
+          <i data-lucide="facebook"></i><span>Facebook</span>
+        </a>
+        <a href="https://www.linkedin.com/in/bandevi-gourment-054b70423/" target="_blank" rel="noopener noreferrer" aria-label="Bandevi Gourmet profile on LinkedIn">
+          <i data-lucide="linkedin"></i><span>LinkedIn</span>
+        </a>
+      </div>
     </div>
     <nav class="footer-links" aria-label="Shop links">
       <strong>Shop</strong>

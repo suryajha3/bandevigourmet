@@ -9138,6 +9138,36 @@ body.customer-authed .portal-dashboard {
   margin: 14px 0 0;
 }
 
+.footer-social-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.footer-social-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.footer-social-links a:hover {
+  border-color: #e9b126;
+  color: #fff;
+}
+
+.footer-social-links svg {
+  width: 16px;
+  height: 16px;
+}
+
 .footer-contact-panel {
   display: grid;
   align-content: start;
