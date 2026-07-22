@@ -4462,7 +4462,7 @@ wholesaleForm?.addEventListener("submit", (event) => {
   const message = buildWholesaleMessage(event.currentTarget);
   syncWholesaleEnquiry(event.currentTarget);
   window.open(getWhatsAppUrl(message), "_blank", "noopener,noreferrer");
-  showToast("Enquiry opened in WhatsApp. You can also email bandevigourment@gmail.com");
+  showToast("Enquiry opened in WhatsApp. You can also email sales@bandeviglobalgroup.com");
 });
 
 document.querySelectorAll(".faq-item button").forEach((button) => {
