@@ -612,7 +612,6 @@ function moveProofLinksToFooter() {
     "company-strength.html",
     "office-network.html",
     "makhana-export-company-net-worth-staff-offices.html",
-    "surya-kant-jha-chairman-net-worth-travel-agent.html"
   ]);
 
   header.querySelectorAll("a[href]").forEach((link) => {
